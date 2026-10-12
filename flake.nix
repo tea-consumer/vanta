@@ -27,15 +27,18 @@
           bash ${./.}/scripts/apply-vanta.sh .
         '';
 
-        # Tune for x86-64-v3 (AVX2). PGO and cross-language LTO are already
-        # on by default in nixpkgs' Firefox build on x86_64-linux.
+        # Tune for x86-64-v3 (AVX2). Cross-language PGO and full cross-language
+        # LTO are already on in nixpkgs' Firefox build on x86_64-linux, and PGO
+        # builds already use -O3 there.
         extraPreConfigure = ''
           export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -march=x86-64-v3"
           export RUSTFLAGS="''${RUSTFLAGS:-} -C target-cpu=x86-64-v3"
         '';
         extraConfigureFlags = [
-          "--enable-optimize=-O3"
           "--enable-rust-simd"
+          # PHC samples allocations to catch memory bugs for crash reports;
+          # with no crash reporter it only costs RAM and CPU.
+          "--disable-phc"
         ];
 
         meta = {

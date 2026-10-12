@@ -1,5 +1,5 @@
 /****************************************************************************
- * Vanta browser: default prefs  (draft 0.3, 2026-10-12)
+ * Vanta browser: default prefs  (draft 0.4, 2026-10-12)
  * Goal: fast + RAM-efficient, built from Firefox source, without breaking
  *       normal sites.
  * Appended to browser/app/profile/firefox.js by scripts/apply-vanta.sh.
@@ -8,8 +8,10 @@
 /** ===== MEMORY ================================================ **/
 // Fewer shared content processes: each costs ~30-80 MB. default=8
 pref("dom.ipc.processCount", 4);
-// Keep only one spare process warm instead of three. default=3
-pref("dom.ipc.processPrelaunch.fission.number", 1);
+// With site isolation most pages run in per-site processes, and Firefox
+// allows up to 4 per site. One per site (what Firefox uses on Android) saves
+// a process for every extra tab of the same site. default=4
+pref("dom.ipc.processCount.webIsolated", 1);
 // Don't preload a hidden New Tab page in the background.
 pref("browser.newtab.preload", false);
 // Unload idle tabs when memory runs low, and sooner than default.
@@ -17,14 +19,25 @@ pref("browser.tabs.unloadOnLowMemory", true);
 pref("browser.tabs.min_inactive_duration_before_unload", 300000); // 5 min; default=10 min
 // Back/forward cache: keep at most 2 full pages in RAM. default=-1 (auto, up to 8)
 pref("browser.sessionhistory.max_total_viewers", 2);
-// Fewer closed tabs/windows held for "undo close". defaults 25 / 3
+// Fewer closed tabs/windows held for "undo close". defaults 25 / 5
 pref("browser.sessionstore.max_tabs_undo", 10);
 pref("browser.sessionstore.max_windows_undo", 1);
 // Write session state every 60s instead of 15s (less disk + CPU churn).
 pref("browser.sessionstore.interval", 60000);
+// Decoded-image cache: up to 1/4 of RAM (2 GB on an 8 GB Mac) per process by
+// default. 512 MB is plenty; images past that are decoded again. default=2 GB
+pref("image.mem.surfacecache.max_size_kb", 524288);
+// PHC (sampled memory-bug detection for crash reports) is compiled out of
+// Vanta; this keeps it off in any build that still has it. default=true
+pref("memory.phc.enabled", false);
+// Don't record per-page interaction data (view time, typing) into history.
+pref("browser.places.interactions.enabled", false);
 // NOTE: disk cache stays ON on purpose, so caching doesn't move into RAM.
 
 /** ===== RENDERING / SPEED ========================= **/
+// Paint as soon as there is something to show. default=5 ms
+pref("nglayout.initialpaint.delay", 0);
+pref("nglayout.initialpaint.delay_in_oopif", 0);
 pref("gfx.content.skia-font-cache-size", 20);
 pref("content.notify.interval", 100000);
 pref("gfx.canvas.accelerated.cache-size", 512);
@@ -39,6 +52,8 @@ pref("network.http.max-connections", 1800);
 pref("network.http.max-persistent-connections-per-server", 10);
 pref("network.http.max-urgent-start-excessive-connections-per-host", 5);
 pref("network.http.request.max-start-delay", 5);
+// Don't hold back requests to spread them out; send them as soon as possible.
+pref("network.http.pacing.requests.enabled", false);
 pref("network.dnsCacheExpiration", 3600);
 // OCSP checks add a network round trip on every new TLS site; CRLite covers revocation.
 pref("security.OCSP.enabled", 0);

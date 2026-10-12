@@ -11,7 +11,8 @@ the files in this repo.
 - `scripts/apply-vanta.sh`: renames Firefox's own unofficial branding to
   Vanta and appends our prefs to `browser/app/profile/firefox.js`.
 - `patches/`: our own small patches (none yet).
-- Build flags: PGO, cross-language LTO, `-O3`, CPU-specific tuning.
+- Build flags: cross-language PGO and LTO, CPU-specific tuning, PHC off.
+  Every lever and why is in [`docs/performance.md`](docs/performance.md).
 
 The Firefox version is pinned in `FIREFOX_VERSION`.
 
@@ -30,7 +31,8 @@ Needs Xcode and its command line tools.
     bash scripts/build-macos.sh
 
 The `.dmg` ends up in `work/firefox-<version>/obj-vanta/dist/`.
-PGO builds Firefox twice, so expect a long first build.
+PGO builds Firefox twice, so expect a long first build. `VANTA_PGO=0`
+skips PGO for a quicker test build.
 
 ## Status
 
