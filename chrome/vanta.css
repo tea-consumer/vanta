@@ -1,8 +1,9 @@
 /* Vanta browser chrome.
  *
  * Layout: Firefox's own vertical tabs, collapsed to an icon rail that expands
- * on hover, with one slim toolbar row on top. The page sits in a rounded card
- * inset from the window edge.
+ * on hover, with one slim toolbar row on top. The page floats in a rounded
+ * card; everything around it is one flat, quiet surface (true black in dark
+ * mode). No blur, gradients or animated effects: they cost paint time.
  *
  * Built into the browser by scripts/apply-vanta.sh (linked last from
  * browser.xhtml). Only applies to the default theme: an installed theme
@@ -13,69 +14,85 @@
 /* ----- Colors ------------------------------------------------------------ */
 
 :root:not([lwtheme]) {
-  --vanta-frame: light-dark(#e7e7eb, #0f0f12) !important;
-  --vanta-raised: light-dark(#ffffff, #26262c) !important;
-  --vanta-field: light-dark(rgba(0, 0, 0, 0.055), rgba(255, 255, 255, 0.07)) !important;
-  --vanta-hover: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.07)) !important;
-  --vanta-text: light-dark(#1c1c21, #e9e9ee) !important;
-  --vanta-text-muted: light-dark(#5d5d68, #9b9ba6) !important;
-  --vanta-card-edge: light-dark(rgba(0, 0, 0, 0.09), rgba(255, 255, 255, 0.07)) !important;
+  /* The window: flat neutral in light mode, true black in dark mode. */
+  --vanta-frame: light-dark(#e6e6eb, #000000) !important;
+  --vanta-raised: light-dark(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.075)) !important;
+  --vanta-hover: light-dark(rgba(0, 0, 0, 0.045), rgba(255, 255, 255, 0.05)) !important;
+  --vanta-field: light-dark(rgba(0, 0, 0, 0.045), rgba(255, 255, 255, 0.055)) !important;
+  --vanta-text: light-dark(#1d1d24, #e6e6ec) !important;
+  --vanta-text-muted: light-dark(#6a6a76, #8a8a96) !important;
+  --vanta-card-edge: light-dark(rgba(0, 0, 0, 0.07), rgba(255, 255, 255, 0.06)) !important;
+  --vanta-card-shadow: light-dark(rgba(20, 20, 40, 0.10), rgba(0, 0, 0, 0.5)) !important;
+  --vanta-radius: 12px !important;
+  --vanta-gap: 8px !important;
 
-  --toolbox-background-color: var(--vanta-frame) !important;
-  --toolbox-background-color-inactive: var(--vanta-frame) !important;
+  --toolbox-background-color: transparent !important;
+  --toolbox-background-color-inactive: transparent !important;
   --toolbox-text-color: var(--vanta-text) !important;
   --toolbox-text-color-inactive: var(--vanta-text-muted) !important;
-  --toolbar-background-color: var(--vanta-frame) !important;
+  --toolbar-background-color: transparent !important;
   --toolbar-text-color: var(--vanta-text) !important;
-  --sidebar-background-color: var(--vanta-frame) !important;
-  --sidebar-launcher-surface-color: var(--vanta-frame) !important;
+  --sidebar-background-color: transparent !important;
+  --sidebar-launcher-surface-color: transparent !important;
   --sidebar-border-color: transparent !important;
   --chrome-content-separator-color: transparent !important;
   --tabs-navbar-separator-color: transparent !important;
+  --toolbarbutton-icon-fill: var(--vanta-text-muted) !important;
+  --toolbarbutton-background-color-hover: var(--vanta-hover) !important;
 
-  --toolbar-field-background-color: var(--vanta-field) !important;
+  --toolbar-field-background-color: transparent !important;
   --toolbar-field-border-color: transparent !important;
   --toolbar-field-text-color: var(--vanta-text) !important;
-  --toolbar-field-background-color-focus: var(--vanta-raised) !important;
+  --toolbar-field-background-color-focus: light-dark(#ffffff, #18181c) !important;
+  --toolbar-field-border-color-focus: transparent !important;
   --toolbar-field-text-color-focus: var(--vanta-text) !important;
 
   --tab-background-color-hover: var(--vanta-hover) !important;
   --tab-background-color-selected: var(--vanta-raised) !important;
+  --tab-text-color: var(--vanta-text-muted) !important;
   --tab-text-color-selected: var(--vanta-text) !important;
-  --tab-box-shadow-selected: 0 1px 2px light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.5)) !important;
+  --tab-box-shadow-selected: 0 1px 2px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.4)) !important;
   --tab-border-color-selected-leading: transparent !important;
   --tab-border-color-selected-trailing: transparent !important;
 }
 
-/* ----- One surface: toolbar and sidebar share the window color ----------- */
+/* ----- One surface behind everything ------------------------------------- */
+
+:root:not([lwtheme]) {
+  background: var(--vanta-frame) !important;
+}
 
 #navigator-toolbox,
 #nav-bar,
-#sidebar-main,
+#browser,
 sidebar-main,
 #sidebar-container {
-  background-color: var(--toolbox-background-color) !important;
+  background: transparent !important;
   border: none !important;
   box-shadow: none !important;
 }
 
-/* ----- The page as a rounded card ---------------------------------------- */
+#nav-bar {
+  padding-block: 2px !important;
+}
+
+/* ----- The page as a floating card --------------------------------------- */
 
 :root:not([inDOMFullscreen], [fullscreenNavToolboxHidden]) {
   #tabbrowser-tabbox {
-    margin: 0 8px 8px 0 !important;
+    margin: 2px var(--vanta-gap) var(--vanta-gap) 0 !important;
     background: transparent !important;
   }
 
   #tabbrowser-tabpanels {
-    border-radius: 10px !important;
+    border-radius: var(--vanta-radius) !important;
     overflow: clip !important;
-    box-shadow: 0 0 0 1px var(--vanta-card-edge), 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 0 0 1px var(--vanta-card-edge), 0 4px 18px -4px var(--vanta-card-shadow) !important;
   }
 
   /* No sidebar on the left (vertical tabs hidden): inset that side too. */
   #sidebar-container[hidden] ~ #tabbrowser-tabbox {
-    margin-inline-start: 8px !important;
+    margin-inline-start: var(--vanta-gap) !important;
   }
 }
 
@@ -86,33 +103,71 @@ sidebar-main,
   box-shadow: none !important;
 }
 
-/* ----- Toolbar ------------------------------------------------------------ */
+/* ----- Toolbar: quiet until you need it ---------------------------------- */
 
-#urlbar-background {
-  border-radius: 8px !important;
+/* The sidebar opens on hover, so its toolbar toggle is redundant; the tab
+   list stays on Ctrl+Shift+A. */
+#sidebar-button,
+#alltabs-button {
+  display: none !important;
 }
 
-/* The bookmark star only when the page is bookmarked or the bar is hovered. */
-#urlbar:not(:hover, [focused]) #star-button-box:not(:has(#star-button[starred])) {
-  display: none !important;
+/* The address bar blends into the window; it gets a field on hover and a
+   raised card when focused. */
+#urlbar:not([focused]):hover {
+  --toolbar-field-background-color: var(--vanta-field) !important;
+}
+
+#urlbar-background {
+  border-radius: 10px !important;
+  transition: background-color 120ms ease !important;
+}
+
+#urlbar[focused] #urlbar-background {
+  box-shadow: 0 0 0 1px var(--vanta-card-edge), 0 8px 28px -6px var(--vanta-card-shadow) !important;
+}
+
+/* Page actions (bookmark star, reader view) only while hovering the bar. */
+#urlbar:not(:hover, [focused]) #page-action-buttons > :not(#star-button-box:has(#star-button[starred])) {
+  opacity: 0 !important;
+}
+
+#page-action-buttons > * {
+  transition: opacity 120ms ease !important;
+}
+
+/* Toolbar icons stay muted until hovered. */
+#nav-bar toolbarbutton:not(:hover) > .toolbarbutton-icon {
+  opacity: 0.8;
 }
 
 /* ----- Tabs ----------------------------------------------------------------- */
 
 #tabbrowser-tabs[orient="vertical"] .tab-background {
-  border-radius: 8px !important;
+  border-radius: 9px !important;
+}
+
+#tabbrowser-tabs[orient="vertical"] .tabbrowser-tab {
+  font-size: 12.5px !important;
+}
+
+/* The line between pinned and other tabs, barely there. */
+#vertical-pinned-tabs-container-separator,
+.pinned-tabs-container-separator {
+  opacity: 0.35 !important;
 }
 
 /* Unloaded tabs: dim the title too, not only the favicon. */
 .tabbrowser-tab[pending] .tab-label-container {
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
 /* ----- Sidebar expanded on hover: float it over the page ------------------ */
 
 :root[sidebar-expand-on-hover] #sidebar-container[sidebar-launcher-expanded] {
-  border-start-end-radius: 10px !important;
-  border-end-end-radius: 10px !important;
-  box-shadow: 0 0 0 1px var(--vanta-card-edge), 8px 0 28px light-dark(rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.55)) !important;
-  clip-path: inset(0 -40px 0 0) !important;
+  background: var(--vanta-frame) !important;
+  border-start-end-radius: var(--vanta-radius) !important;
+  border-end-end-radius: var(--vanta-radius) !important;
+  box-shadow: 0 0 0 1px var(--vanta-card-edge), 12px 0 32px -8px var(--vanta-card-shadow) !important;
+  clip-path: inset(0 -48px 0 0) !important;
 }
