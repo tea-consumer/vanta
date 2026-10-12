@@ -205,15 +205,36 @@ sidebar-main,
 
 /* ----- Signature ------------------------------------------------------------ */
 
-/* The current tab carries a short accent bar on its leading edge. */
-#tabbrowser-tabs[orient="vertical"] .tabbrowser-tab[selected] .tab-background {
-  box-shadow: inset 3px 0 0 var(--vanta-accent), var(--tab-box-shadow-selected) !important;
+/* The Eclipse: Vanta's mark is a dark disc with a rim of light on its
+   upper-left edge. The interface repeats that rim. */
+
+/* The mark is the app menu button, at the head of the toolbar above the
+   tab rail. */
+#PanelUI-button {
+  order: -1 !important;
 }
 
-/* While the current page loads, the card's edge lights up in the accent.
-   A static ring, no animation: it costs nothing to draw. */
+#PanelUI-menu-button > .toolbarbutton-badge-stack > .toolbarbutton-icon {
+  /* The mark is drawn as a mask so it takes the accent color. */
+  background-color: var(--vanta-accent) !important;
+  mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='black' fill-rule='evenodd' d='M1.5 8a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0ZM3.2 8.7a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0-11 0Z'/></svg>") center / 16px 16px no-repeat !important;
+  opacity: 1 !important;
+}
+
+/* In the collapsed rail tabs are round, and the current tab is an eclipse:
+   a disc with the rim of light on its upper-left edge. */
+#tabbrowser-tabs[orient="vertical"]:not([expanded]) .tab-background {
+  border-radius: 50% !important;
+}
+
+#tabbrowser-tabs[orient="vertical"]:not([expanded]) .tabbrowser-tab[selected] .tab-background {
+  box-shadow: inset 1.5px 1.5px 0 var(--vanta-accent), var(--tab-box-shadow-selected) !important;
+}
+
+/* While the current page loads, the card catches the rim on its upper-left
+   edge. Static, no animation: it costs nothing to draw. */
 :root:not([lwtheme]):has(#tabbrowser-tabs .tabbrowser-tab[selected][busy]) #tabbrowser-tabpanels {
-  box-shadow: 0 0 0 1.5px var(--vanta-accent), 0 4px 18px -4px var(--vanta-card-shadow) !important;
+  box-shadow: -1.5px -1.5px 0 0 var(--vanta-accent), 0 0 0 1px var(--vanta-card-edge), 0 4px 18px -4px var(--vanta-card-shadow) !important;
 }
 
 /* Selected text in the address bar uses the accent. */
