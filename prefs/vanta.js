@@ -117,3 +117,31 @@ pref("browser.aboutConfig.showWarning", false);
 pref("browser.compactmode.show", true);
 pref("full-screen-api.transition-duration.enter", "0 0");
 pref("full-screen-api.transition-duration.leave", "0 0");
+
+/** ===== INTERFACE (see chrome/vanta.css) =============================== **/
+// Vertical tabs in a compact sidebar that expands while hovered, with the
+// address bar in one slim row on top.
+pref("sidebar.revamp", true);
+pref("sidebar.verticalTabs", true);
+pref("sidebar.visibility", "expand-on-hover");
+// Sidebar tools: history and bookmarks only (no synced tabs, no AI chat).
+pref("sidebar.main.tools", "history,bookmarks");
+// Compact toolbar spacing. Sticky so it matches Firefox's own declaration.
+sticky_pref("browser.uidensity", 1);
+// Bookmarks stay in the sidebar and menu, not a toolbar row on new tabs.
+pref("browser.toolbars.bookmarks.visibility", "never");
+// Fade tabs that were unloaded to free memory.
+pref("browser.tabs.fadeOutUnloadedTabs", true);
+pref("browser.tabs.fadeOutExplicitlyUnloadedTabs", true);
+// Tab hover cards without page thumbnails (thumbnails cost memory and CPU).
+pref("browser.tabs.hoverPreview.showThumbnails", false);
+// No Firefox account or sync in the UI.
+pref("identity.fxaccounts.enabled", false);
+// Firefox's built-in Resource Monitor, in the sidebar: per-tab memory and CPU.
+pref("browser.resourceMonitor.enabled", true);
+// New tab: search and shortcuts only. Vanta's build has no Firefox logo, and
+// no weather or recent-activity sections.
+pref("browser.newtabpage.activity-stream.hideLogo", true);
+pref("browser.newtabpage.activity-stream.logowordmark.alwaysVisible", false);
+pref("browser.newtabpage.activity-stream.showWeather", false);
+pref("browser.newtabpage.activity-stream.feeds.section.highlights", false);

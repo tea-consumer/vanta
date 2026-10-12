@@ -8,8 +8,12 @@ the files in this repo.
 
 - `prefs/vanta.js`: built-in default prefs (fewer processes, smaller caches,
   faster tab unloading, telemetry and AI features off).
+- `chrome/vanta.css`: the interface. Vertical tabs in a compact sidebar that
+  expands on hover, one slim address bar row on top, and the page in a
+  rounded card. Applies to the default theme only.
 - `scripts/apply-vanta.sh`: renames Firefox's own unofficial branding to
-  Vanta and appends our prefs to `browser/app/profile/firefox.js`.
+  Vanta, appends our prefs to `browser/app/profile/firefox.js`, and builds
+  `chrome/vanta.css` into the browser chrome.
 - `patches/`: our own small patches (none yet).
 - Build flags: PGO, cross-language LTO, `-O3`, CPU-specific tuning.
 
@@ -31,6 +35,13 @@ Needs Xcode and its command line tools.
 
 The `.dmg` ends up in `work/firefox-<version>/obj-vanta/dist/`.
 PGO builds Firefox twice, so expect a long first build.
+
+## Preview the interface without building
+
+    bash scripts/preview-ui.sh            # uses /Applications/Firefox.app or firefox on PATH
+
+This starts your installed Firefox with a throwaway profile that uses Vanta's
+prefs and stylesheet, so you can try the look in a minute instead of a build.
 
 ## Status
 
