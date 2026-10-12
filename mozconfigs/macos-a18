@@ -1,0 +1,25 @@
+# Vanta: macOS on Apple A18 Pro (MacBook Neo)
+ac_add_options --enable-application=browser
+ac_add_options --target=aarch64-apple-darwin
+ac_add_options --with-branding=browser/branding/vanta
+ac_add_options --with-app-name=vanta
+
+ac_add_options --enable-release
+ac_add_options --enable-optimize="-O3"
+ac_add_options --enable-lto=cross
+ac_add_options --enable-rust-simd
+ac_add_options MOZ_PGO=1
+
+ac_add_options --disable-crashreporter
+ac_add_options --disable-updater
+ac_add_options --disable-tests
+ac_add_options --disable-debug
+ac_add_options --enable-strip
+
+# Tune for the A18 Pro cores. If the bundled clang rejects apple-a18,
+# use apple-m4 (same core generation).
+export CFLAGS="-mcpu=apple-a18"
+export CXXFLAGS="-mcpu=apple-a18"
+export RUSTFLAGS="-C target-cpu=apple-a18"
+
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-vanta
