@@ -23,6 +23,10 @@
   --vanta-text-muted: light-dark(#6a6a76, #8a8a96) !important;
   --vanta-card-edge: light-dark(rgba(0, 0, 0, 0.07), rgba(255, 255, 255, 0.06)) !important;
   --vanta-card-shadow: light-dark(rgba(20, 20, 40, 0.10), rgba(0, 0, 0, 0.5)) !important;
+  /* Vanta's signal color: electric lime on black, deep olive on light. */
+  --vanta-accent: light-dark(#4d7c0f, #c6f04b) !important;
+  --vanta-accent-hover: light-dark(#3f6609, #d4f76f) !important;
+  --vanta-on-accent: light-dark(#ffffff, #0a0a0a) !important;
   --vanta-radius: 12px !important;
   --vanta-gap: 8px !important;
 
@@ -46,6 +50,19 @@
   --toolbar-field-background-color-focus: light-dark(#ffffff, #18181c) !important;
   --toolbar-field-border-color-focus: transparent !important;
   --toolbar-field-text-color-focus: var(--vanta-text) !important;
+
+  --color-accent-primary: var(--vanta-accent) !important;
+  --color-accent-primary-hover: var(--vanta-accent-hover) !important;
+  --color-accent-primary-active: var(--vanta-accent-hover) !important;
+  --color-accent-primary-selected: var(--vanta-accent) !important;
+  --focus-outline-color: var(--vanta-accent) !important;
+  --button-background-color-primary: var(--vanta-accent) !important;
+  --button-background-color-primary-hover: var(--vanta-accent-hover) !important;
+  --button-background-color-primary-active: var(--vanta-accent-hover) !important;
+  --button-text-color-primary: var(--vanta-on-accent) !important;
+  --button-text-color-primary-hover: var(--vanta-on-accent) !important;
+  --button-text-color-primary-active: var(--vanta-on-accent) !important;
+  --tab-loading-fill: var(--vanta-accent) !important;
 
   --tab-background-color-hover: var(--vanta-hover) !important;
   --tab-background-color-selected: var(--vanta-raised) !important;
@@ -170,4 +187,23 @@ sidebar-main,
   border-end-end-radius: var(--vanta-radius) !important;
   box-shadow: 0 0 0 1px var(--vanta-card-edge), 12px 0 32px -8px var(--vanta-card-shadow) !important;
   clip-path: inset(0 -48px 0 0) !important;
+}
+
+/* ----- Signature ------------------------------------------------------------ */
+
+/* The current tab carries a short accent bar on its leading edge. */
+#tabbrowser-tabs[orient="vertical"] .tabbrowser-tab[selected] .tab-background {
+  box-shadow: inset 3px 0 0 var(--vanta-accent), var(--tab-box-shadow-selected) !important;
+}
+
+/* While the current page loads, the card's edge lights up in the accent.
+   A static ring, no animation: it costs nothing to draw. */
+:root:not([lwtheme]):has(#tabbrowser-tabs .tabbrowser-tab[selected][busy]) #tabbrowser-tabpanels {
+  box-shadow: 0 0 0 1.5px var(--vanta-accent), 0 4px 18px -4px var(--vanta-card-shadow) !important;
+}
+
+/* Selected text in the address bar uses the accent. */
+#urlbar-input::selection {
+  background-color: var(--vanta-accent) !important;
+  color: var(--vanta-on-accent) !important;
 }
