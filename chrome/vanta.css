@@ -206,7 +206,7 @@ sidebar-main,
 /* ----- Signature ------------------------------------------------------------ */
 
 /* The Eclipse: Vanta's mark is a dark disc with a rim of light on its
-   upper-left edge. The interface repeats that rim. */
+   upper-left edge. The menu button and the current tab carry it. */
 
 /* The mark is the app menu button, at the head of the toolbar above the
    tab rail. */
@@ -222,19 +222,19 @@ sidebar-main,
 }
 
 /* In the collapsed rail tabs are round, and the current tab is an eclipse:
-   a disc with the rim of light on its upper-left edge. */
+   a dark disc with a crescent of light on its upper-left edge. */
 #tabbrowser-tabs[orient="vertical"]:not([expanded]) .tab-background {
   border-radius: 50% !important;
 }
 
 #tabbrowser-tabs[orient="vertical"]:not([expanded]) .tabbrowser-tab[selected] .tab-background {
-  box-shadow: inset 1.5px 1.5px 0 var(--vanta-accent), var(--tab-box-shadow-selected) !important;
-}
-
-/* While the current page loads, the card catches the rim on its upper-left
-   edge. Static, no animation: it costs nothing to draw. */
-:root:not([lwtheme]):has(#tabbrowser-tabs .tabbrowser-tab[selected][busy]) #tabbrowser-tabpanels {
-  box-shadow: -1.5px -1.5px 0 0 var(--vanta-accent), 0 0 0 1px var(--vanta-card-edge), 0 4px 18px -4px var(--vanta-card-shadow) !important;
+  /* The logo's own geometry, as a mask: the accent shows only as a crescent
+     where the dark disc is offset toward the lower right. */
+  background: var(--vanta-accent) !important;
+  mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'><mask id='m'><circle cx='300' cy='300' r='300' fill='white'/><circle cx='326' cy='326' r='278' fill='black'/></mask><circle cx='300' cy='300' r='300' mask='url(%23m)'/></svg>") center / 100% 100% no-repeat !important;
+  border-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Selected text in the address bar uses the accent. */
