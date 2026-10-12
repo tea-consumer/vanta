@@ -23,10 +23,24 @@
   --vanta-text-muted: light-dark(#6a6a76, #8a8a96) !important;
   --vanta-card-edge: light-dark(rgba(0, 0, 0, 0.07), rgba(255, 255, 255, 0.06)) !important;
   --vanta-card-shadow: light-dark(rgba(20, 20, 40, 0.10), rgba(0, 0, 0, 0.5)) !important;
-  /* Vanta's signal color: electric lime on black, deep olive on light. */
-  --vanta-accent: light-dark(#4d7c0f, #c6f04b) !important;
-  --vanta-accent-hover: light-dark(#3f6609, #d4f76f) !important;
+  /* Accent: mono (off-white on black) by default. The vanta.accent pref
+     picks a calmer color instead: "ice", "sage" or "ember". */
+  --vanta-accent: light-dark(#1d1d24, #e6e6ec) !important;
+  --vanta-accent-hover: light-dark(#000000, #ffffff) !important;
   --vanta-on-accent: light-dark(#ffffff, #0a0a0a) !important;
+
+  @media -moz-pref("vanta.accent", "ice") {
+    --vanta-accent: light-dark(#2457b3, #9ec4ff) !important;
+    --vanta-accent-hover: light-dark(#1b4691, #b8d4ff) !important;
+  }
+  @media -moz-pref("vanta.accent", "sage") {
+    --vanta-accent: light-dark(#4a6640, #a8c69a) !important;
+    --vanta-accent-hover: light-dark(#3b5233, #bdd6b1) !important;
+  }
+  @media -moz-pref("vanta.accent", "ember") {
+    --vanta-accent: light-dark(#a2501b, #f4b183) !important;
+    --vanta-accent-hover: light-dark(#843f13, #f8c6a3) !important;
+  }
   --vanta-radius: 12px !important;
   --vanta-gap: 8px !important;
 

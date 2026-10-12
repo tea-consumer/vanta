@@ -17,6 +17,16 @@ sed -i.bak -E 's/^(-brand-(shorter|short|shortcut|full)-name) = .*/\1 = Vanta/' 
 sed -i.bak -E 's/^(brandShorterName|brandShortName|brandFullName)=.*/\1=Vanta/' \
   browser/branding/vanta/locales/en-US/brand.properties
 find browser/branding/vanta -name '*.bak' -delete
+# Vanta's own icons (rendered from branding/logo.svg by scripts/make-branding.py).
+cp -R "$here/branding/vanta/." browser/branding/vanta/
+# macOS: use firefox.icns (our icon) instead of the AppIcon in the unofficial
+# branding's compiled Assets.car, which still holds the generic icon.
+python3 - <<'EOF'
+path = "browser/app/macbuild/Contents/Info.plist.in"
+text = open(path).read()
+text = text.replace("\t<key>CFBundleIconName</key>\n\t<string>AppIcon</string>\n", "")
+open(path, "w").write(text)
+EOF
 
 # Default prefs: Firefox reads browser/app/profile/firefox.js as built-in
 # defaults, so our pref() lines go at the end and win over earlier ones.

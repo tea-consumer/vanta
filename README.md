@@ -8,11 +8,16 @@ the files in this repo.
 
 - `prefs/vanta.js`: built-in default prefs (fewer processes, smaller caches,
   faster tab unloading, telemetry and AI features off).
-- `chrome/vanta.css`: the interface. Vertical tabs in a compact sidebar that
-  expands on hover, one slim address bar row on top, and the page in a
-  rounded card. Applies to the default theme only.
+- `chrome/vanta.css`: the interface. Dark by default, vertical tabs in a
+  compact sidebar that expands on hover, one slim address bar row on top, and
+  the page in a rounded card. Applies to the default theme only. The accent
+  is mono; set `vanta.accent` in about:config to `ice`, `sage` or `ember`
+  for a color.
+- `branding/logo.svg`: the Vanta "Eclipse" logo. `scripts/make-branding.py`
+  renders it into the app icons in `branding/vanta/` (re-run it after
+  editing the logo; needs `pip install cairosvg pillow`).
 - `scripts/apply-vanta.sh`: renames Firefox's own unofficial branding to
-  Vanta, appends our prefs to `browser/app/profile/firefox.js`, and builds
+  Vanta and swaps in our icons, appends our prefs to `browser/app/profile/firefox.js`, and builds
   `chrome/vanta.css` into the browser chrome.
 - `patches/`: our own small patches (none yet).
 - Build flags: PGO, cross-language LTO, `-O3`, CPU-specific tuning.
