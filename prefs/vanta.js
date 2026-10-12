@@ -119,6 +119,9 @@ pref("full-screen-api.transition-duration.enter", "0 0");
 pref("full-screen-api.transition-duration.leave", "0 0");
 
 /** ===== INTERFACE (see chrome/vanta.css) =============================== **/
+// Vanta is dark: the browser and websites that support it use their dark
+// appearance whatever the OS is set to. Set to 0 in about:config for light.
+pref("ui.systemUsesDarkTheme", 1);
 // Vertical tabs in a compact sidebar that expands while hovered, with the
 // address bar in one slim row on top.
 pref("sidebar.revamp", true);
