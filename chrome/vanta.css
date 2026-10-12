@@ -267,6 +267,84 @@ sidebar-main,
   }
 }
 
+/* ----- Menus ------------------------------------------------------------- */
+
+/* Menus borrow from the Persona games' menus, kept calmer: a slanted plate in
+   the accent marks the item under the pointer, text flips to black on it, and
+   the plate snaps in from the left. Panels are plain black with a hard edge,
+   no soft glow. */
+:root:not([lwtheme]) {
+  --panel-background-color: light-dark(#f4f4f7, #09090b) !important;
+  --panel-border-color: var(--vanta-card-edge) !important;
+  --panel-border-radius: 10px !important;
+  --urlbarview-background-color-hover: transparent !important;
+  --urlbarview-background-color-selected: transparent !important;
+  --urlbarview-text-color-selected: var(--vanta-on-accent) !important;
+}
+
+panelview .subviewbutton:not([disabled]),
+.urlbarView-row[row-selectable] {
+  position: relative !important;
+  isolation: isolate !important;
+  background-color: transparent !important;
+}
+
+panelview .subviewbutton:not([disabled])::before,
+.urlbarView-row[row-selectable]::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 1px 2px !important;
+  z-index: -1 !important;
+  border-radius: 3px !important;
+  background: var(--vanta-accent) !important;
+  transform: skewX(-14deg) scaleX(0) !important;
+  transform-origin: left center !important;
+  transition: transform 140ms cubic-bezier(0.2, 0.9, 0.3, 1.2) !important;
+  pointer-events: none !important;
+}
+
+.urlbarView-row[row-selectable]::before {
+  inset: 2px 10px !important;
+}
+
+panelview .subviewbutton:not([disabled]):is(:hover, :focus-visible, [open]),
+.urlbarView-row[row-selectable]:is([selected], :hover) {
+  color: var(--vanta-on-accent) !important;
+  --text-color-deemphasized: var(--vanta-on-accent) !important;
+  --urlbarView-secondary-text-color: var(--vanta-on-accent) !important;
+  --urlbarView-action-color: var(--vanta-on-accent) !important;
+}
+
+panelview .subviewbutton:not([disabled]):is(:hover, :focus-visible, [open])::before,
+.urlbarView-row[row-selectable]:is([selected], :hover)::before {
+  transform: skewX(-14deg) scaleX(1) !important;
+}
+
+/* The label steps forward onto the plate. */
+panelview .subviewbutton > .toolbarbutton-text {
+  transition: transform 140ms cubic-bezier(0.2, 0.9, 0.3, 1.2) !important;
+}
+panelview .subviewbutton:not([disabled]):is(:hover, :focus-visible, [open]) > .toolbarbutton-text {
+  transform: translateX(4px) !important;
+}
+
+/* Hover only lights the row the pointer is on, not a second plate next to
+   the keyboard selection. */
+.urlbarView-row[row-selectable]:not([selected]):hover::before {
+  opacity: 0.35 !important;
+}
+.urlbarView-row[row-selectable]:not([selected]):hover {
+  color: inherit !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  panelview .subviewbutton::before,
+  panelview .subviewbutton > .toolbarbutton-text,
+  .urlbarView-row::before {
+    transition: none !important;
+  }
+}
+
 /* Selected text in the address bar uses the accent. */
 #urlbar-input::selection {
   background-color: var(--vanta-accent) !important;
