@@ -12,6 +12,14 @@ pref("dom.ipc.processCount", 4);
 // allows up to 4 per site. One per site (what Firefox uses on Android) saves
 // a process for every extra tab of the same site. default=4
 pref("dom.ipc.processCount.webIsolated", 1);
+// Site isolation for "high-value" sites only: ones you are logged in to, have
+// a saved password for, or that ask for isolation (COOP header), each for 30
+// days. Other sites share processes. This is Firefox's default on Android.
+// default=1 (isolate every site)
+pref("fission.webContentIsolationStrategy", 2);
+// Desktop Firefox only watches for logins when told to; without this,
+// sites you log in to wouldn't count as high-value. default=false
+pref("fission.highValue.login.monitor", true);
 // Don't preload a hidden New Tab page in the background.
 pref("browser.newtab.preload", false);
 // Unload idle tabs when memory runs low, and sooner than default.

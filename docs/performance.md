@@ -18,6 +18,7 @@ Speedometer 3, JetStream 2 and `about:memory` once there is a build.
 | 6 | **No initial paint delay.** | `nglayout.initialpaint.delay(_in_oopif)=0` | Tiny, first paint 5 ms sooner | None |
 | 7 | **No page-interaction recording** into history. | `browser.places.interactions.enabled=false` | Tiny, less disk I/O | None |
 | 8 | **Linker choice.** Pinned to lld (what mach picks anyway). `VANTA_LINKER=ld64` switches to Xcode's ld64, which Mozilla uses for shipped macOS PGO+LTO builds because lld measured slower; try it after a first build works. | `mozconfigs/macos-a18` | Small (Mozilla saw a regression with lld) | Medium for ld64: Xcode's linker with Mozilla's clang is untested here |
+| 9 | **Isolate only high-value sites** (Fredrik's call, 2026-10-12). `fission.webContentIsolationStrategy=2` keeps a separate process for sites you are logged in to, have a saved password for, or that send a COOP header (30 days each); the rest share processes. `fission.highValue.login.monitor=true` turns on login detection, which desktop Firefox leaves off. | `prefs/vanta.js` | High RAM saving with many tabs: the biggest lever left | Weaker Spectre-style isolation between sites you are not logged in to |
 
 Cleanups found on the way: `-O3` is already Firefox's default on macOS and for
 PGO builds on Linux, so `--enable-optimize=-O3` was a no-op and is gone.
@@ -36,7 +37,6 @@ in `prefs/vanta.js`.
 
 | Lever | Gain | Cost |
 |---|---|---|
-| `fission.webContentIsolationStrategy=2`: isolate only high-value sites (ones you log in to), share processes for the rest. Default is 1 (isolate every site). | The biggest RAM lever left: far fewer processes with many tabs | Weaker Spectre protection between sites you are not logged in to |
 | `--disable-eme`: drop Widevine DRM | No download of the ~20 MB CDM, no media plugin process | Netflix, Spotify web, Disney+ stop working |
 | `accessibility.force_disabled=1` | Avoids big slowdowns when another app (window managers, password managers, Grammarly) turns on Firefox's accessibility engine | VoiceOver and those apps can't read the browser |
 
