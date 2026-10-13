@@ -12,9 +12,13 @@ cp -r browser/branding/unofficial browser/branding/vanta
 sed -i.bak -e 's/^MOZ_APP_DISPLAYNAME=.*/MOZ_APP_DISPLAYNAME=Vanta/' \
            -e 's/^MOZ_MACBUNDLE_ID=.*/MOZ_MACBUNDLE_ID=vanta/' \
   browser/branding/vanta/configure.sh
-sed -i.bak -E 's/^(-brand-(shorter|short|shortcut|full)-name) = .*/\1 = Vanta/' \
+# Short name "Vanta" (app, menus, dock); full name "Vanta Browser" (about
+# dialog, window titles where Firefox says "Mozilla Firefox").
+sed -i.bak -E -e 's/^(-brand-(shorter|short|shortcut)-name) = .*/\1 = Vanta/' \
+              -e 's/^(-brand-full-name) = .*/\1 = Vanta Browser/' \
   browser/branding/vanta/locales/en-US/brand.ftl
-sed -i.bak -E 's/^(brandShorterName|brandShortName|brandFullName)=.*/\1=Vanta/' \
+sed -i.bak -E -e 's/^(brandShorterName|brandShortName)=.*/\1=Vanta/' \
+              -e 's/^(brandFullName)=.*/\1=Vanta Browser/' \
   browser/branding/vanta/locales/en-US/brand.properties
 find browser/branding/vanta -name '*.bak' -delete
 # Vanta's own icons (rendered from branding/logo.svg by scripts/make-branding.py).
