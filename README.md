@@ -21,6 +21,10 @@ the files in this repo.
   editing a source (`--check` tells you if the output is stale,
   `--preview sheet.png` draws every icon on one sheet); needs
   `pip install cairosvg pillow`.
+- `.claude/skills/vanta-icons/`: the icon toolkit Claude uses. Vanta's
+  icon rules, `iconkit.py` (geometry helpers that build icons as plain
+  SVG) and `icon_check.py` (lints an icon, measures legibility at 16-48px,
+  compares cairosvg with a real browser, and renders a review sheet).
 - `tools/icon-studio.html`: Vanta Icon Studio, for designing new icons.
   Open it in a browser (no install). It builds app icons and toolbar glyphs
   from the Eclipse's shapes (tile, eclipse, ring, arc, corona...) in Vanta's
