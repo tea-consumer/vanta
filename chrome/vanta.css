@@ -338,10 +338,47 @@ sidebar-main,
   }
 }
 
-/* Download progress fills the button's disc with light from the upper
-   left, in the accent, rather than Firefox's blue pie from the top. */
+/* Download progress is a waxing moon instead of Firefox's ring and pie: a
+   dim disc that fills with light from the upper left as the download runs,
+   the terminator sweeping across it. Below half, a dark ellipse eats into
+   the lit half (crescent); above half, a lit ellipse grows into the dark
+   half (gibbous). The unused ellipse collapses to nothing, height too, so
+   it leaves no hairline. Firefox sets --download-progress-pcent. */
+#downloads-indicator-progress-outer {
+  background: none !important;
+}
+
+/* A running download is state, so its moon is not dimmed like a resting icon. */
+#nav-bar #downloads-button[progress] .toolbarbutton-badge-stack {
+  opacity: 1 !important;
+}
+
 #downloads-indicator-progress-inner {
-  background: conic-gradient(from -45deg, var(--vanta-accent) var(--download-progress-pcent), transparent var(--download-progress-pcent)) !important;
+  --moon-lit: var(--vanta-accent);
+  --moon-dark: color-mix(in srgb, var(--vanta-accent) 16%, var(--vanta-frame));
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 50% !important;
+  transform: rotate(45deg) !important;
+  background:
+    radial-gradient(ellipse max(0.01px, 50% - var(--download-progress-pcent)) clamp(0.01px, (50% - var(--download-progress-pcent)) * 1000, 50%) at 50% 50%, var(--moon-dark) 97%, transparent 100%),
+    radial-gradient(ellipse max(0.01px, var(--download-progress-pcent) - 50%) clamp(0.01px, (var(--download-progress-pcent) - 50%) * 1000, 50%) at 50% 50%, var(--moon-lit) 97%, transparent 100%),
+    linear-gradient(to right, var(--moon-lit) 50%, var(--moon-dark) 50%) !important;
+}
+
+/* Registering the progress as a percentage lets it animate: Firefox
+   updates it in steps, and the moon waxes smoothly between them. The disc
+   is 16px, so the repaint is negligible. */
+@property --download-progress-pcent {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #downloads-indicator-progress-inner {
+    transition: --download-progress-pcent 600ms ease-out !important;
+  }
 }
 
 /* Selected text in the address bar uses the accent. */
