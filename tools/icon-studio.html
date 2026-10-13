@@ -1,0 +1,581 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vanta Icon Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: three-pane workbench (layers | canvas | properties), size previews and export below. */
+:root {
+  color-scheme: dark;
+  --void: #000000;      /* Vanta's black */
+  --panel: #0c0c0e;
+  --raised: #16161a;
+  --line: #2a2a2e;      /* the Eclipse tile edge */
+  --rim: #ececf1;       /* the Eclipse's light */
+  --dim: #8a8a96;
+  --focus: #9ec4ff;     /* "ice" accent, for focus only */
+  --danger: #f4b183;
+  --font-ui: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--void); color: var(--rim); font: 14px/1.45 var(--font-ui);
+  padding-inline: 16px; padding-block: 16px 48px;
+}
+.wrap { max-width: 1320px; margin-inline: auto; display: grid; gap: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+header h1 { font-size: 18px; font-weight: 600; letter-spacing: .02em; margin: 0; display: flex; align-items: center; gap: 10px; }
+header h1 svg { width: 26px; height: 26px; }
+header p { margin: 0; color: var(--dim); max-width: 62ch; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-inline-start: auto; }
+
+button, select, input, textarea { font: inherit; color: inherit; }
+button, select {
+  background: var(--raised); border: 1px solid var(--line); border-radius: 10px;
+  padding: 6px 12px; cursor: pointer;
+}
+button:hover, select:hover { border-color: #4a4a52; }
+button.primary { background: var(--rim); color: var(--void); border-color: var(--rim); font-weight: 500; }
+button.ghost { background: transparent; }
+button.danger { color: var(--danger); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; background: transparent; color: var(--dim); }
+.seg button[aria-pressed="true"] { background: var(--raised); color: var(--rim); }
+
+.bench { display: grid; grid-template-columns: 240px minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+.pane { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.pane h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--dim); margin: 0; font-weight: 500; }
+
+.layers { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.layers li { display: grid; grid-template-columns: 1fr auto auto auto; gap: 2px; align-items: center; border-radius: 10px; }
+.layers li > button:first-child { text-align: start; background: transparent; border-color: transparent; display: flex; gap: 8px; align-items: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.layers li.sel > button:first-child { background: var(--raised); border-color: var(--line); }
+.layers li .mini { padding: 4px 7px; background: transparent; border-color: transparent; color: var(--dim); font-size: 12px; }
+.layers li .mini:hover { color: var(--rim); }
+.swatch { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--line); flex: none; }
+.adders { display: flex; flex-wrap: wrap; gap: 6px; }
+.adders button { padding: 4px 10px; font-size: 13px; }
+
+.stage { display: grid; gap: 10px; }
+.canvas-box { position: relative; aspect-ratio: 1; width: 100%; max-width: 620px; margin-inline: auto; border-radius: 16px; overflow: hidden; touch-action: none; }
+.canvas-box svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.canvas-box .kl * { vector-effect: non-scaling-stroke; }
+.canvas-box.bg-check { background: repeating-conic-gradient(#141417 0 25%, #0e0e10 0 50%) 0 0 / 24px 24px; }
+.canvas-box.bg-dark { background: #1c1c1f; }
+.canvas-box.bg-light { background: #e6e6eb; }
+.stage-tools { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: center; color: var(--dim); font-size: 13px; }
+.stage-tools label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+
+.props { display: grid; gap: 10px; }
+.field { display: grid; gap: 4px; }
+.field > span { display: flex; justify-content: space-between; color: var(--dim); font-size: 12px; }
+.field output { font-family: var(--font-mono); color: var(--rim); font-variant-numeric: tabular-nums; }
+.field input[type=range] { width: 100%; accent-color: var(--rim); }
+.field input[type=text], textarea, .field select { width: 100%; background: var(--void); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.colors { display: flex; flex-wrap: wrap; gap: 6px; }
+.colors button { width: 28px; height: 28px; padding: 0; border-radius: 50%; }
+.colors button[aria-pressed="true"] { outline: 2px solid var(--rim); outline-offset: 2px; }
+.empty { color: var(--dim); }
+
+.previews { display: grid; gap: 12px; }
+.strip { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px; padding: 18px; border-radius: 14px; }
+.strip figure { margin: 0; display: grid; justify-items: center; gap: 6px; }
+.strip figcaption { font: 11px var(--font-mono); opacity: .6; }
+.strip img { display: block; }
+.on-dark { background: #1c1c1f; color: var(--rim); }
+.on-black { background: #000; color: var(--rim); border: 1px solid var(--line); }
+.on-light { background: #e6e6eb; color: #1d1d24; }
+.pixels { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; }
+.pixels canvas { image-rendering: pixelated; border-radius: 6px; background: #1c1c1f; display: block; }
+
+.mock { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.dock { display: flex; gap: 10px; align-items: flex-end; justify-content: center; padding: 10px 14px; border-radius: 22px; background: rgba(60,60,66,.55); border: 1px solid rgba(255,255,255,.08); }
+.dock span { width: 52px; height: 52px; border-radius: 12px; background: #3a3a40; display: block; }
+.dock img { width: 64px; height: 64px; }
+.tabs { display: grid; gap: 4px; padding: 8px; border-radius: 12px; background: #000; border: 1px solid var(--line); }
+.tab { display: flex; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 8px; color: var(--dim); font-size: 13px; }
+.tab.on { background: #18181c; color: var(--rim); }
+.tab img, .tab i { width: 16px; height: 16px; flex: none; }
+.tab i { border-radius: 4px; background: #3a3a40; display: block; }
+.toolbar { display: flex; gap: 14px; align-items: center; padding: 10px 14px; border-radius: 12px; }
+.toolbar .url { flex: 1; height: 28px; border-radius: 8px; background: rgba(127,127,140,.18); }
+.toolbar img { width: 16px; height: 16px; }
+
+.export { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
+.export textarea { min-height: 180px; font: 12px/1.5 var(--font-mono); resize: vertical; }
+.export ol { margin: 0; padding-inline-start: 18px; display: grid; gap: 6px; color: var(--dim); }
+.export code { font-family: var(--font-mono); color: var(--rim); font-size: 12px; }
+.note { font-size: 12px; color: var(--dim); }
+.toast { position: fixed; inset-inline: 0; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); margin-inline: auto; width: max-content; max-width: calc(100% - 32px); background: var(--rim); color: var(--void); padding: 8px 14px; border-radius: 999px; font-weight: 500; }
+
+@media (max-width: 1080px) { .bench { grid-template-columns: 220px minmax(0, 1fr); } .bench .props-pane { grid-column: 1 / -1; } }
+@media (max-width: 720px) { .bench, .export { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: no-preference) { button { transition: border-color .15s, background .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1><svg viewBox="0 0 1024 1024" aria-hidden="true"><rect x="64" y="64" width="896" height="896" rx="200" fill="#000" stroke="#2a2a2e" stroke-width="24"/><circle cx="512" cy="512" r="300" fill="#ececf1"/><circle cx="538" cy="538" r="278" fill="#000"/></svg>Vanta Icon Studio</h1>
+    <p>Compose icons from Vanta's own shapes, check them at every size, and export an SVG for the icon builder.</p>
+    <div class="bar">
+      <div class="seg" role="group" aria-label="Icon kind">
+        <button id="kind-app" aria-pressed="true">App icon</button>
+        <button id="kind-glyph" aria-pressed="false">Toolbar glyph</button>
+      </div>
+      <select id="preset" aria-label="Start from"></select>
+      <button id="undo" class="ghost" title="Undo (Ctrl+Z)">Undo</button>
+    </div>
+  </header>
+
+  <div class="bench">
+    <section class="pane" aria-label="Layers">
+      <h2>Layers</h2>
+      <ul class="layers" id="layers"></ul>
+      <h2>Add</h2>
+      <div class="adders" id="adders"></div>
+      <p class="note">Top of the list draws on top. Drag on the canvas to move the selected layer.</p>
+    </section>
+
+    <section class="stage" aria-label="Canvas">
+      <div class="canvas-box bg-check" id="canvas"></div>
+      <div class="stage-tools">
+        <label><input type="checkbox" id="keylines" checked> Keylines</label>
+        <label><input type="checkbox" id="snap" checked> Snap</label>
+        <div class="seg" role="group" aria-label="Canvas background">
+          <button data-bg="check" aria-pressed="true">Clear</button>
+          <button data-bg="dark" aria-pressed="false">Dark</button>
+          <button data-bg="light" aria-pressed="false">Light</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane props-pane" aria-label="Properties">
+      <h2 id="props-title">Properties</h2>
+      <div class="props" id="props"></div>
+    </section>
+  </div>
+
+  <section class="pane previews" aria-label="Previews">
+    <h2>Every size</h2>
+    <div class="strip on-dark" id="strip-dark"></div>
+    <div class="strip on-light" id="strip-light"></div>
+    <h2>Real pixels, 8× zoom</h2>
+    <div class="pixels" id="pixels"></div>
+    <h2>In place</h2>
+    <div class="mock" id="mock"></div>
+  </section>
+
+  <section class="pane" aria-label="Export">
+    <h2>Export</h2>
+    <div class="export">
+      <textarea id="svg-out" readonly spellcheck="false" aria-label="SVG source"></textarea>
+      <div class="props">
+        <div class="field"><span>File name</span><input type="text" id="fname" value="logo.svg"></div>
+        <div class="bar" style="margin:0">
+          <button class="primary" id="copy">Copy SVG</button>
+          <button id="import-btn">Import SVG</button>
+        </div>
+        <ol id="howto"></ol>
+      </div>
+    </div>
+    <div id="import-box" hidden class="props">
+      <textarea id="import-text" spellcheck="false" placeholder="Paste an SVG exported from this studio" aria-label="SVG to import"></textarea>
+      <div class="bar" style="margin:0"><button class="primary" id="import-go">Load into studio</button><button class="ghost" id="import-cancel">Cancel</button></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+// ---- Palette: Vanta's own colours (chrome/vanta.css, branding/logo.svg) ----
+const COLORS = {
+  void:  { hex: "#000000", name: "Void" },
+  rim:   { hex: "#ececf1", name: "Rim light" },
+  edge:  { hex: "#2a2a2e", name: "Tile edge" },
+  dim:   { hex: "#9a9aa2", name: "Dim" },
+  page:  { hex: "#0c0c0e", name: "Page" },
+  ice:   { hex: "#9ec4ff", name: "Ice" },
+  sage:  { hex: "#a8c69a", name: "Sage" },
+  ember: { hex: "#f4b183", name: "Ember" },
+  ctx:   { hex: null, name: "Theme (context-fill)" },
+};
+
+// ---- Shapes ----
+// Each type: label, default params for app (1024 units) and glyph (16 units), and its controls.
+const S = k => (k === "app" ? 1024 : 16);
+const TYPES = {
+  tile:    { label: "Tile", fields: ["inset", "radius", "color", "edge", "edgeWidth"],
+             make: k => k === "app" ? { inset: 64, radius: 200, color: "void", edge: "edge", edgeWidth: 2 } : { inset: 0, radius: 3, color: "ctx", edge: "edge", edgeWidth: 0 } },
+  eclipse: { label: "Eclipse", fields: ["cx", "cy", "r", "inner", "shift", "angle", "color"],
+             make: k => k === "app" ? { cx: 512, cy: 512, r: 300, inner: 278, shift: 37, angle: 45, color: "rim" } : { cx: 8, cy: 8, r: 6.5, inner: 5.5, shift: 1.2, angle: 45, color: "ctx" } },
+  disc:    { label: "Disc", fields: ["cx", "cy", "r", "color", "opacity"],
+             make: k => k === "app" ? { cx: 512, cy: 512, r: 200, color: "rim", opacity: 1 } : { cx: 8, cy: 8, r: 3, color: "ctx", opacity: 1 } },
+  ring:    { label: "Ring", fields: ["cx", "cy", "r", "width", "color", "opacity"],
+             make: k => k === "app" ? { cx: 512, cy: 512, r: 286, width: 12, color: "dim", opacity: 1 } : { cx: 8, cy: 8, r: 6, width: 1.5, color: "ctx", opacity: 1 } },
+  arc:     { label: "Arc", fields: ["cx", "cy", "r", "width", "start", "sweep", "color"],
+             make: k => k === "app" ? { cx: 512, cy: 512, r: 300, width: 40, start: 200, sweep: 140, color: "rim" } : { cx: 8, cy: 8, r: 5.5, width: 1.5, start: 200, sweep: 140, color: "ctx" } },
+  corona:  { label: "Corona", fields: ["cx", "cy", "r", "spread", "color", "opacity"],
+             make: k => k === "app" ? { cx: 512, cy: 512, r: 420, spread: 0.34, color: "rim", opacity: 0.22 } : { cx: 8, cy: 8, r: 8, spread: 0.4, color: "ctx", opacity: 0.3 } },
+  rect:    { label: "Rounded box", fields: ["x", "y", "w", "h", "radius", "color", "opacity"],
+             make: k => k === "app" ? { x: 312, y: 312, w: 400, h: 400, radius: 80, color: "rim", opacity: 1 } : { x: 3, y: 3, w: 10, h: 10, radius: 2, color: "ctx", opacity: 1 } },
+  line:    { label: "Line", fields: ["x1", "y1", "x2", "y2", "width", "color"],
+             make: k => k === "app" ? { x1: 312, y1: 512, x2: 712, y2: 512, width: 48, color: "rim" } : { x1: 3, y1: 8, x2: 13, y2: 8, width: 1.5, color: "ctx" } },
+  path:    { label: "Path", fields: ["d", "color", "opacity"],
+             make: k => k === "app" ? { d: "M512 260L760 700H264Z", color: "rim", opacity: 1 } : { d: "M8 3L13 12H3Z", color: "ctx", opacity: 1 } },
+};
+const FIELD = {
+  inset:  { label: "Inset", min: 0, max: k => S(k) / 4, step: k => k === "app" ? 1 : 0.5 },
+  radius: { label: "Corner radius", min: 0, max: k => S(k) / 2, step: k => k === "app" ? 1 : 0.5 },
+  edgeWidth: { label: "Edge width", min: 0, max: k => k === "app" ? 64 : 2, step: k => k === "app" ? 1 : 0.25 },
+  cx: { label: "Centre x", min: 0, max: S, step: k => k === "app" ? 1 : 0.25 },
+  cy: { label: "Centre y", min: 0, max: S, step: k => k === "app" ? 1 : 0.25 },
+  r:  { label: "Radius", min: 0, max: k => S(k) * 0.6, step: k => k === "app" ? 1 : 0.25 },
+  inner: { label: "Shadow radius", min: 0, max: k => S(k) * 0.6, step: k => k === "app" ? 1 : 0.25 },
+  shift: { label: "Shadow offset", min: 0, max: k => S(k) * 0.3, step: k => k === "app" ? 1 : 0.1 },
+  angle: { label: "Shadow angle", min: 0, max: () => 359, step: () => 1, unit: "°" },
+  width: { label: "Stroke width", min: 0, max: k => k === "app" ? 160 : 4, step: k => k === "app" ? 1 : 0.25 },
+  start: { label: "Start angle", min: 0, max: () => 359, step: () => 1, unit: "°" },
+  sweep: { label: "Sweep", min: 1, max: () => 359, step: () => 1, unit: "°" },
+  spread: { label: "Glow spread", min: 0.05, max: () => 0.95, step: () => 0.01 },
+  opacity: { label: "Opacity", min: 0, max: () => 1, step: () => 0.01 },
+  x: { label: "x", min: 0, max: S, step: k => k === "app" ? 1 : 0.25 },
+  y: { label: "y", min: 0, max: S, step: k => k === "app" ? 1 : 0.25 },
+  w: { label: "Width", min: 0, max: S, step: k => k === "app" ? 1 : 0.25 },
+  h: { label: "Height", min: 0, max: S, step: k => k === "app" ? 1 : 0.25 },
+  x1: { label: "From x", min: 0, max: S, step: k => k === "app" ? 1 : 0.25 },
+  y1: { label: "From y", min: 0, max: S, step: k => k === "app" ? 1 : 0.25 },
+  x2: { label: "To x", min: 0, max: S, step: k => k === "app" ? 1 : 0.25 },
+  y2: { label: "To y", min: 0, max: S, step: k => k === "app" ? 1 : 0.25 },
+};
+
+// ---- Presets: the shipped Vanta art, rebuilt from layers ----
+const L = (type, p, name) => ({ id: Math.random().toString(36).slice(2, 9), type, name: name || TYPES[type].label, hidden: false, ...p });
+const shift = (dx) => Math.round(Math.hypot(dx, dx) * 10) / 10;
+const PRESETS = {
+  app: {
+    "Eclipse (logo.svg)": () => [L("tile", { inset: 64, radius: 200, color: "void", edge: "edge", edgeWidth: 2 }), L("eclipse", { cx: 512, cy: 512, r: 300, inner: 278, shift: shift(26), angle: 45, color: "rim" })],
+    "Eclipse, small sizes (small.svg)": () => [L("tile", { inset: 24, radius: 208, color: "void", edge: "edge", edgeWidth: 48 }), L("eclipse", { cx: 512, cy: 512, r: 340, inner: 300, shift: shift(44), angle: 45, color: "rim" })],
+    "Eclipse, macOS grid (macos.svg)": () => [L("tile", { inset: 100, radius: 185, color: "void", edge: "edge", edgeWidth: 2 }), L("eclipse", { cx: 512, cy: 512, r: 276, inner: 256, shift: shift(24), angle: 45, color: "rim" })],
+    "Total eclipse (private.svg)": () => [L("tile", { inset: 64, radius: 200, color: "void", edge: "edge", edgeWidth: 2 }), L("corona", { cx: 512, cy: 512, r: 420, spread: 0.34, color: "rim", opacity: 0.22 }), L("ring", { cx: 512, cy: 512, r: 286, width: 12, color: "dim", opacity: 1 })],
+    "Blank tile": () => [L("tile", { inset: 64, radius: 200, color: "void", edge: "edge", edgeWidth: 2 })],
+  },
+  glyph: {
+    "Eclipse glyph": () => [L("eclipse", { cx: 8, cy: 8, r: 6.5, inner: 5.5, shift: 1.4, angle: 45, color: "ctx" })],
+    "Ring with dot": () => [L("ring", { cx: 8, cy: 8, r: 6, width: 1.5, color: "ctx", opacity: 1 }), L("disc", { cx: 8, cy: 8, r: 2, color: "ctx", opacity: 1 })],
+    "Blank": () => [],
+  },
+};
+
+// ---- State ----
+let doc = { kind: "app", layers: PRESETS.app["Eclipse (logo.svg)"]() };
+let sel = doc.layers[1]?.id ?? null;
+let history = [];
+const view = { keylines: true, snap: true, bg: "check" };
+try {
+  const saved = JSON.parse(localStorage.getItem("vanta-icon-studio") || "null");
+  if (saved && saved.layers) { doc = saved; sel = doc.layers[doc.layers.length - 1]?.id ?? null; }
+} catch (e) {}
+function save() { try { localStorage.setItem("vanta-icon-studio", JSON.stringify(doc)); } catch (e) {} }
+function remember() { history.push(JSON.stringify(doc)); if (history.length > 80) history.shift(); }
+
+// ---- SVG rendering ----
+const n = v => Math.round(v * 1000) / 1000;
+function paint(c, ctxColor) {
+  if (c === "ctx") return ctxColor || "context-fill";
+  return COLORS[c]?.hex || c;
+}
+function layerSVG(l, kind, uid, ctxColor) {
+  const f = paint(l.color, ctxColor);
+  const op = l.opacity != null && l.opacity < 1 ? ` opacity="${n(l.opacity)}"` : "";
+  switch (l.type) {
+    case "tile": {
+      const s = S(kind), w = s - 2 * l.inset;
+      let out = `<rect x="${n(l.inset)}" y="${n(l.inset)}" width="${n(w)}" height="${n(w)}" rx="${n(l.radius)}" fill="${f}"/>`;
+      if (l.edgeWidth > 0) {
+        const h = l.edgeWidth / 2;
+        out += `<rect x="${n(l.inset + h)}" y="${n(l.inset + h)}" width="${n(w - l.edgeWidth)}" height="${n(w - l.edgeWidth)}" rx="${n(Math.max(0, l.radius - h))}" fill="none" stroke="${paint(l.edge, ctxColor)}" stroke-width="${n(l.edgeWidth)}"/>`;
+      }
+      return out;
+    }
+    case "eclipse": {
+      // A plain path, no mask, so every SVG renderer (cairosvg too) draws it.
+      const a = l.angle * Math.PI / 180;
+      return `<path d="${crescent(l.cx, l.cy, l.r, l.cx + Math.cos(a) * l.shift, l.cy + Math.sin(a) * l.shift, l.inner)}" fill="${f}" fill-rule="evenodd"/>`;
+    }
+    case "disc": return `<circle cx="${n(l.cx)}" cy="${n(l.cy)}" r="${n(l.r)}" fill="${f}"${op}/>`;
+    case "ring": return `<circle cx="${n(l.cx)}" cy="${n(l.cy)}" r="${n(l.r)}" fill="none" stroke="${f}" stroke-width="${n(l.width)}"${op}/>`;
+    case "arc": {
+      const a0 = l.start * Math.PI / 180, a1 = (l.start + l.sweep) * Math.PI / 180;
+      const p = a => `${n(l.cx + Math.cos(a) * l.r)} ${n(l.cy + Math.sin(a) * l.r)}`;
+      return `<path d="M${p(a0)}A${n(l.r)} ${n(l.r)} 0 ${l.sweep > 180 ? 1 : 0} 1 ${p(a1)}" fill="none" stroke="${f}" stroke-width="${n(l.width)}" stroke-linecap="round"/>`;
+    }
+    case "corona": {
+      const id = `g${uid}${l.id}`;
+      return `<radialGradient id="${id}" cx="${n(l.cx)}" cy="${n(l.cy)}" r="${n(l.r)}" gradientUnits="userSpaceOnUse"><stop offset="${n(1 - l.spread)}" stop-color="${f}" stop-opacity="${n(l.opacity)}"/><stop offset="1" stop-color="${f}" stop-opacity="0"/></radialGradient><circle cx="${n(l.cx)}" cy="${n(l.cy)}" r="${n(l.r)}" fill="url(#${id})"/>`;
+    }
+    case "rect": return `<rect x="${n(l.x)}" y="${n(l.y)}" width="${n(l.w)}" height="${n(l.h)}" rx="${n(l.radius)}" fill="${f}"${op}/>`;
+    case "line": return `<line x1="${n(l.x1)}" y1="${n(l.y1)}" x2="${n(l.x2)}" y2="${n(l.y2)}" stroke="${f}" stroke-width="${n(l.width)}" stroke-linecap="round"/>`;
+    case "path": return `<path d="${String(l.d).replace(/[^MmLlHhVvCcSsQqTtAaZz0-9.,\-\s]/g, "")}" fill="${f}"${op}/>`;
+  }
+  return "";
+}
+// The light of an eclipse: disc (x1,y1,R) minus shadow disc (x2,y2,r), as a path.
+function crescent(x1, y1, R, x2, y2, r) {
+  const circle = (x, y, q) => `M${n(x - q)} ${n(y)}a${n(q)} ${n(q)} 0 1 0 ${n(2 * q)} 0a${n(q)} ${n(q)} 0 1 0 ${n(-2 * q)} 0Z`;
+  const d = Math.hypot(x2 - x1, y2 - y1);
+  if (R <= 0) return "";
+  if (d >= R + r || r <= 0) return circle(x1, y1, R);            // shadow misses
+  if (d + R <= r) return "";                                       // fully covered
+  if (d + r <= R) return circle(x1, y1, R) + circle(x2, y2, r);    // shadow inside: a ring, evenodd
+  const ux = (x2 - x1) / d, uy = (y2 - y1) / d;
+  const a = (d * d + R * R - r * r) / (2 * d), h = Math.sqrt(Math.max(0, R * R - a * a));
+  const p1 = [x1 + a * ux - h * uy, y1 + a * uy + h * ux], p2 = [x1 + a * ux + h * uy, y1 + a * uy - h * ux];
+  const TAU = Math.PI * 2, ang = (c, p) => Math.atan2(p[1] - c[1], p[0] - c[0]);
+  // Arc around centre c from s to e that passes through m.
+  const arc = (c, q, s, m, e) => {
+    const as = ang(c, s), am = ang(c, m), ae = ang(c, e), fwd = x => ((x - as) % TAU + TAU) % TAU;
+    const sweep = fwd(am) < fwd(ae) ? 1 : 0, span = sweep ? fwd(ae) : TAU - fwd(ae);
+    return `A${n(q)} ${n(q)} 0 ${span > Math.PI ? 1 : 0} ${sweep} ${n(e[0])} ${n(e[1])}`;
+  };
+  return `M${n(p1[0])} ${n(p1[1])}` + arc([x1, y1], R, p1, [x1 - R * ux, y1 - R * uy], p2) + arc([x2, y2], r, p2, [x2 - r * ux, y2 - r * uy], p1) + "Z";
+}
+let uidCounter = 0;
+// ctxColor: what context-fill shows as in previews; null keeps context-fill (export).
+function svgFor(d, ctxColor, extra = "") {
+  const s = S(d.kind), uid = (uidCounter++).toString(36);
+  const body = d.layers.filter(l => !l.hidden).map(l => layerSVG(l, d.kind, uid, ctxColor)).join("\n  ");
+  const glyphAttrs = d.kind === "glyph" && !ctxColor ? ` fill="context-fill" fill-opacity="context-fill-opacity"` : "";
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${s} ${s}" width="${s}" height="${s}"${glyphAttrs}>\n  ${body}${extra}\n</svg>`;
+}
+function exportSVG() {
+  const meta = JSON.stringify({ kind: doc.kind, layers: doc.layers.map(({ id, ...rest }) => rest) });
+  const s = svgFor(doc, null);
+  const head = doc.kind === "app"
+    ? "<!-- Vanta app icon, made in Vanta Icon Studio (tools/icon-studio.html). -->"
+    : "<!-- Vanta toolbar glyph, made in Vanta Icon Studio (tools/icon-studio.html). -->";
+  return s.replace(/^<svg([^>]*)>/, `<svg$1>\n  ${head}\n  <metadata id="vanta-studio">${meta.replace(/--/g, "- -").replace(/</g, "&lt;")}</metadata>`);
+}
+const dataURL = svg => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+
+// ---- Keylines: Apple's grid for app icons, the 16px pixel grid for glyphs ----
+function keylines(kind) {
+  const st = `class="kl" fill="none" stroke="#9ec4ff" stroke-opacity=".45" stroke-width="1"`;
+  if (kind === "app") {
+    return `<g ${st}><rect x="100" y="100" width="824" height="824" rx="185"/><rect x="64" y="64" width="896" height="896" rx="200" stroke-dasharray="4 4"/>
+      <circle cx="512" cy="512" r="300"/><circle cx="512" cy="512" r="200" stroke-dasharray="4 4"/>
+      <line x1="512" y1="0" x2="512" y2="1024" stroke-dasharray="2 6"/><line x1="0" y1="512" x2="1024" y2="512" stroke-dasharray="2 6"/></g>`;
+  }
+  let g = `<g ${st} stroke-opacity=".18">`;
+  for (let i = 1; i < 16; i++) g += `<line x1="${i}" y1="0" x2="${i}" y2="16"/><line x1="0" y1="${i}" x2="16" y2="${i}"/>`;
+  return g + `</g><g ${st}><rect x="1" y="1" width="14" height="14" stroke-dasharray="3 3"/><line x1="8" y1="0" x2="8" y2="16" stroke-dasharray="2 4"/><line x1="0" y1="8" x2="16" y2="8" stroke-dasharray="2 4"/></g>`;
+}
+
+// ---- UI ----
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function selected() { return doc.layers.find(l => l.id === sel) || null; }
+
+function renderPresets() {
+  const p = $("preset");
+  p.innerHTML = `<option value="">Start from…</option>` + Object.keys(PRESETS[doc.kind]).map(k => `<option>${esc(k)}</option>`).join("");
+}
+function renderKind() {
+  $("kind-app").setAttribute("aria-pressed", doc.kind === "app");
+  $("kind-glyph").setAttribute("aria-pressed", doc.kind === "glyph");
+  $("adders").innerHTML = Object.entries(TYPES).filter(([t]) => doc.kind === "app" || t !== "corona").map(([t, v]) => `<button data-add="${t}">+ ${v.label}</button>`).join("");
+  $("fname").value = doc.kind === "app" ? "logo.svg" : "my-glyph.svg";
+  renderPresets();
+}
+function swatch(c) {
+  return c === "ctx" ? `background: linear-gradient(135deg, #ececf1 50%, #1d1d24 50%)` : `background:${COLORS[c]?.hex}`;
+}
+function renderLayers() {
+  $("layers").innerHTML = [...doc.layers].reverse().map(l => `
+    <li class="${l.id === sel ? "sel" : ""}">
+      <button data-sel="${l.id}" aria-pressed="${l.id === sel}"><i class="swatch" style="${swatch(l.color)}"></i>${esc(l.name)}${l.hidden ? " <span class=empty>(hidden)</span>" : ""}</button>
+      <button class="mini" data-up="${l.id}" title="Move up" aria-label="Move ${esc(l.name)} up">↑</button>
+      <button class="mini" data-down="${l.id}" title="Move down" aria-label="Move ${esc(l.name)} down">↓</button>
+      <button class="mini" data-hide="${l.id}" title="${l.hidden ? "Show" : "Hide"}" aria-label="${l.hidden ? "Show" : "Hide"} ${esc(l.name)}">${l.hidden ? "◌" : "●"}</button>
+    </li>`).join("") || `<li class="empty">No layers yet. Add one below.</li>`;
+}
+function colorPicker(key, value) {
+  const keys = Object.keys(COLORS).filter(c => doc.kind === "glyph" || c !== "ctx");
+  return `<div class="field"><span>${key === "edge" ? "Edge colour" : "Colour"} <output>${esc(COLORS[value]?.name || value)}</output></span>
+    <div class="colors">${keys.map(c => `<button data-color="${key}" data-value="${c}" aria-pressed="${c === value}" title="${COLORS[c].name}" aria-label="${COLORS[c].name}" style="${swatch(c)}"></button>`).join("")}</div></div>`;
+}
+function renderProps() {
+  const l = selected();
+  if (!l) { $("props-title").textContent = "Properties"; $("props").innerHTML = `<p class="empty">Select a layer to edit it.</p>`; return; }
+  $("props-title").textContent = TYPES[l.type].label;
+  const k = doc.kind;
+  let html = `<div class="field"><span>Name</span><input type="text" id="p-name" value="${esc(l.name)}"></div>`;
+  for (const f of TYPES[l.type].fields) {
+    if (f === "color" || f === "edge") { html += colorPicker(f, l[f]); continue; }
+    if (f === "d") { html += `<div class="field"><span>Path data (in a ${S(k)}-unit square)</span><textarea id="p-d" rows="3" spellcheck="false">${esc(l.d)}</textarea></div>`; continue; }
+    const F = FIELD[f], max = typeof F.max === "function" ? F.max(k) : F.max, step = F.step(k);
+    html += `<div class="field"><span><label for="p-${f}">${F.label}</label><output id="o-${f}">${n(l[f])}${F.unit || ""}</output></span>
+      <input type="range" id="p-${f}" data-field="${f}" min="${F.min}" max="${max}" step="${step}" value="${l[f]}"></div>`;
+  }
+  html += `<div class="bar" style="margin:0"><button data-dup="${l.id}">Duplicate</button><button class="danger" data-del="${l.id}">Delete</button></div>`;
+  if (l.type === "eclipse") html += `<p class="note">The shadow disc cuts the light. Thicker rim: raise the radius, lower the shadow radius, or push the offset.</p>`;
+  $("props").innerHTML = html;
+}
+function renderCanvas() {
+  const box = $("canvas");
+  box.className = "canvas-box bg-" + view.bg;
+  const ctx = view.bg === "light" ? "#1d1d24" : "#ececf1";
+  const kl = view.keylines ? keylines(doc.kind) : "";
+  box.innerHTML = svgFor(doc, ctx, kl);
+}
+function renderPreviews() {
+  const k = doc.kind;
+  const sizes = k === "app" ? [256, 128, 64, 48, 32, 24, 16] : [64, 32, 24, 16];
+  const strip = ctx => sizes.map(s => `<figure><img width="${s}" height="${s}" alt="${s}px" src="${dataURL(svgFor(doc, ctx))}"><figcaption>${s}</figcaption></figure>`).join("");
+  $("strip-dark").innerHTML = strip("#ececf1");
+  $("strip-light").innerHTML = strip("#1d1d24");
+
+  // Rasterise at true pixel sizes, then blow up: what a 1x screen really shows.
+  const px = $("pixels"); px.innerHTML = "";
+  const img = new Image();
+  img.onload = () => {
+    for (const s of [16, 24, 32]) {
+      const c = document.createElement("canvas"); c.width = s; c.height = s;
+      c.getContext("2d").drawImage(img, 0, 0, s, s);
+      const big = document.createElement("canvas"); const z = 8; big.width = s * z; big.height = s * z;
+      const g = big.getContext("2d"); g.imageSmoothingEnabled = false;
+      g.fillStyle = "#1c1c1f"; g.fillRect(0, 0, big.width, big.height);
+      g.drawImage(c, 0, 0, s * z, s * z);
+      big.style.width = Math.min(s * z, 256) + "px";
+      const fig = document.createElement("figure"); fig.style.margin = "0";
+      fig.innerHTML = `<figcaption class="note">${s}×${s}</figcaption>`; fig.prepend(big); px.append(fig);
+    }
+  };
+  img.src = dataURL(svgFor(doc, "#ececf1"));
+
+  const src = dataURL(svgFor(doc, "#ececf1"));
+  const srcLight = dataURL(svgFor(doc, "#1d1d24"));
+  if (k === "app") {
+    $("mock").innerHTML = `
+      <div class="dock" aria-label="macOS Dock mock"><span></span><span></span><img src="${src}" alt="Your icon in the Dock"><span></span><span></span></div>
+      <div class="tabs" aria-label="Tab strip mock">
+        <div class="tab on"><img src="${src}" alt="">Vanta: new tab</div>
+        <div class="tab"><i></i>docs.mozilla.org</div>
+        <div class="tab"><i></i>search.nixos.org</div>
+      </div>`;
+  } else {
+    $("mock").innerHTML = `
+      <div class="toolbar on-black" aria-label="Dark toolbar mock"><img src="${src}" alt="Your glyph"><img src="${src}" alt=""><div class="url"></div><img src="${src}" alt=""></div>
+      <div class="toolbar on-light" aria-label="Light toolbar mock"><img src="${srcLight}" alt="Your glyph"><img src="${srcLight}" alt=""><div class="url"></div><img src="${srcLight}" alt=""></div>`;
+  }
+}
+function renderExport() {
+  $("svg-out").value = exportSVG();
+  const f = esc($("fname").value || "icon.svg");
+  $("howto").innerHTML = doc.kind === "app" ? `
+      <li>Save it in the repo as <code>branding/${f === "logo.svg" ? "logo.svg" : "src/" + f}</code>. The main icon is <code>branding/logo.svg</code>; the small-size, macOS and private ones live in <code>branding/src/</code>.</li>
+      <li>Run <code>python3 scripts/make-branding.py --preview sheet.png</code> and look at the sheet.</li>
+      <li>Commit the SVG and <code>branding/vanta/</code> together.</li>`
+    : `<li>Save it in the repo as <code>branding/glyphs/${f}</code>.</li>
+      <li>It uses <code>context-fill</code>, so Firefox paints it in the toolbar's text colour, in dark and light.</li>
+      <li>Nothing in the build uses glyphs yet. Ask Claude to wire it into <code>chrome/vanta.css</code> for the button you want it on.</li>`;
+}
+function render() { renderLayers(); renderProps(); renderCanvas(); renderPreviews(); renderExport(); save(); }
+function soft() { renderCanvas(); renderPreviews(); renderExport(); save(); }   // while dragging a slider
+
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 1800); }
+
+// ---- Events ----
+document.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const d = b.dataset;
+  if (d.sel) { sel = d.sel; render(); }
+  else if (d.add) {
+    remember(); const l = L(d.add, TYPES[d.add].make(doc.kind)); doc.layers.push(l); sel = l.id; render();
+  } else if (d.up || d.down) {
+    remember(); const id = d.up || d.down, i = doc.layers.findIndex(l => l.id === id), j = d.up ? i + 1 : i - 1;
+    if (j >= 0 && j < doc.layers.length) [doc.layers[i], doc.layers[j]] = [doc.layers[j], doc.layers[i]];
+    render();
+  } else if (d.hide) { remember(); const l = doc.layers.find(l => l.id === d.hide); l.hidden = !l.hidden; render(); }
+  else if (d.dup) { remember(); const src = selected(); const c = { ...src, id: L("disc", {}).id, name: src.name + " copy" }; doc.layers.splice(doc.layers.indexOf(src) + 1, 0, c); sel = c.id; render(); }
+  else if (d.del) { remember(); doc.layers = doc.layers.filter(l => l.id !== d.del); sel = doc.layers[doc.layers.length - 1]?.id ?? null; render(); }
+  else if (d.color) { remember(); selected()[d.color] = d.value; render(); }
+  else if (d.bg) { view.bg = d.bg; document.querySelectorAll("[data-bg]").forEach(x => x.setAttribute("aria-pressed", x.dataset.bg === d.bg)); renderCanvas(); }
+});
+$("props").addEventListener("pointerdown", e => { if (e.target.type === "range") remember(); });
+$("props").addEventListener("keydown", e => { if (e.target.type === "range" && !e.repeat) remember(); });
+$("props").addEventListener("input", e => {
+  const l = selected(); if (!l) return;
+  const t = e.target;
+  if (t.dataset.field) { l[t.dataset.field] = parseFloat(t.value); $("o-" + t.dataset.field).textContent = n(l[t.dataset.field]) + (FIELD[t.dataset.field].unit || ""); soft(); }
+  else if (t.id === "p-name") { l.name = t.value; renderLayers(); save(); }
+  else if (t.id === "p-d") { l.d = t.value; soft(); }
+});
+$("props").addEventListener("change", e => { if (e.target.id === "p-d" || e.target.id === "p-name") remember(); });
+function setKind(k) {
+  if (doc.kind === k) return;
+  remember(); doc = { kind: k, layers: Object.values(PRESETS[k])[0]() }; sel = doc.layers[doc.layers.length - 1]?.id ?? null;
+  renderKind(); render();
+}
+$("kind-app").onclick = () => setKind("app");
+$("kind-glyph").onclick = () => setKind("glyph");
+$("preset").onchange = e => {
+  const p = PRESETS[doc.kind][e.target.value]; if (!p) return;
+  remember(); doc.layers = p(); sel = doc.layers[doc.layers.length - 1]?.id ?? null; e.target.value = ""; render();
+  toast("Loaded " + e.target.selectedOptions[0]?.text);
+};
+function undo() { const h = history.pop(); if (!h) return toast("Nothing to undo"); doc = JSON.parse(h); if (!selected()) sel = doc.layers[doc.layers.length - 1]?.id ?? null; renderKind(); render(); }
+$("undo").onclick = undo;
+document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "z" && !/input|textarea/i.test(e.target.tagName)) { e.preventDefault(); undo(); } });
+$("keylines").onchange = e => { view.keylines = e.target.checked; renderCanvas(); };
+$("snap").onchange = e => { view.snap = e.target.checked; };
+$("fname").oninput = renderExport;
+$("copy").onclick = async () => {
+  const text = $("svg-out").value;
+  try { await navigator.clipboard.writeText(text); toast("Copied " + ($("fname").value || "SVG")); }
+  catch (err) { $("svg-out").focus(); $("svg-out").select(); toast("Selected. Press Ctrl+C or ⌘C to copy"); }
+};
+$("import-btn").onclick = () => { $("import-box").hidden = false; $("import-text").focus(); };
+$("import-cancel").onclick = () => { $("import-box").hidden = true; };
+$("import-go").onclick = () => {
+  const m = $("import-text").value.match(/<metadata id="vanta-studio">([\s\S]*?)<\/metadata>/);
+  if (!m) return toast("No studio data found. Only SVGs exported from this studio can be loaded.");
+  try {
+    const data = JSON.parse(m[1].replace(/&lt;/g, "<"));
+    if (!TYPES || !Array.isArray(data.layers) || !["app", "glyph"].includes(data.kind)) throw 0;
+    remember();
+    doc = { kind: data.kind, layers: data.layers.filter(l => TYPES[l.type]).map(l => L(l.type, l, l.name)) };
+    sel = doc.layers[doc.layers.length - 1]?.id ?? null;
+    $("import-box").hidden = true; $("import-text").value = ""; renderKind(); render(); toast("Loaded");
+  } catch (err) { toast("That studio data is damaged. Export it again."); }
+};
+
+// Drag on the canvas moves the selected layer.
+(() => {
+  const box = $("canvas"); let start = null;
+  const toUnits = e => { const r = box.getBoundingClientRect(), s = S(doc.kind); return [(e.clientX - r.left) / r.width * s, (e.clientY - r.top) / r.height * s]; };
+  const keys = l => l.cx != null ? [["cx", "cy"]] : l.x1 != null ? [["x1", "y1"], ["x2", "y2"]] : l.x != null ? [["x", "y"]] : [];
+  box.addEventListener("pointerdown", e => {
+    const l = selected(); if (!l || !keys(l).length) return;
+    remember(); box.setPointerCapture(e.pointerId);
+    start = { p: toUnits(e), orig: JSON.parse(JSON.stringify(l)) };
+  });
+  box.addEventListener("pointermove", e => {
+    if (!start) return; const l = selected(); if (!l) return;
+    const [x, y] = toUnits(e), grid = view.snap ? (doc.kind === "app" ? 8 : 0.5) : 0;
+    let dx = x - start.p[0], dy = y - start.p[1];
+    const [kx, ky] = keys(l)[0];
+    if (grid) { dx = Math.round((start.orig[kx] + dx) / grid) * grid - start.orig[kx]; dy = Math.round((start.orig[ky] + dy) / grid) * grid - start.orig[ky]; }
+    for (const [a, b] of keys(l)) { l[a] = n(start.orig[a] + dx); l[b] = n(start.orig[b] + dy); }
+    soft();
+  });
+  const end = () => { if (start) { start = null; renderProps(); } };
+  box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
+})();
+
+renderKind(); render();
+</script>

@@ -21,6 +21,12 @@ the files in this repo.
   editing a source (`--check` tells you if the output is stale,
   `--preview sheet.png` draws every icon on one sheet); needs
   `pip install cairosvg pillow`.
+- `tools/icon-studio.html`: Vanta Icon Studio, for designing new icons.
+  Open it in a browser (no install). It builds app icons and toolbar glyphs
+  from the Eclipse's shapes (tile, eclipse, ring, arc, corona...) in Vanta's
+  palette, shows them at every size and as real 16/24/32px pixels, and
+  exports an SVG for `branding/` that the icon builder above renders.
+  Exported SVGs carry their layers, so "Import SVG" opens them for editing.
 - `scripts/apply-vanta.sh`: renames Firefox's own unofficial branding to
   Vanta and swaps in our icons, appends our prefs to `browser/app/profile/firefox.js`, and builds
   `chrome/vanta.css` into the browser chrome.
