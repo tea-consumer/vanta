@@ -19,7 +19,14 @@ the files in this repo.
 - `scripts/apply-vanta.sh`: renames Firefox's own unofficial branding to
   Vanta and swaps in our icons, appends our prefs to `browser/app/profile/firefox.js`, and builds
   `chrome/vanta.css` into the browser chrome.
-- `patches/`: our own small patches (none yet).
+- `chrome/split-view.css`: split view (two tabs side by side), which is
+  Firefox's own feature restyled. Each pane is its own card and the focused
+  pane's rim is lit. Ctrl+Alt+S (Cmd+Option+S on macOS) splits the current
+  tab and asks which tab goes beside it; Ctrl+Alt+Shift+S separates them.
+  Selecting two tabs and right-clicking also offers "Add Split View".
+- `patches/`: our own small patches: default split view shortcuts, and the
+  split view tab picker on Vanta's flat background instead of a purple
+  gradient.
 - Build flags: PGO, cross-language LTO, `-O3`, CPU-specific tuning.
 
 The Firefox version is pinned in `FIREFOX_VERSION`.
