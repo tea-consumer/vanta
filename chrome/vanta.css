@@ -369,6 +369,100 @@ sidebar-main,
   }
 }
 
+/* Start and finish are the moments worth animating: you need to notice
+   them, and they are events in the moon's life rather than decoration.
+   Firefox's own sprite animations (arrow dropping in, check mark) give
+   way to these.
+   - Start: the moon rises into place behind the arrow.
+   - Finish: the moon, now full, sets: it holds a beat, then sinks and fades
+     away, leaving the arrow lit until you open the downloads panel. */
+#downloads-indicator-start-image {
+  visibility: hidden !important;
+}
+
+#downloads-button[progress][notification="start"] > .toolbarbutton-badge-stack > #downloads-indicator-progress-outer {
+  visibility: visible !important;
+}
+
+#downloads-button[notification="finish"] > .toolbarbutton-badge-stack {
+  isolation: isolate !important;
+
+  > #downloads-indicator-anchor {
+    position: relative !important;
+    z-index: 1 !important;
+    mix-blend-mode: difference !important;
+    fill: #ffffff !important;
+    fill-opacity: 1 !important;
+  }
+
+  > #downloads-indicator-finish-box > #downloads-indicator-finish-image {
+    list-style-image: none !important;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50% !important;
+    background: var(--vanta-accent) !important;
+    transform: none;
+    animation: none;
+    opacity: 0;
+  }
+
+  /* Firefox hides the arrow during its own finish sprite; keep it. It
+     grows back to full size as the moon sets. */
+  > #downloads-indicator-anchor > #downloads-indicator-icon {
+    visibility: visible !important;
+  }
+}
+
+:root:not([lwtheme]) {
+  --toolbarbutton-icon-fill-attention: var(--vanta-accent) !important;
+}
+
+#nav-bar #downloads-button[attention] .toolbarbutton-badge-stack {
+  opacity: 1 !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #downloads-button[progress][notification="start"] > .toolbarbutton-badge-stack > #downloads-indicator-progress-outer {
+    animation: vanta-moonrise 650ms cubic-bezier(0.2, 0.8, 0.3, 1) both !important;
+  }
+
+  #downloads-button[animate][notification="finish"] > .toolbarbutton-badge-stack > #downloads-indicator-finish-box > #downloads-indicator-finish-image {
+    visibility: visible !important;
+    animation: vanta-moonset 1600ms ease-in both !important;
+  }
+
+  #downloads-button[animate][notification="finish"] > .toolbarbutton-badge-stack > #downloads-indicator-anchor > #downloads-indicator-icon {
+    animation: vanta-arrow-return 1600ms ease-in-out both !important;
+  }
+}
+
+@keyframes vanta-moonrise {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+}
+
+@keyframes vanta-arrow-return {
+  0%, 35% {
+    transform: scale(0.6);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes vanta-moonset {
+  0%, 35% {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
 /* A running download is state, so its moon is not dimmed like a resting icon. */
 #nav-bar #downloads-button[progress] .toolbarbutton-badge-stack {
   opacity: 1 !important;
