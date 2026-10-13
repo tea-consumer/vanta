@@ -170,10 +170,7 @@ sidebar-main,
   transition: opacity 120ms ease !important;
 }
 
-/* Toolbar icons stay muted until hovered. */
-#nav-bar toolbarbutton:not(:hover) > .toolbarbutton-icon {
-  opacity: 0.8;
-}
+
 
 /* ----- Tabs ----------------------------------------------------------------- */
 
@@ -299,6 +296,52 @@ sidebar-main,
     opacity: 1;
     transform: none;
   }
+}
+
+/* The Eclipse's style, beyond its shape: darkness is the material and light
+   is the accent. Nothing gets a plate or a fill to say "this one"; it is
+   lit instead. Light falls from the upper left, and when something happens
+   the light moves while the thing itself stays still. */
+
+/* Hover lights the icon rather than putting a plate behind it: icons rest
+   dim and come up to full brightness under the pointer. Open and pressed
+   buttons keep Firefox's plate, since that is state, not pointing. */
+:root:not([lwtheme]) #nav-bar {
+  --toolbarbutton-background-color-hover: transparent !important;
+}
+
+#nav-bar .toolbarbutton-1:not(#PanelUI-menu-button) :is(.toolbarbutton-icon, .toolbarbutton-badge-stack) {
+  opacity: 0.6;
+}
+
+#nav-bar .toolbarbutton-1:not(#PanelUI-menu-button, [disabled]):is(:hover, [open], [checked]) :is(.toolbarbutton-icon, .toolbarbutton-badge-stack) {
+  opacity: 1;
+}
+
+/* The same for tabs in the rail: unselected favicons rest dim and light up
+   under the pointer, with no plate. */
+#tabbrowser-tabs[orient="vertical"]:not([expanded]) .tabbrowser-tab:not([selected]) {
+  --tab-background-color-hover: transparent !important;
+
+  &:not([pending]) .tab-icon-stack {
+    opacity: 0.6;
+  }
+  &:not([pending]):hover .tab-icon-stack {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #nav-bar .toolbarbutton-1 :is(.toolbarbutton-icon, .toolbarbutton-badge-stack),
+  #tabbrowser-tabs[orient="vertical"] .tab-icon-stack {
+    transition: opacity 140ms ease-out !important;
+  }
+}
+
+/* Download progress fills the button's disc with light from the upper
+   left, in the accent, rather than Firefox's blue pie from the top. */
+#downloads-indicator-progress-inner {
+  background: conic-gradient(from -45deg, var(--vanta-accent) var(--download-progress-pcent), transparent var(--download-progress-pcent)) !important;
 }
 
 /* Selected text in the address bar uses the accent. */
