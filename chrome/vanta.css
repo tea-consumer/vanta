@@ -364,7 +364,7 @@ sidebar-main,
 
     > #downloads-indicator-icon {
       visibility: visible !important;
-      transform: scale(0.75) !important;
+      transform: scale(0.6) !important;
     }
   }
 }
@@ -377,8 +377,8 @@ sidebar-main,
 #downloads-indicator-progress-inner {
   --moon-lit: var(--vanta-accent);
   --moon-dark: color-mix(in srgb, var(--vanta-accent) 16%, var(--vanta-frame));
-  width: 16px !important;
-  height: 16px !important;
+  width: 18px !important;
+  height: 18px !important;
   border-radius: 50% !important;
   transform: rotate(45deg) !important;
   background:
