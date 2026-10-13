@@ -58,6 +58,17 @@ pref("dom.security.https_only_mode_error_page_user_suggestions", true);
 pref("security.csp.reporting.enabled", false);
 pref("pdfjs.enableScripting", false);
 
+/** ===== COOKIE BANNERS: REJECT AUTOMATICALLY (patches/cookiebanners-*) ===== **/
+// 1 = click "reject all" or inject the opt-out cookie; never accept.
+pref("cookiebanners.service.mode", 1);
+pref("cookiebanners.service.mode.privateBrowsing", 1);
+// Consent-platform rules (OneTrust, Cookiebot, Didomi...) on any site, but only
+// in the top page: running them in every iframe costs more than it catches.
+pref("cookiebanners.service.enableGlobalRules", true);
+pref("cookiebanners.service.enableGlobalRules.subFrames", false);
+// Stop looking 10s after DOMContentLoaded instead of 20s (5s after load stays).
+pref("cookiebanners.bannerClicking.timeoutAfterDOMContentLoaded", 10000);
+
 /** ===== TELEMETRY / STUDIES / CRASH REPORTS OFF ======================= **/
 pref("datareporting.policy.dataSubmissionEnabled", false);
 pref("datareporting.healthreport.uploadEnabled", false);

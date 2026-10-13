@@ -10,7 +10,9 @@ the files in this repo.
   faster tab unloading, telemetry and AI features off).
 - `scripts/apply-vanta.sh`: renames Firefox's own unofficial branding to
   Vanta and appends our prefs to `browser/app/profile/firefox.js`.
-- `patches/`: our own small patches (none yet).
+- `patches/`: our own patches. The `cookiebanners-*` pair brings back
+  Firefox's cookie banner handling, set to reject automatically
+  (see `docs/cookie-banners.md`).
 - Build flags: PGO, cross-language LTO, `-O3`, CPU-specific tuning.
 
 The Firefox version is pinned in `FIREFOX_VERSION`.

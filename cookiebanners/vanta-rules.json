@@ -1,0 +1,125 @@
+{
+  "data": [
+    {
+      "id": "didomi",
+      "domains": [],
+      "click": {
+        "presence": "div#didomi-host",
+        "optOut": "#didomi-notice-disagree-button",
+        "optIn": "button#didomi-notice-agree-button"
+      }
+    },
+    {
+      "id": "vanta-cookieyes",
+      "domains": [],
+      "click": {
+        "presence": ".cky-consent-container",
+        "optOut": ".cky-consent-container .cky-btn-reject"
+      }
+    },
+    {
+      "id": "vanta-cookie-notice",
+      "domains": [],
+      "click": {
+        "presence": "#cookie-notice",
+        "optOut": "#cookie-notice #cn-refuse-cookie"
+      }
+    },
+    {
+      "id": "vanta-cookielawinfo",
+      "domains": [],
+      "click": {
+        "presence": "#cookie-law-info-bar",
+        "optOut": "#cookie-law-info-bar #cookie_action_close_header_reject"
+      }
+    },
+    {
+      "id": "vanta-iubenda",
+      "domains": [],
+      "click": {
+        "presence": "#iubenda-cs-banner",
+        "optOut": "#iubenda-cs-banner .iubenda-cs-reject-btn"
+      }
+    },
+    {
+      "id": "vanta-osano",
+      "domains": [],
+      "click": {
+        "presence": ".osano-cm-dialog",
+        "optOut": ".osano-cm-dialog .osano-cm-button--type_denyAll"
+      }
+    },
+    {
+      "id": "vanta-klaro",
+      "domains": [],
+      "click": {
+        "presence": ".klaro .cookie-notice",
+        "optOut": ".klaro .cookie-notice .cn-decline"
+      }
+    },
+    {
+      "id": "vanta-cookiescript",
+      "domains": [],
+      "click": {
+        "presence": "#cookiescript_injected",
+        "optOut": "#cookiescript_injected #cookiescript_reject"
+      }
+    },
+    {
+      "id": "vanta-moove-gdpr",
+      "domains": [],
+      "click": {
+        "presence": "#moove_gdpr_cookie_info_bar",
+        "optOut": "#moove_gdpr_cookie_info_bar .moove-gdpr-infobar-reject-btn"
+      }
+    },
+    {
+      "id": "vanta-google-fundingchoices",
+      "domains": [],
+      "click": {
+        "presence": ".fc-consent-root",
+        "optOut": ".fc-consent-root .fc-cta-do-not-consent"
+      }
+    },
+    {
+      "id": "vanta-hubspot",
+      "domains": [],
+      "click": {
+        "presence": "#hs-eu-cookie-confirmation",
+        "optOut": "#hs-eu-cookie-confirmation #hs-eu-decline-button"
+      }
+    },
+    {
+      "id": "vanta-shopify",
+      "domains": [],
+      "click": {
+        "presence": "#shopify-pc__banner",
+        "optOut": "#shopify-pc__banner__btn-decline"
+      }
+    },
+    {
+      "id": "vanta-tarteaucitron",
+      "domains": [],
+      "click": {
+        "presence": "#tarteaucitronRoot #tarteaucitronAlertBig",
+        "optOut": "#tarteaucitronAlertBig #tarteaucitronAllDenied2"
+      }
+    },
+    {
+      "id": "vanta-cookieconsent-insites",
+      "domains": [],
+      "click": {
+        "presence": ".cc-window",
+        "optOut": ".cc-window .cc-deny"
+      }
+    },
+    {
+      "id": "vanta-cookieconsent-v3",
+      "domains": [],
+      "click": {
+        "presence": "#cc-main .cm",
+        "optOut": "#cc-main .cm [data-role=\"necessary\"]"
+      }
+    }
+  ]
+}

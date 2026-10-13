@@ -29,3 +29,6 @@ for p in "$here"/patches/*.patch; do
   [ -e "$p" ] || continue
   patch -p1 --forward < "$p"
 done
+
+# Vanta's own cookie banner rules (packaged by patches/cookiebanners-2).
+cp "$here/cookiebanners/vanta-rules.json" toolkit/components/cookiebanners/vanta-rules.json
