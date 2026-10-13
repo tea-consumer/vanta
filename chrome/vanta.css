@@ -267,65 +267,6 @@ sidebar-main,
   }
 }
 
-/* ----- Menus ------------------------------------------------------------- */
-
-/* Menus use the browser's own shapes: rounded plates, like the tabs and the
-   page card, lit the way the Eclipse is lit. The item under the pointer gets
-   a raised plate with a thin rim of accent light along its top and left
-   edges, the same offset-disc geometry as the logo, scaled to a rectangle.
-   Panels are plain black with a hard edge, no soft glow. */
-:root:not([lwtheme]) {
-  --panel-background-color: light-dark(#f4f4f7, #09090b) !important;
-  --panel-border-color: var(--vanta-card-edge) !important;
-  --panel-border-radius: var(--vanta-radius) !important;
-  --urlbarview-background-color-hover: transparent !important;
-  --urlbarview-background-color-selected: transparent !important;
-  --urlbarview-text-color-selected: var(--vanta-text) !important;
-}
-
-panelview .subviewbutton:not([disabled]),
-.urlbarView-row[row-selectable] {
-  position: relative !important;
-  isolation: isolate !important;
-  background-color: transparent !important;
-}
-
-panelview .subviewbutton:not([disabled])::before,
-.urlbarView-row[row-selectable]::before {
-  content: "" !important;
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: -1 !important;
-  border-radius: 8px !important;
-  background: var(--vanta-raised) !important;
-  box-shadow: inset 1px 1px 0 color-mix(in srgb, var(--vanta-accent) 55%, transparent) !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-.urlbarView-row[row-selectable]::before {
-  inset: var(--urlbarView-row-gutter) !important;
-  border-radius: 9px !important;
-}
-
-panelview .subviewbutton:not([disabled]):is(:hover, :focus-visible, [open])::before,
-.urlbarView-row[row-selectable][selected]::before {
-  opacity: 1 !important;
-}
-
-/* Pointer hover without the keyboard selection: the plate only, no rim. */
-.urlbarView-row[row-selectable]:not([selected]):hover::before {
-  opacity: 0.6 !important;
-  box-shadow: none !important;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  panelview .subviewbutton::before,
-  .urlbarView-row::before {
-    transition: opacity 110ms ease-out !important;
-  }
-}
-
 /* Selected text in the address bar uses the accent. */
 #urlbar-input::selection {
   background-color: var(--vanta-accent) !important;
