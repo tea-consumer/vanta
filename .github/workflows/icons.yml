@@ -1,0 +1,39 @@
+name: Icons
+
+on:
+  pull_request:
+    paths:
+      - "branding/**"
+      - "scripts/make-branding.py"
+      - ".claude/skills/vanta-icons/**"
+      - ".github/workflows/icons.yml"
+  push:
+    branches: [main]
+    paths:
+      - "branding/**"
+      - "scripts/make-branding.py"
+      - ".claude/skills/vanta-icons/**"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install cairo and the Python tools
+        run: |
+          sudo apt-get update -q && sudo apt-get install -yq libcairo2
+          python -m pip install -q cairosvg pillow
+      - name: Toolkit tests
+        run: python .claude/skills/vanta-icons/scripts/test_toolkit.py
+      - name: Audit every shipped icon
+        run: python .claude/skills/vanta-icons/scripts/audit.py --out icon-audit.png
+      - name: Keep the audit sheet
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: icon-audit
+          path: icon-audit.png
+          if-no-files-found: ignore

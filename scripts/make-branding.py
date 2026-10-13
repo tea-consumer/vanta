@@ -31,7 +31,7 @@ import sys
 import tempfile
 
 import cairosvg
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw
 
 here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 branding = os.path.join(here, "branding")
@@ -136,6 +136,26 @@ def preview(path):
     print("wrote", path)
 
 
+def same(a, b):
+    """Byte-equal, or for images, the same pixels within antialiasing noise:
+    a different cairo or Pillow version (CI vs a laptop) re-encodes icons
+    slightly differently without anything having changed."""
+    if filecmp.cmp(a, b, shallow=False):
+        return True
+    if not a.endswith((".png", ".icns", ".ico")):
+        return False
+    try:
+        ia, ib = Image.open(a), Image.open(b)
+        if ia.size != ib.size:
+            return False
+        diff = ImageChops.difference(ia.convert("RGBA"), ib.convert("RGBA")).convert("L")
+        hist = diff.histogram()
+        changed = sum(hist[16:])
+        return changed <= 0.005 * ia.size[0] * ia.size[1]
+    except OSError:
+        return False
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--check", action="store_true", help="fail if branding/vanta/ is out of date")
@@ -151,7 +171,7 @@ def main():
                 for name in files:
                     rel = os.path.relpath(os.path.join(root, name), tmp)
                     mine = os.path.join(out, rel)
-                    if not os.path.exists(mine) or not filecmp.cmp(os.path.join(tmp, rel), mine, shallow=False):
+                    if not os.path.exists(mine) or not same(os.path.join(tmp, rel), mine):
                         stale.append(rel)
             if stale:
                 sys.exit("stale icons, run scripts/make-branding.py: " + ", ".join(sorted(stale)))
