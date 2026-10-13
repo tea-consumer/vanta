@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Eclipse on Apple's app-icon grid: 824px body, 100px margin, so the
+       Dock shows it the same size as its neighbours. -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#000"/>
+  <rect x="100.5" y="100.5" width="823" height="823" rx="185" fill="none" stroke="#2a2a2e" stroke-width="2"/>
+  <circle cx="512" cy="512" r="276" fill="#ececf1"/>
+  <circle cx="536" cy="536" r="256" fill="#000"/>
+</svg>

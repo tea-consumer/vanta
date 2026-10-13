@@ -13,9 +13,14 @@ the files in this repo.
   the page in a rounded card. Applies to the default theme only. The accent
   is mono; set `vanta.accent` in about:config to `ice`, `sage` or `ember`
   for a color.
-- `branding/logo.svg`: the Vanta "Eclipse" logo. `scripts/make-branding.py`
-  renders it into the app icons in `branding/vanta/` (re-run it after
-  editing the logo; needs `pip install cairosvg pillow`).
+- `branding/logo.svg`: the Vanta "Eclipse" logo, plus its variants in
+  `branding/src/` (small sizes, macOS grid, private browsing, document
+  icon, wordmark, .dmg window). `scripts/make-branding.py` is the icon
+  builder: it renders all of them into `branding/vanta/`, every icon and
+  image Firefox's branding reads on macOS and Linux. Re-run it after
+  editing a source (`--check` tells you if the output is stale,
+  `--preview sheet.png` draws every icon on one sheet); needs
+  `pip install cairosvg pillow`.
 - `scripts/apply-vanta.sh`: renames Firefox's own unofficial branding to
   Vanta and swaps in our icons, appends our prefs to `browser/app/profile/firefox.js`, and builds
   `chrome/vanta.css` into the browser chrome.

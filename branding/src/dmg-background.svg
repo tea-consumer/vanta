@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="880" viewBox="0 0 1440 880">
+  <!-- The .dmg window at 2x. Icon slots, arrow and label pill sit where
+       Firefox's dsstore (kept unchanged) places the app and Applications. -->
+  <defs>
+    <radialGradient id="glow" cx="418" cy="360" r="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ececf1" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#ececf1" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1440" height="880" fill="#000"/>
+  <circle cx="418" cy="360" r="260" fill="url(#glow)"/>
+  <path d="M594 387H738M712 361L738 387L712 413" fill="none" stroke="#ececf1" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="329" y="524" width="178" height="44" rx="22" fill="#ececf1"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Eclipse for 32px and below: fuller tile, a thicker rim of light and
+       a visible edge, so the crescent survives at taskbar sizes. -->
+  <rect x="24" y="24" width="976" height="976" rx="208" fill="#000"/>
+  <rect x="48" y="48" width="928" height="928" rx="184" fill="none" stroke="#2a2a2e" stroke-width="48"/>
+  <circle cx="512" cy="512" r="340" fill="#ececf1"/>
+  <circle cx="556" cy="556" r="300" fill="#000"/>
+</svg>

@@ -1,0 +1,26 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* Vanta: Firefox's unofficial about dialog, recoloured to Vanta black. */
+@media not ((prefers-contrast) and (prefers-color-scheme: light)) {
+  #aboutDialogContainer {
+    background-color: #000;
+    color: #ececf1;
+    color-scheme: dark;
+  }
+
+  #bottomBox {
+    background-color: #0c0c0e;
+  }
+}
+
+#rightBox {
+  background-size: auto 36px;
+  margin-inline: 30px;
+  padding-top: 64px;
+}
+
+#bottomBox {
+  padding: 15px 10px;
+}

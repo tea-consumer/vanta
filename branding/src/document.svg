@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- macOS document icon: a dark page carrying the eclipse. -->
+  <path d="M232 80H640L832 272V904Q832 944 792 944H232Q192 944 192 904V120Q192 80 232 80Z" fill="#0c0c0e" stroke="#3a3a40" stroke-width="8"/>
+  <path d="M640 80V232Q640 272 680 272H832" fill="#1c1c20" stroke="#3a3a40" stroke-width="8" stroke-linejoin="round"/>
+  <circle cx="512" cy="600" r="200" fill="#ececf1"/>
+  <circle cx="530" cy="618" r="186" fill="#0c0c0e"/>
+</svg>

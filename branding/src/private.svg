@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Private browsing: a total eclipse. The light is hidden, only the
+       corona shows. -->
+  <defs>
+    <radialGradient id="corona" cx="512" cy="512" r="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0.66" stop-color="#ececf1" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ececf1" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="#000"/>
+  <rect x="64.5" y="64.5" width="895" height="895" rx="200" fill="none" stroke="#2a2a2e" stroke-width="2"/>
+  <circle cx="512" cy="512" r="420" fill="url(#corona)"/>
+  <circle cx="512" cy="512" r="292" fill="#9a9aa2"/>
+  <circle cx="512" cy="512" r="280" fill="#000"/>
+</svg>
