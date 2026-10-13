@@ -348,6 +348,27 @@ sidebar-main,
   background: none !important;
 }
 
+/* The download arrow stays on top of the moon so the button still reads as
+   downloads. It inverts against whatever is under it: light over the dark
+   part of the moon, dark over the lit part. */
+#downloads-button[progress] > .toolbarbutton-badge-stack {
+  isolation: isolate !important;
+
+  > #downloads-indicator-anchor {
+    position: relative !important;
+    z-index: 1 !important;
+    mix-blend-mode: difference !important;
+    --toolbarbutton-icon-fill: #ffffff !important;
+    fill: #ffffff !important;
+    fill-opacity: 1 !important;
+
+    > #downloads-indicator-icon {
+      visibility: visible !important;
+      transform: scale(0.75) !important;
+    }
+  }
+}
+
 /* A running download is state, so its moon is not dimmed like a resting icon. */
 #nav-bar #downloads-button[progress] .toolbarbutton-badge-stack {
   opacity: 1 !important;
