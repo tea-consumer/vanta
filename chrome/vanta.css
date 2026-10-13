@@ -114,7 +114,11 @@ sidebar-main,
 
 :root:not([inDOMFullscreen], [fullscreenNavToolboxHidden]) {
   #tabbrowser-tabbox {
-    margin: 2px var(--vanta-gap) var(--vanta-gap) 0 !important;
+    /* Leave margin-inline-start to Firefox: it pads the page by the rail's
+     * width while the hover-expanded rail floats over it, so the page must
+     * not shift when the rail opens and closes. */
+    margin-block: 2px var(--vanta-gap) !important;
+    margin-inline-end: var(--vanta-gap) !important;
     background: transparent !important;
   }
 
@@ -195,12 +199,32 @@ sidebar-main,
 
 /* ----- Sidebar expanded on hover: float it over the page ------------------ */
 
-:root[sidebar-expand-on-hover] #sidebar-container[sidebar-launcher-expanded] {
+/* Firefox keeps the launcher floating for the whole collapse animation
+   ([sidebar-ongoing-animations] without [sidebar-launcher-expanded]), so
+   the surface must too, or it would vanish at the start of the collapse and
+   the rail would pop back. Only the shadow follows the expanded state, and
+   it fades over the same 400ms as Firefox's width animation, in on expand
+   and out on collapse. */
+:root[sidebar-expand-on-hover] #sidebar-container:is([sidebar-launcher-expanded], [sidebar-ongoing-animations]) {
   background: var(--vanta-frame) !important;
   border-start-end-radius: var(--vanta-radius) !important;
   border-end-end-radius: var(--vanta-radius) !important;
-  box-shadow: 0 0 0 1px var(--vanta-card-edge), 12px 0 32px -8px var(--vanta-card-shadow) !important;
+  border-inline: none !important;
   clip-path: inset(0 -48px 0 0) !important;
+}
+
+:root[sidebar-expand-on-hover] #sidebar-container {
+  box-shadow: 0 0 0 1px transparent, 12px 0 32px -8px transparent !important;
+}
+
+:root[sidebar-expand-on-hover] #sidebar-container[sidebar-launcher-expanded] {
+  box-shadow: 0 0 0 1px var(--vanta-card-edge), 12px 0 32px -8px var(--vanta-card-shadow) !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[sidebar-expand-on-hover] #sidebar-container {
+    transition: box-shadow 400ms ease !important;
+  }
 }
 
 /* ----- Signature ------------------------------------------------------------ */
