@@ -38,9 +38,10 @@ if ! grep -q 'Vanta browser: default prefs' browser/app/profile/firefox.js; then
   { echo; cat "$here/prefs/vanta.js"; } >> browser/app/profile/firefox.js
 fi
 
-# Interface: ship chrome/vanta.css as chrome://browser/skin/vanta.css and link
-# it last from the main window, so it overrides Firefox's own chrome styles.
-cp "$here/chrome/vanta.css" browser/themes/shared/vanta.css
+# Interface: ship chrome/vanta.css (plus chrome/split-view.css) as
+# chrome://browser/skin/vanta.css and link it last from the main window, so it
+# overrides Firefox's own chrome styles.
+cat "$here/chrome/vanta.css" "$here/chrome/split-view.css" > browser/themes/shared/vanta.css
 python3 - <<'EOF'
 import sys
 
@@ -65,5 +66,9 @@ EOF
 # Our own patches, if any.
 for p in "$here"/patches/*.patch; do
   [ -e "$p" ] || continue
+  # Skip patches that are already in, so the script can run twice.
+  if patch -p1 -R -s -f --dry-run < "$p" >/dev/null 2>&1; then
+    continue
+  fi
   patch -p1 --forward < "$p"
 done

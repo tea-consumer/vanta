@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Try Vanta's interface on a stock Firefox, without building Vanta.
 # Creates a throwaway profile with prefs/vanta.js as user prefs and
-# chrome/vanta.css as its userChrome.css, then starts Firefox with it.
+# chrome/vanta.css and chrome/split-view.css as its userChrome.css, then
+# starts Firefox with it. The split view shortcuts are a source patch, so
+# they only exist in a real Vanta build.
 # Usage: scripts/preview-ui.sh [path-to-firefox-binary]
 set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
@@ -23,6 +25,6 @@ mkdir -p "$profile/chrome"
   # Stock Firefox only reads userChrome.css with this on.
   echo 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);'
 } > "$profile/user.js"
-cp "$here/chrome/vanta.css" "$profile/chrome/userChrome.css"
+cat "$here/chrome/vanta.css" "$here/chrome/split-view.css" > "$profile/chrome/userChrome.css"
 
 exec "$firefox" --no-remote --profile "$profile"
