@@ -1,0 +1,9 @@
+{
+  "name": "blackout-compare",
+  "private": true,
+  "type": "module",
+  "description": "Runs uBlock Origin's network filtering engine on the same lists and requests as blackout-bench.",
+  "dependencies": {
+    "@gorhill/ubo-core": "0.1.30"
+  }
+}

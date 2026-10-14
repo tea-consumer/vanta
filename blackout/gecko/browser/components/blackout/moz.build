@@ -1,0 +1,23 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Vanta Blackout: keeps the filter lists fresh, hides page elements, runs
+# scriptlets, and adds its toolbar button and about:blackout.
+# Network blocking itself happens in toolkit/components/content-classifier.
+
+with Files("**"):
+    BUG_COMPONENT = ("Firefox", "General")
+
+MOZ_SRC_FILES += [
+    "Blackout.sys.mjs",
+    "BlackoutUI.sys.mjs",
+]
+
+JAR_MANIFESTS += ["jar.mn"]
+
+FINAL_TARGET_FILES.actors += [
+    "BlackoutChild.sys.mjs",
+    "BlackoutParent.sys.mjs",
+    "BlackoutScriptlets.js",
+]

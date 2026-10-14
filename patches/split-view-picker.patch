@@ -1,0 +1,25 @@
+--- a/browser/components/tabbrowser/content/opentabs-splitview.css
++++ b/browser/components/tabbrowser/content/opentabs-splitview.css
+@@ -15,7 +15,7 @@
+ }
+ 
+ .sticky-header {
+-  background: linear-gradient(to bottom, light-dark(#f0ebfd, #332a50) 0%, light-dark(#f1ebf8, #342a47) 95%, transparent 100%);
++  background: linear-gradient(to bottom, var(--vanta-picker-background) 95%, transparent 100%);
+   position: sticky;
+   top: 0;
+   z-index: 1;
+--- a/browser/components/tabbrowser/content/opentabs.css
++++ b/browser/components/tabbrowser/content/opentabs.css
+@@ -7,8 +7,9 @@
+ :root {
+   height: 100%;
+   --splitview-opentabs-card-width: 358px;
+-  background: no-repeat light-dark(linear-gradient(#f0ebfd, #f7ebeb), linear-gradient(#332a50, #3f2a2f));
+-  background-attachment: fixed;
++  /* Vanta: the flat window surface instead of the purple gradient. */
++  --vanta-picker-background: light-dark(#e6e6eb, #000000);
++  background: var(--vanta-picker-background);
+ }
+ 
+ body {

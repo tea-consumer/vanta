@@ -1,0 +1,13 @@
+# Standalone benchmark for Blackout's engine glue, built against the same
+# adblock crate version Firefox 157 vendors. Not part of the browser build.
+[package]
+name = "blackout-bench"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+adblock = { version = "=0.12.1", default-features = false, features = ["full-regex-handling", "single-thread", "embedded-domain-resolver"] }
+
+[profile.release]
+lto = "thin"

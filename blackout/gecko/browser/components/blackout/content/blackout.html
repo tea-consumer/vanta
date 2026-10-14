@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src chrome:; img-src chrome: data:; object-src 'none'"
+    />
+    <meta name="color-scheme" content="dark light" />
+    <title>Blackout</title>
+    <link rel="icon" href="chrome://browser/content/blackout/blackout-icon.svg" />
+    <link rel="stylesheet" href="chrome://browser/content/blackout/blackout.css" />
+    <script type="module" src="chrome://browser/content/blackout/blackout.mjs"></script>
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <div class="eclipse" id="eclipse" aria-hidden="true"></div>
+        <div class="hero-text">
+          <h1>Blackout</h1>
+          <p id="summary" class="muted"></p>
+        </div>
+        <button class="switch" id="enabled" role="switch" aria-label="Block ads and trackers"></button>
+      </header>
+
+      <section aria-labelledby="lists-title">
+        <div class="section-head">
+          <h2 id="lists-title">Filter lists</h2>
+          <button class="quiet" id="update-now">Update now</button>
+        </div>
+        <p class="muted">
+          Lists are fetched from their maintainers and checked once a day.
+          Each list you add makes blocking stricter and the first start after
+          a change a little slower; page loads stay as fast.
+        </p>
+        <div id="lists"></div>
+        <form id="add-form" class="card add">
+          <label for="add-url">Add a list by its address</label>
+          <div class="add-row">
+            <input id="add-url" type="url" placeholder="https://example.com/filters.txt" required />
+            <button type="submit">Add</button>
+          </div>
+          <p id="add-error" class="error" hidden></p>
+        </form>
+      </section>
+
+      <section aria-labelledby="cleanup-title">
+        <h2 id="cleanup-title">On the page</h2>
+        <div class="card" id="cleanup"></div>
+      </section>
+
+      <section aria-labelledby="sites-title">
+        <h2 id="sites-title">Sites where Blackout is off</h2>
+        <p class="muted">
+          Turn Blackout off for a site with the Blackout button in the
+          toolbar.
+        </p>
+        <div class="card" id="sites"></div>
+      </section>
+    </main>
+  </body>
+</html>

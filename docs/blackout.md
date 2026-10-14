@@ -1,0 +1,285 @@
+# Blackout
+
+Blackout is Vanta's built-in ad and tracker blocker. It is not an extension:
+it runs inside Firefox's own **content classifier**
+(`toolkit/components/content-classifier`), the native filter-list engine
+Mozilla added to Enhanced Tracking Protection. Firefox 157 already ships it,
+switched off and without lists. Blackout turns it on, adds a `blackout`
+feature to it, and feeds it public ad and tracker lists.
+
+Everything Blackout adds is Firefox source plus Vanta's own code in this repo.
+The engine is Firefox's vendored `adblock` crate (157) or its in-tree fork
+`etp_engine` (158), both MPL-2.0. Filter lists are data, downloaded at runtime
+from their maintainers, never bundled.
+
+## How it works
+
+```
+page asks for https://ads.example/tag.js
+  -> nsHttpChannel::AsyncOpen
+  -> URL classifier worker thread (already used by ETP for every request)
+       content classifier: "blackout" engine checks the URL      ~5 us
+  -> main thread: blocked? cancel with NS_ERROR_TRACKING_URI
+     (same path as ETP: shield icon, SmartBlock shims, per-site toggle)
+```
+
+- **Network blocking** happens before any connection is made, off the main
+  thread, on the thread ETP's classifier already runs every request through.
+  Blackout matches every request, first party included, against the frame that
+  made it, like a classic ad blocker. Top-level page loads are only blocked by
+  rules that ask for it (`$document`), which is how the lists are written.
+- **Element hiding** (`##` rules): when a page's document starts, a small window
+  actor asks the parent process for that site's rules. The engine answers on
+  the same classifier thread, and the actor applies them as one user style
+  sheet. Generic rules (the ones meant for every site, tens of thousands of
+  `##.ad-slot` style rules) are matched to the page instead of sent whole:
+  when the browser is idle after DOMContentLoaded, after load and once more
+  5 s later, the actor lists the CSS classes and ids the page uses and gets
+  back only the rules that target them. Pages with nothing to hide get no
+  sheet and no style work.
+- **Scriptlets** (`##+js(...)` rules): small scripts the lists ask for to
+  switch off anti-adblock code, ad setups and trackers that request blocking
+  cannot reach. Vanta has its own implementations (below); when a page's
+  window is created, the same window actor runs the ones listed for the
+  page's site inside the page, before any of the page's own scripts.
+- **Lists** are downloaded into `<profile>/blackout/lists/` on first start and
+  refreshed daily with conditional requests (ETag / If-Modified-Since), so an
+  unchanged list costs one empty 304 response. After a change the engine is
+  rebuilt on a background thread and cached as `<profile>/blackout/engine.dat`.
+  Every later start loads that cache instead of parsing the lists again.
+- **Turning it off for a site** uses the existing shield in the address bar.
+  Blocked ads and trackers appear there under "Tracking content", and the
+  site toggle turns off both request blocking and element hiding.
+
+## Scriptlets
+
+`BlackoutScriptlets.js` is Vanta's own code (MPL-2.0) for the scriptlets the
+lists use, under the names and arguments the lists use (`set`, `aopr`, `acs`,
+`nostif`, `json-prune`, `rmnt` and so on, 38 scriptlets plus their aliases).
+uBlock Origin's implementations are GPLv3 code from another project, so none
+of it is used. On the default lists they cover 98% of the site/scriptlet
+pairs (37,196 of 37,946, on 24,542 sites).
+
+- **Table.** While building the engine, `blackout.rs` takes the `##+js` rules
+  out of the lists and writes `<profile>/blackout/scriptlets.json` next to
+  the engine cache: each distinct call once, and for each site the calls and
+  exceptions (`#@#+js(...)`, and `#@#+js()` for "none here"). `!#if` blocks
+  and comments are honoured as for the other rules.
+- **Trusted lists.** `trusted-*` scriptlets (and `rpnt`) can rewrite what a
+  page shows or sends, so as in uBlock Origin only lists from uBlock Origin's
+  own sites may use them. The updater saves those lists as `<id>.trusted.txt`;
+  `trusted-*` rules in any other list are dropped.
+- **Sharing.** After each engine build the parent process drops calls the
+  library does not have and shares the table with the content processes
+  (`Services.ppmm.sharedData`), split by the hosts' first letter so a page
+  only reads a small string. The library source is shared too.
+- **Injection.** At `DOMWindowCreated`, the actor looks up the page's host,
+  its parent domains, their `name.*` forms and `*`. If anything is listed, it
+  runs the library in the page's own realm with `PrecompiledScript` (compiled
+  once per process); on the first page of a process, before that compile has
+  finished, it uses a sandbox on the page's window instead. Both run before
+  the page's scripts and are not subject to the page's CSP.
+- **Cost.** Pages with no scriptlets for their site pay about 0.4 ms for the
+  lookup (measured in Firefox 157, a fresh process per site); pages with some
+  pay 1-5 ms on the first page of a process, the same as uBlock Origin's
+  injection work. browserbench.org has none.
+
+Not done: `trusted-click-element` (Blackout does not click consent buttons;
+cookie banners are PR #4's job) and a long tail (`edit-object-on-setter`,
+`json-edit`, `xml-prune`, `prevent-innerHTML` and a few others, 2% of uses).
+The rules for those are skipped.
+
+Tested in real Firefox 157.0.1 and 158.0 (`blackout/test/scriptlets/`): every scriptlet
+above that the default lists use most, with and without a strict CSP, in both
+the sandbox and the precompiled path, plus site matching (subdomains,
+`example.*`), exceptions, alias exceptions, `#@#+js()` and the shield's
+per-site switch.
+
+## Interface
+
+- **Toolbar button**, right of the address bar: the eclipse mark with the
+  number of requests blocked on the current page as a badge. The icon is an
+  open circle when Blackout is off for the site. The count comes from the
+  page's content blocking log (the one the shield reads), read only for the
+  selected tab and at most four times a second while a page is blocking.
+- **Panel**: the count, a switch for the site and the total blocked so far
+  (Firefox's own tracking statistics). The switch is the shield's per-site
+  switch, so turning Blackout off for a site turns ETP off there too, as the
+  shield always has; the page reloads. The eclipse in the panel shows the
+  state: covered when blocking, uncovered when off, with the moon moving
+  between the two (no motion with reduced motion on).
+- **about:blackout** (from "Lists and settings"): Blackout on or off, the
+  known lists grouped as Ads, Privacy, Security, Annoyances and Fixes with
+  a switch, size and last change for each, any list by its address,
+  "Update now", the page settings (element hiding, scriptlets, thorough
+  hiding) and the sites Blackout is off for. Optional lists include
+  uBlock Origin's cookie notice list, which hides notices that cannot be
+  rejected; rejecting them is the cookie-banner setting's job.
+
+Both use Vanta's palette and work without the interface patch too, with
+Firefox's own panel colors. `blackout/test/ui/run.py <firefox>` checks them
+in a real Firefox.
+
+## Default lists
+
+The defaults are uBlock Origin's own default lists, so the two can be compared
+like for like:
+
+| List | What it adds | License |
+|---|---|---|
+| uBlock filters, badware, privacy, quick fixes, unbreak | uBlock Origin's own lists | GPLv3 |
+| EasyList | Ads, international baseline | GPLv3 / CC BY-SA 3.0 |
+| EasyPrivacy | Trackers and analytics | GPLv3 / CC BY-SA 3.0 |
+| Peter Lowe's list | Ad and tracking servers | Free to use |
+| Online Malicious URL Blocklist (URLhaus) | Malware sites | CC0 / MIT |
+
+The set is one pref, `vanta.blackout.lists` (whitespace-separated `id=url`
+entries), so adding or removing a list needs no rebuild. AdGuard Base, for
+example, adds `adguard-base=https://filters.adtidy.org/extension/ublock/filters/2_without_easylist.txt`
+(1-2 us more per request, mostly more element hiding).
+
+### uBlock Origin's list syntax
+
+uBlock Origin's lists are written for uBlock Origin, so the engine glue
+(`blackout.rs`) translates them as it loads them:
+
+- `!#if` / `!#else` / `!#endif` blocks are evaluated as uBlock Origin on
+  Firefox would (`env_firefox`, `ext_ublock`, `cap_user_stylesheet` hold;
+  anything else, such as `env_chromium` or `cap_html_filtering`, does not).
+- `@@...$redirect-rule` exceptions only switch off a redirect in uBlock Origin.
+  The engine would read them as full exceptions and let the ad through, so
+  they are dropped (Gecko does not redirect anyway).
+- `$redirect=` rules are kept as plain blocks; `$redirect-rule` and
+  `$removeparam` rules are dropped, since Gecko only asks whether to block and
+  they would cost time on every request for nothing.
+- `$denyallow=` becomes the rule plus exceptions for the allowed hosts (only
+  for rules limited to some sites, where that means the same thing).
+- `$~document` is dropped, since rules never apply to top-level pages unless
+  they ask to.
+
+What the engine still skips: `$popup` (popup windows are not network
+requests the classifier sees), `$to=`, `$header=`, `$replace=`, `$urlskip=`
+and a few other uBlock-only options, HTML filtering (`##^`) and regular
+expressions with lookaround. These and the scriptlets above that Vanta does
+not have are the gap to uBlock Origin.
+
+## Numbers
+
+Both blockers measured on the same machine (cloud x86), on the same lists
+(the defaults above, 9 lists) and the same 205,560 real requests from 2,000
+sites (the request set adblock-rust benchmarks with). Blackout is timed the
+way Gecko calls it (hosts already parsed, block or not); uBlock Origin's own
+engine (`@gorhill/ubo-core` 0.1.30, with WASM and the real public suffix
+list) is timed through its `matchRequest`, after a warm-up pass.
+
+| | Blackout | uBlock Origin |
+|---|---|---|
+| Requests blocked | 83,581 | 83,584 |
+| Network check | **5.2 us** per request | 5.9 us |
+| Start with cached engine | **35 ms** | 210 ms |
+| First start or list update | **0.2-0.3 s** | 1.0 s |
+| Engine memory | **12.5 MB** | at least 49 MB |
+
+Blackout blocks every request uBlock Origin blocks but 3 (one script on
+nbcnews.com that only a regular expression with lookahead catches), and
+nothing uBlock Origin lets through. The per-request time is the engine alone; in the browser uBlock
+Origin also pays for each request's trip to its extension process, which
+Blackout does not make. Blackout's lead on the network check comes from one
+change to Firefox's matching code (below); without it the two are even.
+
+Element hiding: site rules for nytimes.com are 13 rules in 0.1 ms;
+browserbench.org gets none. Matching a page's classes and ids to generic
+rules takes 0.1-0.25 ms on the classifier thread (cnn.com: 1,062 classes and
+294 ids, 14 rules).
+
+To reproduce: `blackout/bench` (`cargo run --release -- <lists> <requests.tsv>`,
+with `BLACKOUT_DECISIONS=<file>` to save its decisions) and
+`blackout/bench/compare` (`requests.py` converts adblock-rust's
+`data/requests.json`; `ubo.mjs` runs uBlock Origin's engine).
+
+### The matching change
+
+Firefox's filter engine looked for substrings with `memchr::memmem::find`,
+which builds a new searcher on every call. On short URLs and host names that
+setup costs more than the search, and it was the largest single cost of a
+check. The patch replaces it in `network_matchers.rs` (vendored `adblock`
+crate in 157, in-tree `etp_engine` in 158) with a plain first-byte scan that
+returns the same results; that is the 13% that puts Blackout ahead.
+
+### Speedometer
+
+Speedometer 3.1 on the Mac scored 39.6 without Blackout, and Blackout must not
+lower it. Why it should not:
+
+- Every request already goes through ETP's classifier thread in Strict mode.
+  Blackout adds one engine lookup inside that same step, not a new thread hop.
+- browserbench.org gets no element-hiding rules, so no style sheet is added.
+- The class and id survey runs only when the browser is idle, three times per
+  page, and adds rules only for classes and ids that lists target.
+- The other generic rules (about 550 selectors every page would get, mostly
+  attribute selectors such as `a[href^="..."]`) are off by default
+  (`vanta.blackout.cosmetic.generic_complex`). uBlock Origin applies them;
+  they would add style-matching work to every page.
+
+This still has to be confirmed on the real build: run Speedometer 3.1 with
+`privacy.trackingprotection.content.protection.enabled` on and off.
+
+## Prefs
+
+| Pref | Default | |
+|---|---|---|
+| `privacy.trackingprotection.content.protection.enabled` | `true` | Master switch (Firefox's pref) |
+| `privacy.trackingprotection.content.protection.engines` | `blackout` | Engines that block, normal windows |
+| `privacy.trackingprotection.content.protection.engines.pbmode` | `blackout` | Same, private windows |
+| `vanta.blackout.lists` | 9 lists | `id=url` entries |
+| `vanta.blackout.update_interval` | `86400` | Seconds between list refreshes |
+| `vanta.blackout.cosmetic.enabled` | `true` | Element hiding |
+| `vanta.blackout.cosmetic.generic` | `true` | Generic element hiding, matched to the page's classes and ids |
+| `vanta.blackout.cosmetic.generic_complex` | `false` | The other generic rules, on every page |
+| `vanta.blackout.scriptlets.enabled` | `true` | Scriptlets (needs `vanta.blackout.cosmetic.enabled`, whose actor runs them) |
+
+ETP Strict and its Disconnect lists keep running alongside Blackout.
+
+## Code
+
+- `blackout/patches/firefox-<major>.patch`: changes to Firefox's own files, one
+  patch per Firefox major version (157, 158): the `blackout` feature in
+  `ContentClassifierService.cpp`, the engine-cache and element-hiding entry
+  points in the engine glue, `getCosmeticStyle()` and `getClassIdStyle()` on
+  `nsIContentClassifierService`, the matching change, and the startup hooks.
+- `blackout/gecko/`: new files copied into the tree.
+  `content_classifier_engine/src/blackout.rs` translates uBlock Origin's list
+  syntax, builds and caches the engine, writes element-hiding style sheets
+  and the scriptlet table; `browser/components/blackout/` holds the list
+  updater, the page actors, the scriptlet library, the toolbar button
+  (`BlackoutUI.sys.mjs`) and about:blackout (`content/`).
+  The actor registration sets `safeForUntrustedWebProcess`: without it
+  Firefox 157 keeps the actor out of web content processes, and element
+  hiding silently did nothing.
+- `prefs/blackout.js`: the prefs above.
+- `scripts/apply-blackout.sh`: applies all of it; `apply-vanta.sh` calls it.
+- `blackout/bench/`: the benchmark behind the numbers above
+  (`cargo run --release -- <folder with *.txt lists> [requests.tsv]`). It
+  builds against crates.io's `adblock` 0.12.1, without the matching change;
+  to include it, point a `[patch.crates-io]` entry at the patched
+  `third_party/rust/adblock` of a Firefox 157 tree.
+- `blackout/bench/compare/`: the uBlock Origin side of the comparison.
+
+## Not in this version
+
+- Redirects to neutered resources: rules that redirect are applied as plain
+  blocks; Firefox's SmartBlock shims still replace the common trackers
+  (Google Analytics, Tag Manager and so on) so sites that expect them keep
+  working.
+- The uBlock-only options listed above, and procedural element hiding
+  (`:has-text()`, `:upward()` and the like).
+
+## Checking a build
+
+- `about:url-classifier` has a content classifier section where a URL can be
+  probed against the `blackout` feature.
+- Logs: set `MOZ_LOG=ContentClassifier:5`, and `vanta.blackout.loglevel` to
+  `Debug` for the list updater.
+- First start: `<profile>/blackout/lists/` fills with nine `.txt` files (the
+  five uBlock Origin lists as `.trusted.txt`), and `engine.dat` and
+  `scriptlets.json` appear a moment later.
