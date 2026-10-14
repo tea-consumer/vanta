@@ -24,16 +24,26 @@ The Firefox version is pinned in `FIREFOX_VERSION`.
 Or add this flake as an input to your system flake and put
 `inputs.vanta.packages.x86_64-linux.vanta` in `environment.systemPackages`.
 
-## Build on macOS (Apple Silicon, tuned for A18 Pro)
+## Build for the Mac
 
-Needs Xcode and its command line tools.
+The usual way is a cross build on the Linux machine (Orpheus), with only the
+PGO training run on the Mac, so the Mac never compiles anything:
 
-    bash scripts/build-macos.sh
+    scripts/build-macos-cross.sh instrumented     # Linux
+    scripts/run-profile-macos.sh vanta-instrumented.dmg   # Mac, about 10-20 min
+    scripts/build-macos-cross.sh final vanta-profile.tar  # Linux
 
-The `.dmg` ends up in `work/firefox-<version>/obj-vanta/dist/`.
-PGO builds Firefox twice, so expect a long first build. `VANTA_PGO=0`
-skips PGO for a quicker test build.
+Interface and prefs changes don't need a build at all: on the Mac,
+
+    scripts/update-mac-ui.sh
+
+has the Linux machine repack the front end from `main` and swaps it into
+`/Applications/Vanta.app` (`--undo` puts the previous one back).
+
+`scripts/build-macos.sh` still builds everything on a Mac with Xcode, if
+there is ever no Linux machine. Every step, knob and file is in
+[`docs/building.md`](docs/building.md).
 
 ## Status
 
-Untested scaffold. Nothing has been built or benchmarked yet.
+In daily use on the Mac, built on Firefox 158.0.
