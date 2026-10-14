@@ -13,6 +13,7 @@
 //   npx playwright install chromium
 //   node crawl.mjs --top 10000 --concurrency 8 --out out
 //   node crawl.mjs --sites example.com,example.org --out out
+//   (--rules <path> points at vanta-rules.json when run outside the repo)
 //
 // Output (resumable; rerun the same command to continue):
 //   out/results.jsonl         one line per site with what happened
@@ -87,7 +88,7 @@ const mozRules = JSON.parse(
   )
 ).changes;
 const vantaRules = JSON.parse(
-  fs.readFileSync(path.join(here, "../../cookiebanners/vanta-rules.json"), "utf8")
+  fs.readFileSync(args.rules || path.join(here, "../../cookiebanners/vanta-rules.json"), "utf8")
 ).data;
 const globalRules = new Map();
 for (const r of [...mozRules, ...vantaRules]) {
