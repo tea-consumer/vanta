@@ -20,22 +20,25 @@
         # FIREFOX_VERSION (nix will print the right one on mismatch).
         src = pkgs.fetchurl {
           url = "mirror://mozilla/firefox/releases/${version}/source/firefox-${version}.source.tar.xz";
-          sha512 = "c019202b2f87d25b3605bbf7266f3bb4d59745e48536f297d3f00cc3524a1cd2eba416a5a3cd0ecee6b0762d0f35bf3c5fcce286ebc7bc741263bebd0f102858";
+          sha512 = "14b8ffdc325a234061db14dea9bd144786dc2c84468a5dfe2bb70bb9558f63f73427cf244eaf461010ee01dfdf04f2cae68bae9f07b4820603a4bcd4462f7960";
         };
 
         extraPostPatch = ''
           bash ${./.}/scripts/apply-vanta.sh .
         '';
 
-        # Tune for x86-64-v3 (AVX2). PGO and cross-language LTO are already
-        # on by default in nixpkgs' Firefox build on x86_64-linux.
+        # Tune for x86-64-v3 (AVX2). Cross-language PGO and full cross-language
+        # LTO are already on in nixpkgs' Firefox build on x86_64-linux, and PGO
+        # builds already use -O3 there.
         extraPreConfigure = ''
           export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -march=x86-64-v3"
           export RUSTFLAGS="''${RUSTFLAGS:-} -C target-cpu=x86-64-v3"
         '';
         extraConfigureFlags = [
-          "--enable-optimize=-O3"
           "--enable-rust-simd"
+          # PHC samples allocations to catch memory bugs for crash reports;
+          # with no crash reporter it only costs RAM and CPU.
+          "--disable-phc"
         ];
 
         meta = {

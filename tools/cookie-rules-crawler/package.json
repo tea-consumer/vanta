@@ -1,0 +1,9 @@
+{
+  "name": "vanta-cookie-rules-crawler",
+  "private": true,
+  "type": "module",
+  "description": "Generates Vanta cookie banner reject rules by visiting popular sites.",
+  "dependencies": {
+    "playwright": "1.56.1"
+  }
+}

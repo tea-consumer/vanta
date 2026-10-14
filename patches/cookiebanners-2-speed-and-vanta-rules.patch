@@ -1,0 +1,370 @@
+Vanta: make cookie banner handling reject-only friendly and cheaper per page.
+
+  - CookieBannerChild: drop the MutationObserver (attributes + subtree on the
+    whole body) and poll instead, each check in an idle slot, plus one
+    check right after "load", since banners are often built in onload.
+  - CookieBannerChild: test all presence selectors with one querySelector, so
+    a page without a banner costs one DOM lookup per check.
+  - CookieBannerParent: don't send rules that have nothing to click in the
+    current mode (opt-in-only rules while we only reject).
+  - CookieBannerListService: also import Vanta's own rules from
+    vanta-site-rules.json (generated) and vanta-rules.json (hand-written)
+    under chrome://global/content/cookiebanners/, after Mozilla's, so they
+    can add rules and override stale ones. scripts/apply-vanta.sh copies
+    both from cookiebanners/ into place. Mozilla's own tests for this
+    component turn them off (cookiebanners.listService.vantaRules=false),
+    since they count exact rules.
+  - CookieBannerDomainPrefService: use components::AsyncShutdown::Service();
+    services::GetAsyncShutdownService() no longer exists in Firefox 157+.
+
+Applies on top of cookiebanners-1.
+
+diff --git a/toolkit/components/cookiebanners/CookieBannerChild.sys.mjs b/toolkit/components/cookiebanners/CookieBannerChild.sys.mjs
+index c81be54b9..9ebf7c1b0 100644
+--- a/toolkit/components/cookiebanners/CookieBannerChild.sys.mjs
++++ b/toolkit/components/cookiebanners/CookieBannerChild.sys.mjs
+@@ -77,6 +77,8 @@ export class CookieBannerChild extends JSWindowActorChild {
+   #timeoutSignalController = new AbortController();
+   #timeoutTimerID;
+   #hasActiveObserver = false;
++  // Vanta: runs the active poll's check right away; null when not polling.
++  #checkNow = null;
+   // Indicates whether the page "load" event occurred.
+   #didLoad = false;
+ 
+@@ -293,6 +295,12 @@ export class CookieBannerChild extends JSWindowActorChild {
+ 
+     // On load reset the timer for cleanup.
+     this.#startOrResetCleanupTimer();
++
++    // Vanta: banners are often built in onload. Check once the load event
++    // has finished dispatching (our listener runs before the page's own
++    // onload), rather than on the next poll tick, which could fall after a
++    // short after-load window.
++    lazy.setTimeout(() => this.#checkNow?.(), 0);
+   }
+ 
+   /**
+@@ -426,79 +434,67 @@ export class CookieBannerChild extends JSWindowActorChild {
+       }
+ 
+       let win = this.contentWindow;
+-      // Marks whether a mutation on the site has been observed since we last
+-      // ran checkFn.
+-      let sawMutation = false;
+ 
+-      // IDs for interval for checkFn polling.
++      // Vanta: poll instead of watching the DOM. A MutationObserver on the
++      // whole body (attributes + subtree) costs time on every mutation of
++      // DOM-heavy pages, even ones that never show a banner. A few cheap
++      // checks during the detection window cost less, and each check waits
++      // for an idle slot so it never competes with the page's own work.
+       let pollIntervalId = null;
+-
+-      // Keep track of DOM changes via MutationObserver. We only run query
+-      // selectors again if the DOM updated since our last check.
+-      let observer = new win.MutationObserver(() => {
+-        sawMutation = true;
+-      });
+-      observer.observe(win.document.body, {
+-        attributes: true,
+-        subtree: true,
+-        childList: true,
+-      });
+-
+-      // Start polling checkFn.
+-      let intervalFn = () => {
+-        lazy.logConsole.debug(
+-          "#promiseObserve interval function",
+-          this.document.location.href
+-        );
+-
+-        if (this.#abortController.signal.aborted) {
+-          throw new Error(
+-            "The promiseObserve interval function is still running after banner detection has aborted."
+-          );
+-        }
+-
+-        if (this.#timeoutSignalController.signal.aborted) {
+-          throw new Error(
+-            "The promiseObserve interval function is still running after banner detection has timed out."
+-          );
+-        }
+-
+-        // Nothing changed since last run, skip running checkFn.
+-        if (!sawMutation) {
++      let idleCallbackId = null;
++
++      let runCheck = () => {
++        idleCallbackId = null;
++        if (
++          this.#abortController.signal.aborted ||
++          this.#timeoutSignalController.signal.aborted
++        ) {
+           return;
+         }
+-        // Reset mutation flag.
+-        sawMutation = false;
+ 
+-        // A truthy result means we have a hit so we can stop observing.
++        // A truthy result means we have a hit so we can stop polling.
+         let result = checkFn?.();
+         if (result) {
+           cleanUp();
+           resolve(result);
+         }
+       };
++
++      let intervalFn = () => {
++        // Skip this tick if the previous check is still waiting for idle time.
++        if (idleCallbackId != null) {
++          return;
++        }
++        idleCallbackId = win.requestIdleCallback(runCheck, {
++          timeout: lazy.pollingInterval,
++        });
++      };
+       pollIntervalId = lazy.setInterval(intervalFn, lazy.pollingInterval);
++      this.#checkNow = () => {
++        if (idleCallbackId != null) {
++          win.cancelIdleCallback(idleCallbackId);
++        }
++        runCheck();
++      };
+ 
+       let cleanUp = () => {
+         lazy.logConsole.debug("#promiseObserve cleanup", {
+-          observer,
+           pollIntervalId,
+           href: this.document.location?.href,
+         });
+ 
+-        // Unregister the observer.
+-        if (observer) {
+-          observer.disconnect();
+-          observer = null;
+-        }
+-
+         // Stop the polling checks.
+         if (pollIntervalId) {
+           lazy.clearInterval(pollIntervalId);
+           pollIntervalId = null;
+         }
++        if (idleCallbackId != null) {
++          win.cancelIdleCallback(idleCallbackId);
++          idleCallbackId = null;
++        }
+ 
+         this.#hasActiveObserver = false;
++        this.#checkNow = null;
+         this.#abortController.signal.removeEventListener(
+           "abort",
+           abortFunction
+@@ -533,10 +529,26 @@ export class CookieBannerChild extends JSWindowActorChild {
+     }
+     lazy.logConsole.debug("Starting to detect the banner");
+ 
++    // Vanta: one query for all presence selectors, so a page without a banner
++    // costs a single DOM lookup per check instead of one per rule.
++    let combinedPresence = this.#clickRules
++      .map(rule => rule.presence)
++      .join(",");
++
+     // Returns an array of rules for which a cookie banner exists for the
+     // current site.
+     let presenceDetector = () => {
+       lazy.logConsole.debug("presenceDetector start");
++      try {
++        if (!this.document.querySelector(combinedPresence)) {
++          return null;
++        }
++      } catch (e) {
++        // One invalid selector makes the whole list throw. Fall through to
++        // the per-rule checks below.
++        lazy.logConsole.debug("Combined presence selector failed", e);
++      }
++
+       let matchingRules = this.#clickRules.filter(rule => {
+         let { presence, skipPresenceVisibilityCheck } = rule;
+ 
+diff --git a/toolkit/components/cookiebanners/CookieBannerDomainPrefService.cpp b/toolkit/components/cookiebanners/CookieBannerDomainPrefService.cpp
+index ca9085e40..f069da2cb 100644
+--- a/toolkit/components/cookiebanners/CookieBannerDomainPrefService.cpp
++++ b/toolkit/components/cookiebanners/CookieBannerDomainPrefService.cpp
+@@ -5,6 +5,7 @@
+ #include "CookieBannerDomainPrefService.h"
+ 
+ #include "mozilla/ClearOnShutdown.h"
++#include "mozilla/Components.h"
+ #include "mozilla/DebugOnly.h"
+ #include "mozilla/Logging.h"
+ #include "mozilla/RefPtr.h"
+@@ -38,7 +39,8 @@ namespace {
+ // A helper function to get the profile-before-change shutdown barrier.
+ 
+ nsCOMPtr<nsIAsyncShutdownClient> GetShutdownBarrier() {
+-  nsCOMPtr<nsIAsyncShutdownService> svc = services::GetAsyncShutdownService();
++  // Vanta: services::GetAsyncShutdownService() was removed after Firefox 154.
++  nsCOMPtr<nsIAsyncShutdownService> svc = components::AsyncShutdown::Service();
+   NS_ENSURE_TRUE(svc, nullptr);
+ 
+   nsCOMPtr<nsIAsyncShutdownClient> barrier;
+diff --git a/toolkit/components/cookiebanners/CookieBannerListService.sys.mjs b/toolkit/components/cookiebanners/CookieBannerListService.sys.mjs
+index 52afe915a..7496a2af3 100644
+--- a/toolkit/components/cookiebanners/CookieBannerListService.sys.mjs
++++ b/toolkit/components/cookiebanners/CookieBannerListService.sys.mjs
+@@ -31,6 +31,14 @@ XPCOMUtils.defineLazyPreferenceGetter(lazy, "testRulesPref", PREF_TEST_RULES);
+ // Name of the RemoteSettings collection containing the rules.
+ const COLLECTION_NAME = "cookie-banner-rules-list";
+ 
++// Vanta's own rules, shipped in omni.ja. They are imported after Mozilla's
++// rules so they can add global CMP rules and override stale site rules.
++// vanta-site-rules.json is generated by tools/cookie-rules-crawler.
++const VANTA_RULES_URLS = [
++  "chrome://global/content/cookiebanners/vanta-site-rules.json",
++  "chrome://global/content/cookiebanners/vanta-rules.json",
++];
++
+ ChromeUtils.defineLazyGetter(lazy, "logConsole", () => {
+   return console.createInstance({
+     prefix: "CookieBannerListService",
+@@ -38,6 +46,29 @@ ChromeUtils.defineLazyGetter(lazy, "logConsole", () => {
+   });
+ });
+ 
++// Off in Mozilla's own tests for this component, which count exact rules.
++XPCOMUtils.defineLazyPreferenceGetter(
++  lazy,
++  "vantaRulesEnabled",
++  "cookiebanners.listService.vantaRules",
++  true
++);
++
++// Vanta rules parsed once per session; re-imported after every sync.
++ChromeUtils.defineLazyGetter(lazy, "VantaRules", async () => {
++  let lists = await Promise.all(
++    VANTA_RULES_URLS.map(async url => {
++      let response = await fetch(url);
++      if (!response.ok) {
++        throw new Error(`Failed to fetch ${url}.`);
++      }
++      return (await response.json()).data;
++    })
++  );
++  // Hand-written rules come last so they win over generated ones.
++  return lists.flat();
++});
++
+ // Lazy getter for the JSON schema of cookie banner rules. It is used for
+ // validation of rules defined by pref.
+ ChromeUtils.defineLazyGetter(lazy, "CookieBannerRuleSchema", async () => {
+@@ -112,6 +143,8 @@ export class CookieBannerListService {
+       );
+     }
+ 
++    await this.#importVantaRules();
++
+     // We import test rules, even if fetching rules from RemoteSettings failed.
+     await this.#importTestRules();
+   }
+@@ -144,6 +177,9 @@ export class CookieBannerListService {
+     // Import new rules and override updated rules.
+     this.#importRules(created.concat(updated.map(u => u.new)));
+ 
++    // Vanta rules win over Mozilla's, so put them back on top.
++    this.#importVantaRules();
++
+     // Re-import test rules in case they need to overwrite existing rules or a test rule was deleted above.
+     this.#importTestRules();
+   }
+@@ -215,6 +251,21 @@ export class CookieBannerListService {
+     });
+   }
+ 
++  async #importVantaRules() {
++    if (!lazy.vantaRulesEnabled || lazy.TEST_SKIP_REMOTE_SETTINGS) {
++      return;
++    }
++    try {
++      let rules = await lazy.VantaRules;
++      if (!Services.cookieBanners.isEnabled) {
++        return;
++      }
++      this.#importRules(rules);
++    } catch (error) {
++      lazy.logConsole.error("Error while importing Vanta rules", error);
++    }
++  }
++
+   async #importTestRules() {
+     lazy.logConsole.debug("importTestRules");
+ 
+diff --git a/toolkit/components/cookiebanners/CookieBannerParent.sys.mjs b/toolkit/components/cookiebanners/CookieBannerParent.sys.mjs
+index e74816dc4..025b9ccd2 100644
+--- a/toolkit/components/cookiebanners/CookieBannerParent.sys.mjs
++++ b/toolkit/components/cookiebanners/CookieBannerParent.sys.mjs
+@@ -235,19 +235,23 @@ export class CookieBannerParent extends JSWindowActorParent {
+     let modeAllowsOptIn =
+       mode == Ci.nsICookieBannerService.MODE_REJECT_OR_ACCEPT;
+ 
+-    rules = rules.map(rule => {
+-      let target = rule.optOut;
++    rules = rules
++      .map(rule => {
++        let target = rule.optOut;
+ 
+-      if (modeAllowsOptIn && !target) {
+-        target = rule.optIn;
+-      }
+-      return {
+-        hide: rule.hide ?? rule.presence,
+-        presence: rule.presence,
+-        skipPresenceVisibilityCheck: rule.skipPresenceVisibilityCheck,
+-        target,
+-      };
+-    });
++        if (modeAllowsOptIn && !target) {
++          target = rule.optIn;
++        }
++        return {
++          hide: rule.hide ?? rule.presence,
++          presence: rule.presence,
++          skipPresenceVisibilityCheck: rule.skipPresenceVisibilityCheck,
++          target,
++        };
++      })
++      // Vanta: a rule with nothing to click in this mode (opt-in only, while
++      // we only reject) can never act, so don't make the page look for it.
++      .filter(rule => rule.target);
+ 
+     return { rules, hasExecuted };
+   }
+diff --git a/toolkit/components/cookiebanners/jar.mn b/toolkit/components/cookiebanners/jar.mn
+index ab0184022..fdd401094 100644
+--- a/toolkit/components/cookiebanners/jar.mn
++++ b/toolkit/components/cookiebanners/jar.mn
+@@ -4,3 +4,5 @@
+ 
+ toolkit.jar:
+   content/global/cookiebanners/CookieBannerRule.schema.json           (schema/CookieBannerRule.schema.json)
++  content/global/cookiebanners/vanta-rules.json                       (vanta-rules.json)
++  content/global/cookiebanners/vanta-site-rules.json                  (vanta-site-rules.json)
+diff --git a/toolkit/components/cookiebanners/test/browser/browser.toml b/toolkit/components/cookiebanners/test/browser/browser.toml
+index b48284d4b..e1e49d609 100644
+--- a/toolkit/components/cookiebanners/test/browser/browser.toml
++++ b/toolkit/components/cookiebanners/test/browser/browser.toml
+@@ -1,4 +1,5 @@
+ [DEFAULT]
++prefs = ["cookiebanners.listService.vantaRules=false"]
+ support-files = ["head.js"]
+ 
+ ["browser_bannerClicking.js"]
+diff --git a/toolkit/components/cookiebanners/test/unit/xpcshell.toml b/toolkit/components/cookiebanners/test/unit/xpcshell.toml
+index cfa272362..a2d9291c3 100644
+--- a/toolkit/components/cookiebanners/test/unit/xpcshell.toml
++++ b/toolkit/components/cookiebanners/test/unit/xpcshell.toml
+@@ -1,3 +1,4 @@
+ [DEFAULT]
++prefs = ["cookiebanners.listService.vantaRules=false"]
+ 
+ ["test_cookiebannerlistservice.js"]

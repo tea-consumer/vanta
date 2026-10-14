@@ -1,0 +1,115 @@
+/* Vanta split view: two tabs side by side.
+ *
+ * This is Firefox's own split view (browser.tabs.splitView.enabled, on by
+ * default in Firefox 157): select two tabs, right-click and pick "Add Split
+ * View", or press Ctrl+Alt+S (Cmd+Option+S on macOS). Vanta only restyles
+ * it. Each pane becomes its own floating card, the same shape as the
+ * single page card, with the frame showing through the gap between them.
+ *
+ * The state worth showing is which pane has focus, so the focused pane is
+ * lit: its rim catches the light on the upper-left edge, like the Eclipse.
+ * Clicking into the other pane moves the light across; the panes stay put.
+ *
+ * Appended to vanta.css by scripts/apply-vanta.sh and scripts/preview-ui.sh,
+ * so it shares its colors and only applies to the default theme.
+ */
+
+/* ----- The panes as cards ------------------------------------------------- */
+
+/* Firefox sets splitview-selected-column only while a split pane has focus.
+   With another tab selected the split stays parked in the background and
+   the page is the usual single card from vanta.css. */
+:root[splitview-selected-column]:not([lwtheme], [inDOMFullscreen]) #tabbrowser-tabpanels[splitview] {
+  /* The panes carry the card now; the panel strip behind them is frame. */
+  border-radius: 0 !important;
+  overflow: visible !important;
+  box-shadow: none !important;
+  background: transparent !important;
+
+  > .split-view-panel.split-view-panel-active {
+    position: relative !important;
+    margin: 0 !important;
+  }
+
+  .split-view-panel .browserContainer {
+    border-radius: var(--vanta-radius) !important;
+    overflow: clip !important;
+    outline: none !important;
+    box-shadow: 0 0 0 1px var(--vanta-card-edge), 0 4px 18px -4px var(--vanta-card-shadow) !important;
+  }
+
+  /* The lit rim: a 1px ring just outside the card, brightest at the
+     upper-left corner and fading out along the top and left edges. It is
+     drawn once and only its opacity changes, so moving focus costs a
+     compositor fade. */
+  > .split-view-panel::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: -1px !important;
+    z-index: 2 !important;
+    pointer-events: none !important;
+    border-radius: calc(var(--vanta-radius) + 1px) !important;
+    padding: 1px !important;
+    background: linear-gradient(135deg, var(--vanta-accent) 0%, color-mix(in srgb, var(--vanta-accent) 35%, transparent) 30%, transparent 62%) !important;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0) !important;
+    opacity: 0 !important;
+  }
+
+  > .split-view-panel.deck-selected::after {
+    opacity: 1 !important;
+  }
+
+  /* The gap between the panes is the splitter. It stays invisible until the
+     pointer finds it, then a thin line of light marks where to drag. */
+  > .split-view-splitter {
+    width: var(--vanta-gap) !important;
+    margin: 0 !important;
+    padding-inline: calc((var(--vanta-gap) - 2px) / 2) !important;
+    background-color: transparent !important;
+    background-clip: content-box !important;
+    border-radius: 0 !important;
+
+    &:is(:hover, [state="dragging"]) {
+      background-color: var(--vanta-accent) !important;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #tabbrowser-tabpanels[splitview] > .split-view-panel::after {
+    transition: opacity 220ms ease-out !important;
+  }
+
+  #tabbrowser-tabpanels[splitview] > .split-view-splitter {
+    transition: background-color 120ms ease-out !important;
+  }
+}
+
+/* The site label Firefox puts in the corner of the unfocused pane, in
+   Vanta's quiet surface. */
+#tabbrowser-tabpanels[splitview] split-view-footer {
+  border-start-start-radius: 9px !important;
+  background: var(--vanta-frame) !important;
+  color: var(--vanta-text-muted) !important;
+}
+
+/* ----- The pair in the tab rail ------------------------------------------- */
+
+/* Two tabs in a split view sit together in one capsule. Instead of a filled
+   plate it is a faint ring, a little brighter while the pair is on screen. */
+:root:not([lwtheme]) #tabbrowser-tabs tab-split-view-wrapper {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 1px var(--vanta-card-edge) !important;
+
+  &[hasactivetab] {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vanta-accent) 28%, transparent) !important;
+  }
+}
+
+/* ----- The address bar ---------------------------------------------------- */
+
+/* The split view button shows which side has focus, which is state, so it
+   stays visible when the other page actions hide. */
+#nav-bar #urlbar-container #urlbar #page-action-buttons > #split-view-button {
+  opacity: 1 !important;
+}
