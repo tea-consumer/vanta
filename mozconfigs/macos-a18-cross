@@ -1,0 +1,17 @@
+# Vanta: macOS on Apple A18 Pro, cross-compiled from Linux (x86_64).
+# Same options as macos-a18, plus --enable-bootstrap so mach fetches Mozilla's
+# own cross toolchain: clang, rust with the darwin targets, cctools, the
+# MacOSX SDK, and the dmg/hfsplus tools for packaging. Used by
+# scripts/build-macos-cross.sh, which sets VANTA_PGO_STAGE.
+. "$VANTA_ROOT/mozconfigs/macos-a18"
+ac_add_options --enable-bootstrap
+
+# VANTA_LINKER=ld64 links with ld64 from Mozilla's cctools-port build, the
+# way Mozilla links its own macOS PGO+LTO release builds (they measured lld
+# slower there). Fetch it once with:
+#   ./mach artifact toolchain --from-build linux64-cctools-port
+# and unpack it to ~/.mozbuild/cctools.
+if [ "${VANTA_LINKER:-lld}" = ld64 ]; then
+  mk_add_options "export PATH=$HOME/.mozbuild/cctools/bin:$PATH"
+  export PATH="$HOME/.mozbuild/cctools/bin:$PATH"
+fi
