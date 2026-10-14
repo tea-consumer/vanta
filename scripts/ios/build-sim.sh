@@ -5,14 +5,14 @@
 #
 #   scripts/ios/build-sim.sh [work-dir] [out-dir]
 #
-# RAM: the Mac has 8 GB, so the compiler runs at most 3 jobs. Build products
+# RAM: the Mac has 8 GB, so the compiler runs at most 2 jobs. Build products
 # stay in <work-dir>/DerivedData, so removing the work dir removes everything.
 set -euo pipefail
 
 DEST=${1:-"$HOME/vanta-ios/firefox-ios"}
 OUT=${2:-"$(dirname "$DEST")/screenshots"}
 DEVICE_NAME=${VANTA_SIM_DEVICE:-"Vanta iPhone"}
-JOBS=${VANTA_JOBS:-3}
+JOBS=${VANTA_JOBS:-2}
 DERIVED="$DEST/DerivedData"
 mkdir -p "$OUT"
 cd "$DEST/firefox-ios"

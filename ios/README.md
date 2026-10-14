@@ -26,7 +26,7 @@ scripts/ios/build-sim.sh   # builds, installs in one simulator, screenshots in ~
 ```
 
 `prepare.sh` resets its work dir to the pinned tag every run. `build-sim.sh`
-keeps build products inside the work dir and compiles with 3 jobs so an
+keeps build products inside the work dir and compiles with 2 jobs so an
 8 GB Mac doesn't swap. Removing `~/vanta-ios` removes everything.
 
 Installing on an iPhone needs an Apple developer team and its own bundle ID;
