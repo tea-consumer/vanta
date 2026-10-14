@@ -169,6 +169,10 @@ pref("vanta.toolbar.pageTint", true);
 // tonight's moon, over a sunlit planet horizon with a sunrise as it opens. Drawn by the window on a blank page, so a new tab
 // costs no extra process.
 pref("vanta.newtab.home", true);
+// DuckDuckGo is the default search engine (set once on first run, so a
+// choice made later in Settings sticks), and its results page wears the
+// Vanta look.
+pref("vanta.search.skin", true);
 // The Vanta home is also the start page and the Home button: both open a
 // blank tab, which the window draws the home on.
 pref("browser.startup.page", 1);

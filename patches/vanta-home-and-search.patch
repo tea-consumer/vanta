@@ -1,6 +1,6 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,710 @@
+@@ -1258,3 +1258,919 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
@@ -401,6 +401,215 @@
 +  },
 +};
 +delayedStartupPromise.then(() => VantaSearch.init());
++
++// Vanta: DuckDuckGo is the search engine, and its results page wears the
++// Vanta look. The engine is set once, on first run, so a later choice in
++// Settings sticks. The skin is a user style sheet scoped to duckduckgo.com,
++// shared by every window; vanta.search.skin turns it off.
++var VantaSearchSkin = {
++  ENGINE_PREF: "vanta.search.duckduckgoSet",
++  SKIN_PREF: "vanta.search.skin",
++
++  init() {
++    this.setEngine();
++    if (Services.prefs.getBoolPref(this.SKIN_PREF, true)) {
++      let sss = Cc["@mozilla.org/content/style-sheet-service;1"].getService(
++        Ci.nsIStyleSheetService
++      );
++      let uri = Services.io.newURI(
++        "data:text/css;charset=utf-8," +
++          encodeURIComponent(
++            '@-moz-document domain("duckduckgo.com") {\n' + this.CSS + "\n}"
++          )
++      );
++      if (!sss.sheetRegistered(uri, sss.USER_SHEET)) {
++        sss.loadAndRegisterSheet(uri, sss.USER_SHEET);
++      }
++    }
++  },
++
++  async setEngine() {
++    if (Services.prefs.getBoolPref(this.ENGINE_PREF, false)) {
++      return;
++    }
++    let { SearchService } = ChromeUtils.importESModule(
++      "moz-src:///toolkit/components/search/SearchService.sys.mjs"
++    );
++    await SearchService.init();
++    let engine = SearchService.getEngineByName("DuckDuckGo");
++    if (!engine) {
++      return;
++    }
++    await SearchService.setDefault(engine, SearchService.CHANGE_REASON.USER);
++    await SearchService.setDefaultPrivate(engine, SearchService.CHANGE_REASON.USER);
++    Services.prefs.setBoolPref(this.ENGINE_PREF, true);
++  },
++
++  CSS: `
++    /* Vanta's skin for DuckDuckGo results: the same editorial voice as the new
++       tab. True black, your search set large like a heading, results as quiet
++       type with no boxes. Only stable hooks (ids, data-testid) are used, since
++       DuckDuckGo's class names change with every deploy. */
++
++    html, body, .site-wrapper, #header_wrapper, #header, #react-duckbar,
++    #web_content_wrapper, #react-layout, #vertical_wrapper, #zero_click_wrapper,
++    [data-testid="mainline"], [data-testid="sidebar"] {
++      background: #000 !important;
++      border-color: transparent !important;
++      box-shadow: none !important;
++    }
++    body {
++      -moz-osx-font-smoothing: grayscale;
++      --vanta-ink: #fff;
++      --vanta-dim: rgba(255,255,255,.6);
++      --vanta-faint: rgba(255,255,255,.38);
++    }
++
++    /* Header: no logo, no slogan, no pill. Just the words you searched. */
++    #header-logo-wrapper, .header--aside > :not(#header-hamburger-menu-btn),
++    [data-testid="floating-feedback-prompt"], #footer-feedback-wrapper,
++    [data-testid="privacy-reminder"] {
++      display: none !important;
++    }
++    #header_wrapper { padding-top: 28px !important; }
++    [data-testid="search-form-input-wrapper"] {
++      background: none !important;
++      border: 0 !important;
++      box-shadow: none !important;
++      border-radius: 0 !important;
++      padding-left: 0 !important;
++    }
++    [data-testid="search-form-input-wrapper"] button { opacity: .35 !important; }
++    [data-testid="search-form-input-wrapper"] button:hover { opacity: .8 !important; }
++    #search_form_input {
++      font: 650 44px/1.15 "Inter Display", -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif !important;
++      letter-spacing: -.035em !important;
++      color: #fff !important;
++      height: auto !important;
++      padding: 0 !important;
++      text-rendering: geometricPrecision;
++    }
++    #search_form_input::placeholder { color: rgba(255,255,255,.17) !important; }
++    #header-hamburger-menu-btn { opacity: .45 !important; }
++
++    /* Tabs and filters: the small spaced capitals of the new tab's date line. */
++    #react-duckbar {
++      border-bottom: 0 !important;
++    }
++    #react-duckbar a, #react-duckbar button, #react-duckbar span, #react-duckbar label {
++      font-family: system-ui, -apple-system, sans-serif !important;
++      font-size: 11.5px !important;
++      font-weight: 600 !important;
++      letter-spacing: .16em !important;
++      text-transform: uppercase !important;
++      color: var(--vanta-faint) !important;
++      background: none !important;
++      border-color: transparent !important;
++      box-shadow: none !important;
++    }
++    #react-duckbar svg { color: var(--vanta-faint) !important; fill: currentColor; }
++    #react-duckbar [aria-current="page"], #react-duckbar [aria-current="page"] *,
++    #react-duckbar a:hover, #react-duckbar button:hover {
++      color: #fff !important;
++    }
++    #react-duckbar [aria-current="page"] { box-shadow: inset 0 -1px 0 #fff !important; }
++    #react-duckbar input[type="checkbox"] + *, #react-duckbar [role="switch"] {
++      filter: grayscale(1) brightness(.8);
++    }
++
++    /* Results: type, not cards. */
++    [data-testid="result"] {
++      background: none !important;
++      border: 0 !important;
++      box-shadow: none !important;
++      padding-block: 14px !important;
++    }
++    [data-testid="result"]:hover { background: none !important; }
++    [data-testid="result-extras-site-search-link"] img {
++      border-radius: 3px;
++    }
++    [data-testid="result-extras-site-search-link"] div {
++      background: none !important;
++      box-shadow: none !important;
++      width: 16px !important;
++      height: 16px !important;
++    }
++    /* The site, small and spaced; the full address only on hover. */
++    [data-testid="result"] p {
++      color: var(--vanta-faint) !important;
++    }
++    [data-testid="result-extras-url-link"] { display: none !important; }
++    [data-testid="result"]:hover [data-testid="result-extras-url-link"] { display: block !important; }
++    [data-testid="result-extras-url-link"] * { color: var(--vanta-faint) !important; text-decoration: none !important; }
++    [data-testid="result-title-a"] {
++      font: 500 24px/1.25 "Inter Display", -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif !important;
++      letter-spacing: -.02em !important;
++      color: #fff !important;
++      text-decoration: none !important;
++    }
++    [data-testid="result-title-a"] * { font: inherit !important; color: inherit !important; }
++    [data-testid="result-title-a"]:visited { color: rgba(255,255,255,.55) !important; }
++    [data-testid="result-title-a"]:hover {
++      text-decoration: underline 1px !important;
++      text-underline-offset: 5px !important;
++    }
++    [data-result="snippet"], [data-result="snippet"] * {
++      font-size: 15.5px !important;
++      line-height: 1.55 !important;
++      color: var(--vanta-dim) !important;
++    }
++    [data-result="snippet"] b { color: #fff !important; font-weight: 500 !important; }
++    [data-testid="result"] a:not([data-testid]) { color: rgba(255,255,255,.82) !important; text-decoration: none !important; }
++    [data-testid="result"] button[aria-haspopup="menu"] { opacity: .3 !important; }
++
++    /* Other modules (images, news, the answer box) sit on black too. */
++    [data-testid="mainline"] section, [data-testid="mainline"] li,
++    [data-testid="sidebar"] section, [data-testid="sidebar"] > div {
++      background-color: transparent !important;
++      box-shadow: none !important;
++      border-color: rgba(255,255,255,.08) !important;
++    }
++    [data-testid="mainline"] h2, [data-testid="sidebar"] h2 {
++      color: #fff !important;
++    }
++    #more-results {
++      background: none !important;
++      border: 0 !important;
++      color: var(--vanta-dim) !important;
++      text-transform: uppercase;
++      letter-spacing: .16em;
++      font-size: 11.5px !important;
++    }
++
++    /* The filter row (region, safe search, time) in the same small capitals. */
++    nav:has([data-testid="date-filter-trigger"]) :is(button, span, strong) {
++      font-family: system-ui, -apple-system, sans-serif !important;
++      font-size: 11.5px !important;
++      font-weight: 600 !important;
++      letter-spacing: .16em !important;
++      text-transform: uppercase !important;
++      color: var(--vanta-faint) !important;
++      background-color: transparent !important;
++      border-color: transparent !important;
++      box-shadow: none !important;
++    }
++    nav:has([data-testid="date-filter-trigger"]) label { filter: grayscale(1) brightness(.75); }
++    nav:has([data-testid="date-filter-trigger"]) button:hover * { color: #fff !important; }
++
++    /* No fades or tints at the edges of the header rows. */
++    :is(#header_wrapper, #react-duckbar, nav:has([data-testid="date-filter-trigger"])),
++    :is(#header_wrapper, #react-duckbar, nav:has([data-testid="date-filter-trigger"])) *,
++    :is(#header_wrapper, #react-duckbar, nav:has([data-testid="date-filter-trigger"])) *::before,
++    :is(#header_wrapper, #react-duckbar, nav:has([data-testid="date-filter-trigger"])) *::after {
++      background-image: none !important;
++    }
++    :is(#react-duckbar, nav:has([data-testid="date-filter-trigger"]))::before,
++    :is(#react-duckbar, nav:has([data-testid="date-filter-trigger"]))::after {
++      display: none !important;
++    }
++  `,
++};
++delayedStartupPromise.then(() => VantaSearchSkin.init());
 +
 +// Vanta: the new tab. A blank page the window draws on (no extra content
 +// process), seamless with the frame: your search set large like a page
