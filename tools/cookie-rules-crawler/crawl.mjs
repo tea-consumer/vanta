@@ -15,7 +15,8 @@
 //   node crawl.mjs --sites example.com,example.org --out out
 //   (--rules <path> points at vanta-rules.json when run outside the repo)
 //
-// Output (resumable; rerun the same command to continue):
+// Output (resumable; rerun the same command to continue, and add --retry to
+// also redo sites that ended in an error):
 //   out/results.jsonl         one line per site with what happened
 //   out/vanta-site-rules.json rules in Firefox's format, ready to copy to
 //                             cookiebanners/vanta-site-rules.json
@@ -94,6 +95,10 @@ const globalRules = new Map();
 for (const r of [...mozRules, ...vantaRules]) {
   if (!r.domains?.length && r.click?.presence && r.click?.optOut) globalRules.set(r.id, r.click);
 }
+// A site rule whose button is a global rule's button only repeats that rule
+// (its banner just appeared after the global check gave up).
+const globalButtons = [...globalRules.values()].flatMap(c => c.optOut.split(",").map(s => s.trim()));
+const repeatsGlobal = optOut => globalButtons.some(b => optOut === b || optOut.endsWith(" " + b));
 const mozSiteRules = new Map();
 for (const r of mozRules) {
   for (const d of r.domains || []) if (r.click?.optOut || r.cookies?.optOut) mozSiteRules.set(d, r);
@@ -118,7 +123,9 @@ const resultsFile = path.join(OUT, "results.jsonl");
 const done = new Set();
 if (fs.existsSync(resultsFile)) {
   for (const l of fs.readFileSync(resultsFile, "utf8").split("\n")) {
-    if (l) done.add(JSON.parse(l).site);
+    if (!l) continue;
+    const r = JSON.parse(l);
+    if (!(args.retry && r.status === "error")) done.add(r.site);
   }
 }
 const todo = sites.filter(s => !done.has(s));
@@ -127,6 +134,19 @@ console.log(`${sites.length} sites, ${done.size} done, ${todo.length} to go`);
 // --- Browser. ----------------------------------------------------------------
 let browser = await chromium.launch({ headless: true });
 let sinceRestart = 0;
+let relaunching = null;
+
+// Chromium sometimes crashes mid-crawl; without this every later site fails
+// with "browser has been closed".
+async function relaunch() {
+  relaunching ||= (async () => {
+    const old = browser;
+    browser = await chromium.launch({ headless: true });
+    sinceRestart = 0;
+    setTimeout(() => old.close().catch(() => {}), 60000);
+  })().finally(() => (relaunching = null));
+  return relaunching;
+}
 
 async function newPage() {
   const ctx = await browser.newContext({
@@ -260,20 +280,24 @@ async function worker() {
   while (next < todo.length) {
     const site = todo[next++];
     let res;
-    try {
-      res = await processSite(site);
-    } catch (e) {
-      res = { status: "error", error: String(e).slice(0, 200) };
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        res = await processSite(site);
+        break;
+      } catch (e) {
+        res = { status: "error", error: String(e).slice(0, 200) };
+        if (!browser.isConnected() || /has been closed|Target closed/.test(res.error)) {
+          if (relaunching) await relaunching;
+          if (!browser.isConnected()) await relaunch();
+          continue;
+        }
+        break;
+      }
     }
     out.write(JSON.stringify({ site, ...res }) + "\n");
     if (res.status === "verified") console.log(`✓ ${site}  ${res.rule.optOut}`);
-    if (++sinceRestart >= 400) {
-      // Chromium grows over thousands of contexts; recycle it now and then.
-      sinceRestart = 0;
-      const old = browser;
-      browser = await chromium.launch({ headless: true });
-      setTimeout(() => old.close().catch(() => {}), 60000);
-    }
+    // Chromium grows over thousands of contexts; recycle it now and then.
+    if (++sinceRestart >= 400) await relaunch();
   }
 }
 await Promise.all(Array.from({ length: CONCURRENCY }, worker));
@@ -281,16 +305,23 @@ out.end();
 await browser.close();
 
 // --- Build the rules file from every verified result. --------------------
-const results = fs
-  .readFileSync(resultsFile, "utf8")
-  .split("\n")
-  .filter(Boolean)
-  .map(l => JSON.parse(l));
+// The last line for a site wins (a --retry run appends a new one).
+const results = [
+  ...new Map(
+    fs
+      .readFileSync(resultsFile, "utf8")
+      .split("\n")
+      .filter(Boolean)
+      .map(l => JSON.parse(l))
+      .map(r => [r.site, r])
+  ).values(),
+];
 const groups = new Map();
 for (const r of results) {
   if (r.status !== "verified") continue;
   // Mozilla's working site rule wins; ours would only duplicate it.
   if (mozSiteRules.has(r.rule.domain) && r.rule.runContext === "top") continue;
+  if (repeatsGlobal(r.rule.optOut)) continue;
   const key = JSON.stringify([r.rule.presence, r.rule.optOut, r.rule.runContext]);
   if (!groups.has(key)) groups.set(key, { ...r.rule, domains: new Set() });
   groups.get(key).domains.add(r.rule.domain);

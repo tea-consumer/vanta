@@ -93,6 +93,7 @@ Run it from an EU/EEA connection, since most sites only show banners there:
     cd tools/cookie-rules-crawler
     npm install && npx playwright install chromium
     node crawl.mjs --top 10000 --concurrency 8 --out out
+    # rerun the same command to continue; add --retry to redo errored sites
     cp out/vanta-site-rules.json ../../cookiebanners/
 
 Not covered: platforms that draw their banner inside a closed shadow DOM
