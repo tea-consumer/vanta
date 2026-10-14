@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 100" fill="context-fill light-dark(#000, #ececf1)">
+  <!-- VΛNTΛ: geometric caps, 14-unit strokes, A drawn without its bar. -->
+  <style>:root { color-scheme: light dark }</style>
+  <path d="M0 0H15L40 72L65 0H80L47 100H33Z"/>
+  <path transform="translate(100)" d="M33 0H47L80 100H65L40 28L15 100H0Z"/>
+  <path transform="translate(200)" d="M0 0H16L56 72V0H70V100H54L14 28V100H0Z"/>
+  <path transform="translate(290)" d="M0 0H70V14H42V100H28V14H0Z"/>
+  <path transform="translate(380)" d="M33 0H47L80 100H65L40 28L15 100H0Z"/>
+</svg>
