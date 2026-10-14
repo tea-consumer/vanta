@@ -53,6 +53,10 @@ pref("nglayout.initialpaint.delay_in_oopif", 0);
 // already uses: momentum that eases out instead of stopping abruptly, closer
 // to Safari for mouse wheel and keyboard scrolling. default=false on release
 pref("general.smoothScroll.msdPhysics.enabled", true);
+// Trackpad scrolling stuttered on the MacBook Neo except while the profiler
+// took screenshots. patches/0001-frame-readback.patch runs that small
+// per-frame readback without the profiler (1 = readback, 2 = also encode).
+pref("gfx.vanta.frame-readback", 1);
 pref("content.notify.interval", 100000);
 pref("image.mem.decode_bytes_at_a_time", 32768);
 pref("media.cache_readahead_limit", 3600);
