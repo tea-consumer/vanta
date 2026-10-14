@@ -1,0 +1,101 @@
+--- a/browser/base/content/browser-init.js
++++ b/browser/base/content/browser-init.js
+@@ -1163,3 +1163,98 @@
+     );
+   },
+ };
++
++// Vanta: the frame takes a faint tint of the page's own colour. The tint is
++// sampled from a thin strip at the top of the page once it has loaded (a
++// small snapshot from the compositor, no script in the page) and kept per
++// tab, so switching tabs only swaps a color. Off with vanta.toolbar.pageTint.
++var VantaPageTint = {
++  PREF: "vanta.toolbar.pageTint",
++
++  init() {
++    gBrowser.addTabsProgressListener(this);
++    gBrowser.tabContainer.addEventListener("TabSelect", this);
++    this.sample(gBrowser.selectedBrowser);
++  },
++
++  onStateChange(browser, webProgress, request, stateFlags) {
++    const { STATE_STOP, STATE_IS_WINDOW } = Ci.nsIWebProgressListener;
++    if (
++      webProgress.isTopLevel &&
++      stateFlags & STATE_STOP &&
++      stateFlags & STATE_IS_WINDOW
++    ) {
++      this.sample(browser);
++    }
++  },
++
++  handleEvent() {
++    let browser = gBrowser.selectedBrowser;
++    if (browser._vantaTint === undefined) {
++      this.sample(browser);
++    }
++    this.apply();
++  },
++
++  async sample(browser) {
++    if (!Services.prefs.getBoolPref(this.PREF, true)) {
++      return;
++    }
++    let global = browser.browsingContext?.currentWindowGlobal;
++    if (!global || !browser.clientWidth) {
++      return;
++    }
++    let tint = null;
++    try {
++      let width = browser.clientWidth;
++      let scale = Math.min(1, 64 / width);
++      let bitmap = await global.drawSnapshot(
++        new DOMRect(0, 0, width, 24),
++        scale,
++        "transparent"
++      );
++      let canvas = document.createElementNS(
++        "http://www.w3.org/1999/xhtml",
++        "canvas"
++      );
++      canvas.width = bitmap.width;
++      canvas.height = bitmap.height;
++      let ctx = canvas.getContext("2d", { willReadFrequently: true });
++      ctx.drawImage(bitmap, 0, 0);
++      bitmap.close();
++      let { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
++      let r = 0, g = 0, b = 0, n = 0;
++      for (let i = 0; i < data.length; i += 4) {
++        if (data[i + 3] < 128) {
++          continue;
++        }
++        r += data[i];
++        g += data[i + 1];
++        b += data[i + 2];
++        n++;
++      }
++      if (n) {
++        tint = `rgb(${Math.round(r / n)} ${Math.round(g / n)} ${Math.round(b / n)})`;
++      }
++    } catch (e) {
++      // The page went away, or it can't be snapshotted: no tint.
++    }
++    browser._vantaTint = tint;
++    if (browser == gBrowser.selectedBrowser) {
++      this.apply();
++    }
++  },
++
++  apply() {
++    let tint = gBrowser.selectedBrowser._vantaTint;
++    let root = document.documentElement;
++    if (tint && Services.prefs.getBoolPref(this.PREF, true)) {
++      root.style.setProperty("--vanta-page-tint", tint);
++      root.setAttribute("vanta-page-tint", "true");
++    } else {
++      root.style.removeProperty("--vanta-page-tint");
++      root.removeAttribute("vanta-page-tint");
++    }
++  },
++};
++delayedStartupPromise.then(() => VantaPageTint.init());

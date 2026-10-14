@@ -197,6 +197,29 @@ sidebar-main,
   opacity: 0.5;
 }
 
+/* ----- Page tint (vanta.toolbar.pageTint) --------------------------------- */
+
+/* The frame is black with a faint tint of the page's own colour, sampled
+   from the top of the page (patches/page-tint.patch). It keeps the page's
+   hue at a low strength and stays near black, so a white or gray page leaves
+   the frame black and a red one makes it a deep red-black. It replaces the gradient
+   Firefox paints behind the toolbar, and fades when you switch tabs. */
+@media -moz-pref("vanta.toolbar.pageTint") {
+  :root:not([lwtheme])[vanta-page-tint] {
+    --vanta-frame: light-dark(
+      oklch(from var(--vanta-page-tint) 0.94 min(calc(c * 0.3), 0.03) h),
+      oklch(from var(--vanta-page-tint) calc(0.05 + min(c, 0.1) * 1.2) min(calc(c * 0.6), 0.06) h)
+    ) !important;
+    --toolbox-background-image: none !important;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([lwtheme]) {
+      transition: background-color 300ms ease !important;
+    }
+  }
+}
+
 /* ----- See-through toolbar (vanta.toolbar.seeThrough) -------------------- */
 
 /* Like Safari: the page runs up under the toolbar, which is black glass the
