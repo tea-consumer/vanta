@@ -79,6 +79,17 @@ function badgeText(count) {
   return count > 999 ? "999+" : String(count);
 }
 
+/**
+ * about:blackout needs Blackout's patch to AboutRedirector, which a binary
+ * built before it lacks. Such a binary can still get this file in a newer
+ * omni.ja, so fall back to the page's chrome address there.
+ */
+function settingsURL() {
+  return "@mozilla.org/network/protocol/about;1?what=blackout" in Cc
+    ? "about:blackout"
+    : "chrome://browser/content/blackout/blackout.html";
+}
+
 function isBlackoutOn() {
   return Services.prefs.getBoolPref(PREF_ENABLED, false);
 }
@@ -215,7 +226,7 @@ class WindowUI {
     });
     settings.addEventListener("click", () => {
       panel.hidePopup();
-      this.window.switchToTabHavingURI("about:blackout", true, {
+      this.window.switchToTabHavingURI(settingsURL(), true, {
         triggeringPrincipal:
           Services.scriptSecurityManager.getSystemPrincipal(),
       });
