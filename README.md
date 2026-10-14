@@ -11,8 +11,8 @@ the files in this repo.
 - `chrome/vanta.css`: the interface. Dark by default, vertical tabs in a
   compact sidebar that expands on hover, one slim address bar row on top, and
   the page in a rounded card. Applies to the default theme only. The accent
-  is mono; set `vanta.accent` in about:config to `ice`, `sage` or `ember`
-  for a color.
+  is mono; pick Ice, Sage or Ember under Settings > Appearance > Vanta theme
+  (patches/vanta-themes-settings.patch; it sets the `vanta.accent` pref).
 - `branding/logo.svg`: the Vanta "Eclipse" logo. `scripts/make-branding.py`
   renders it into the app icons in `branding/vanta/` (re-run it after
   editing the logo; needs `pip install cairosvg pillow`).
