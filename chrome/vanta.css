@@ -207,10 +207,38 @@ sidebar-main,
    and out on collapse. */
 :root[sidebar-expand-on-hover] #sidebar-container:is([sidebar-launcher-expanded], [sidebar-ongoing-animations]) {
   background: var(--vanta-frame) !important;
-  border-start-end-radius: var(--vanta-radius) !important;
-  border-end-end-radius: var(--vanta-radius) !important;
+  /* The open panel is part of the frame, not a card: no convex corners of
+   * its own. It ends level with the page card's bottom, and two concave
+   * fillets give the page its rounded corners against the panel, the same
+   * shape the page has against the collapsed rail. */
+  border-radius: 0 !important;
   border-inline: none !important;
-  clip-path: inset(0 -48px 0 0) !important;
+  clip-path: inset(0 -48px var(--vanta-gap) 0) !important;
+  /* Firefox clips the launcher's overflow; let the fillets past its edge. */
+  overflow-clip-margin: var(--vanta-radius) !important;
+
+  &::before,
+  &::after {
+    content: "" !important;
+    position: absolute !important;
+    inset-inline-start: 100% !important;
+    width: var(--vanta-radius) !important;
+    height: var(--vanta-radius) !important;
+    pointer-events: none !important;
+  }
+
+  /* Starts at the toolbar edge so it also covers the card's 1px rim above
+   * the page; the circle stays centred on the page's corner. */
+  &::before {
+    inset-block-start: 0 !important;
+    height: calc(var(--vanta-radius) + 2px) !important;
+    background: radial-gradient(circle at 100% 100%, transparent calc(var(--vanta-radius) - 0.5px), var(--vanta-frame) var(--vanta-radius)) !important;
+  }
+
+  &::after {
+    inset-block-end: var(--vanta-gap) !important;
+    background: radial-gradient(circle at 100% 0%, transparent calc(var(--vanta-radius) - 0.5px), var(--vanta-frame) var(--vanta-radius)) !important;
+  }
 }
 
 :root[sidebar-expand-on-hover] #sidebar-container {
