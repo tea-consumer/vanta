@@ -189,7 +189,7 @@ diff --git a/modules/libpref/init/StaticPrefList.yaml b/modules/libpref/init/Sta
 index 964f67c0..c6960ab3 100644
 --- a/modules/libpref/init/StaticPrefList.yaml
 +++ b/modules/libpref/init/StaticPrefList.yaml
-@@ -8497,6 +8497,21 @@
+@@ -8497,6 +8497,22 @@
  #endif
    mirror: always
  
@@ -198,11 +198,12 @@ index 964f67c0..c6960ab3 100644
 +# keeps the GPU from idling between frames, which otherwise makes trackpad
 +# scrolling stutter on screen even though frames are produced on time.
 +# 0 = off, 1 = only while APZ is scrolling (and 1 s after), 2 = every frame.
-+# On by default on macOS only, where the stutter was seen.
++# 2 by default on macOS only, where the stutter was seen: mode 1 was not
++# reliably as smooth.
 +- name: gfx.vanta.frame-readback
 +  type: RelaxedAtomicUint32
 +#ifdef XP_MACOSX
-+  value: 1
++  value: 2
 +#else
 +  value: 0
 +#endif
