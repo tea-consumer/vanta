@@ -115,29 +115,51 @@ section {
   min-width: 0;
 }
 
-/* On: the moon covers the disk, leaving a lit crescent at the upper left,
- * the logo's shape. Off: the moon has moved away and the disk is lit. */
+/* Vanta's eclipse, drawn like the icon pack's logo (branding/logo.svg): a
+ * black tile, a lit disk and the moon over it, leaving the crescent at the
+ * upper left. Off: the moon slides off to the lower right, uncovering the
+ * disk, which dims. */
 .eclipse {
   flex: none;
   position: relative;
+  box-sizing: border-box;
   width: 64px;
   height: 64px;
-  border-radius: 50%;
-  background: var(--accent);
+  border: 1px solid #2a2a2e;
+  border-radius: 22%;
+  background: #000;
   overflow: hidden;
 
+  &::before,
   &::after {
     content: "";
     position: absolute;
-    inset: 5px -1px -1px 5px;
     border-radius: 50%;
-    background: var(--frame);
+  }
+
+  &::before {
+    inset: 16.5%;
+    background: #ececf1;
+    transition: background-color 480ms;
+  }
+
+  &::after {
+    top: 21.9%;
+    left: 21.9%;
+    width: 62%;
+    height: 62%;
+    background: #000;
     transition: transform 480ms cubic-bezier(0.3, 0, 0.2, 1);
   }
 
-  &[off]::after {
-    transform: translate(115%, 115%);
+  &[off]::before {
+    background: #9a9aa2;
   }
+
+  &[off]::after {
+    transform: translate(100%, 100%);
+  }
+
 }
 
 /* ----- Cards and rows ------------------------------------------------------ */
@@ -310,6 +332,7 @@ input:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .eclipse::before,
   .eclipse::after,
   .switch::after {
     transition: none;

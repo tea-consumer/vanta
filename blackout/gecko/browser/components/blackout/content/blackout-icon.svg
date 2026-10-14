@@ -1,9 +1,11 @@
 <!-- This Source Code Form is subject to the terms of the Mozilla Public
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
-<!-- Blackout on: the disk covered, a lit crescent left at the upper left
-   - (the logo's shape) and the moon faintly visible. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="context-fill" fill-opacity="context-fill-opacity">
-  <path fill-rule="evenodd" d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm1 2.1a5.9 5.9 0 1 0 0 11.8A5.9 5.9 0 0 0 9 3.1Z"/>
-  <circle cx="9" cy="9" r="4.9" fill-opacity="0.3"/>
+<!-- Blackout on: Vanta's eclipse, the icon pack's art for 32px and below
+   - (branding/src/small.svg). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <rect x="24" y="24" width="976" height="976" rx="208" fill="#000"/>
+  <rect x="48" y="48" width="928" height="928" rx="184" fill="none" stroke="#2a2a2e" stroke-width="48"/>
+  <circle cx="512" cy="512" r="340" fill="#ececf1"/>
+  <circle cx="556" cy="556" r="300" fill="#000"/>
 </svg>
