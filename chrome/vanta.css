@@ -471,14 +471,18 @@ sidebar-main,
    the light moves while the thing itself stays still. */
 
 /* Hover lights the icon rather than putting a plate behind it: icons rest
-   dim and come up to full brightness under the pointer. Open and pressed
-   buttons keep Firefox's plate, since that is state, not pointing. */
+   a step below full brightness and come all the way up under the pointer.
+   They rest in the text color, not the muted one, so they read clearly on
+   any frame (black or Firefox 158's purple); dimming the muted gray as well
+   left them washed out. Open and pressed buttons keep Firefox's plate,
+   since that is state, not pointing. */
 :root:not([lwtheme]) #nav-bar {
   --toolbarbutton-background-color-hover: transparent !important;
+  --toolbarbutton-icon-fill: var(--vanta-text) !important;
 }
 
 #nav-bar .toolbarbutton-1:not(#PanelUI-menu-button) :is(.toolbarbutton-icon, .toolbarbutton-badge-stack) {
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 #nav-bar .toolbarbutton-1:not(#PanelUI-menu-button, [disabled]):is(:hover, [open], [checked]) :is(.toolbarbutton-icon, .toolbarbutton-badge-stack) {
