@@ -269,7 +269,10 @@ sidebar-main,
 #PanelUI-menu-button > .toolbarbutton-badge-stack > .toolbarbutton-icon {
   /* The mark is drawn as a mask so it takes the accent color. */
   background-color: var(--vanta-accent) !important;
-  mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='black' fill-rule='evenodd' d='M1.5 8a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0ZM3.2 8.7a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0-11 0Z'/></svg>") center / 16px 16px no-repeat !important;
+  /* The logo's own crescent. A ring whose thin side is a fraction of a
+   * pixel renders patchy at toolbar size, so the mark keeps the logo's true
+   * crescent, which tapers to clean tips. */
+  mask: var(--vanta-crescent) center / 16px 16px no-repeat !important;
   opacity: 1 !important;
 }
 
