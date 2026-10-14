@@ -481,11 +481,17 @@ sidebar-main,
   --toolbarbutton-icon-fill: var(--vanta-text) !important;
 }
 
-#nav-bar .toolbarbutton-1:not(#PanelUI-menu-button) :is(.toolbarbutton-icon, .toolbarbutton-badge-stack) {
+#nav-bar .toolbarbutton-1:not(#PanelUI-menu-button) > :is(.toolbarbutton-icon, .toolbarbutton-badge-stack) {
   opacity: 0.8;
 }
 
-#nav-bar .toolbarbutton-1:not(#PanelUI-menu-button, [disabled]):is(:hover, [open], [checked]) :is(.toolbarbutton-icon, .toolbarbutton-badge-stack) {
+/* Extension buttons (Bitwarden and the like) draw their own colored icons,
+   which any dimming makes look disabled: they rest at full strength. */
+#nav-bar .toolbarbutton-1.webextension-browser-action:not(#PanelUI-menu-button) > :is(.toolbarbutton-icon, .toolbarbutton-badge-stack) {
+  opacity: 1;
+}
+
+#nav-bar .toolbarbutton-1:not(#PanelUI-menu-button, [disabled]):is(:hover, [open], [checked]) > :is(.toolbarbutton-icon, .toolbarbutton-badge-stack) {
   opacity: 1;
 }
 
@@ -503,7 +509,7 @@ sidebar-main,
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  #nav-bar .toolbarbutton-1 :is(.toolbarbutton-icon, .toolbarbutton-badge-stack),
+  #nav-bar .toolbarbutton-1 > :is(.toolbarbutton-icon, .toolbarbutton-badge-stack),
   #tabbrowser-tabs[orient="vertical"] .tab-icon-stack {
     transition: opacity 140ms ease-out !important;
   }
