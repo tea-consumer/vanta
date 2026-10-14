@@ -1,6 +1,6 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,505 @@
+@@ -1258,3 +1258,506 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
@@ -403,10 +403,9 @@
 +delayedStartupPromise.then(() => VantaSearch.init());
 +
 +// Vanta: the new tab. A blank page the window draws on (no extra content
-+// process), seamless with the frame: black, and one plain search field whose
-+// only form is a line of light, lit from the left in the colour of the sky
-+// outside (dawn, day, dusk, night). Opening a tab draws the light across;
-+// afterwards nothing moves. Off with vanta.newtab.home.
++// process), seamless with the frame: one plain search bar over a planet's
++// horizon, lit by the sun for the time of day. Opening a tab is a sunrise,
++// played once; afterwards nothing moves. Off with vanta.newtab.home.
 +var VantaHome = {
 +  PREF: "vanta.newtab.home",
 +  HTML: "http://www.w3.org/1999/xhtml",
@@ -429,7 +428,9 @@
 +    this.root = el(
 +      "div",
 +      "",
-+      el("div", "vanta-home-search", this.input, el("div", "vanta-home-line"))
++      // The sun first, so the planet hides its lower half.
++      el("div", "vanta-home-sky", el("div", "vanta-home-sun"), el("div", "vanta-home-planet")),
++      el("div", "vanta-home-search", this.input)
 +    );
 +    this.root.id = "vanta-home";
 +    document.getElementById("tabbrowser-tabbox").append(this.root);
@@ -463,7 +464,7 @@
 +    }
 +    this.sky();
 +    if (!was) {
-+      // Each arrival draws the light again: restart the one-shot animation.
++      // Each arrival is a new sunrise: restart the one-shot animation.
 +      this.root.removeAttribute("dawn");
 +      this.root.getBoundingClientRect();
 +      this.root.setAttribute("dawn", "");

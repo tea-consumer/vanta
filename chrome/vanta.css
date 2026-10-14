@@ -926,8 +926,10 @@ sidebar-main,
 
 /* A new tab is a blank page the window draws on (VantaHome in
    browser-init.js): true black, no card edge, one surface with the frame.
-   One plain search field, drawn as a line of light. Only transform and
-   opacity animate. */
+   One plain search bar; below it lies a planet's horizon. The sun sits on
+   it by the time of day, warm at dawn and dusk, white by day, gone at night (only a thin
+   moonlit rim). Opening a tab is a sunrise, played once; afterwards nothing
+   moves. Only transform and opacity animate. */
 #vanta-home { display: none; }
 :root[vanta-home] {
   #tabbrowser-tabbox { position: relative !important; }
@@ -957,93 +959,131 @@ sidebar-main,
 }
 
 #vanta-home {
-  --glow: 200, 216, 255;
+  --glow: 190, 210, 255;
   --sun: 255, 255, 255;
-  &[data-sky="dawn"] { --glow: 255, 176, 120; --sun: 255, 232, 200; }
-  &[data-sky="dusk"] { --glow: 255, 146, 100; --sun: 255, 220, 180; }
-  &[data-sky="night"] { --glow: 160, 176, 210; --sun: 214, 222, 240; }
+  --sun-x: 34%;
+  --sun-size: 1;
+  &[data-sky="dawn"] { --glow: 255, 168, 110; --sun: 255, 226, 190; --sun-x: 22%; --sun-size: .9; }
+  &[data-sky="dusk"] { --glow: 255, 140, 96; --sun: 255, 214, 170; --sun-x: 70%; --sun-size: .9; }
+  &[data-sky="night"] { --glow: 170, 185, 215; --sun-size: 0; }
 }
 
-/* The search field is text on a line of light. The light enters from the
-   left, brightest at its point of entry, and fades out to the right, the
-   way sunlight catches the edge of a dark body. Focus lets it burn a little
-   brighter. */
+.vanta-home-sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The planet: a body far wider than the window, lit along its upper rim
+   by its atmosphere. */
+.vanta-home-planet {
+  position: absolute;
+  left: 50%;
+  top: 74%;
+  width: 420vw;
+  aspect-ratio: 1;
+  margin-left: -210vw;
+  border-radius: 50%;
+  background: #000;
+  box-shadow:
+    0 -1px 0 rgba(var(--glow), .55),
+    0 -8px 30px -6px rgba(var(--glow), .28);
+  #vanta-home[data-sky="night"] & {
+    box-shadow:
+      0 -1px 0 rgba(var(--glow), .45),
+      0 -8px 30px -6px rgba(var(--glow), .16),
+      0 -50px 140px -30px rgba(var(--glow), .10);
+  }
+}
+
+/* The sun on the horizon: a point, its glare along the rim, and a wide
+   halo. Drawn as one gradient layer so it stays cheap. */
+.vanta-home-sun {
+  position: absolute;
+  left: var(--sun-x);
+  top: 74%;
+  width: 900px;
+  height: 340px;
+  margin: -170px 0 0 -450px;
+  background:
+    radial-gradient(closest-side, rgba(var(--sun), 1) 0, rgba(var(--sun), 1) 1.1%, rgba(var(--sun), .55) 3%, rgba(var(--glow), .22) 14%, rgba(var(--glow), .06) 45%, transparent 100%),
+    radial-gradient(ellipse 50% 2.5% at 50% 50%, rgba(var(--sun), .55), transparent);
+  transform: scale(var(--sun-size));
+  opacity: calc(var(--sun-size) * 1);
+}
+
+/* The search bar: plain, not a pill. A dark body lit from the upper left,
+   its rim catching the light and its lower-right edge falling into shadow,
+   with a small eclipse as the search mark. Focus brightens the rim. */
 .vanta-home-search {
   position: relative;
-  width: min(640px, 100% - 64px);
-  margin-top: 22vh;
-}
-.vanta-home-line {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(var(--sun), .95), rgba(var(--glow), .45) 30%, rgba(var(--glow), .08) 75%, transparent);
-  transform-origin: left center;
+  width: min(620px, 100% - 64px);
+  margin-top: 14vh;
+  border-radius: 14px;
+  background: linear-gradient(155deg, #1b1b20, #0b0b0d 55%, #050506);
+  box-shadow:
+    inset 1.5px 1.5px 0 rgba(255,255,255,.3),
+    inset -1px -1px 0 rgba(0,0,0,.6),
+    0 18px 40px -18px #000;
   &::before {
-    /* The point where the light enters. */
     content: "";
     position: absolute;
-    left: -3px;
-    top: -3px;
-    width: 7px;
-    height: 7px;
+    left: 20px;
+    top: 19px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    background: rgba(var(--sun), 1);
-    box-shadow: 0 0 12px 3px rgba(var(--glow), .55), 0 0 40px 8px rgba(var(--glow), .18);
+    background: #000;
+    box-shadow: inset 1.5px 1.5px 0 rgba(255,255,255,.75), -1px -1px 4px -1px rgba(255,255,255,.25);
   }
   &::after {
-    /* Its glow on the dark above and below. */
     content: "";
     position: absolute;
-    left: 0;
-    right: 30%;
-    top: -14px;
-    height: 29px;
-    background: radial-gradient(ellipse 60% 50% at 0 50%, rgba(var(--glow), .22), transparent);
-    opacity: .5;
-    transition: opacity 300ms ease;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: inset 2px 2px 0 rgba(255,255,255,.6);
+    opacity: 0;
+    transition: opacity 220ms ease;
   }
-  .vanta-home-search:focus-within > &::after { opacity: 1; }
+  &:focus-within::after { opacity: 1; }
 }
-
-/* Firefox styles chrome inputs as boxes; this one is only text on the line. */
+/* Firefox styles chrome inputs as boxes; this one is only text on the bar. */
 .vanta-home-input {
   appearance: none !important;
   display: block !important;
   box-sizing: border-box !important;
   width: 100% !important;
-  height: 64px !important;
+  height: 56px !important;
   margin: 0 !important;
-  padding: 0 4px 0 22px !important;
+  padding: 0 20px 0 52px !important;
   border: none !important;
-  border-radius: 0 !important;
+  border-radius: inherit !important;
   outline: none !important;
   background: transparent !important;
   box-shadow: none !important;
-  font: 200 26px/64px system-ui, -apple-system, sans-serif !important;
+  font: 450 17px/56px system-ui, -apple-system, sans-serif !important;
   letter-spacing: .01em !important;
   color: var(--vanta-text) !important;
-  caret-color: rgba(var(--sun), 1) !important;
-  &::placeholder { color: rgba(255,255,255,.28) !important; opacity: 1 !important; }
+  caret-color: auto !important;
+  &::placeholder { color: rgba(255,255,255,.34) !important; opacity: 1 !important; }
 }
 
-/* Opening: the light is drawn across from the left, its point leading,
-   then the words appear on it. */
+/* Sunrise. */
 @media (prefers-reduced-motion: no-preference) {
   #vanta-home[dawn] {
-    .vanta-home-line { animation: vanta-draw 1100ms cubic-bezier(.16, 1, .3, 1) both; }
-    .vanta-home-line::before { animation: vanta-flare 1100ms cubic-bezier(.2, .9, .3, 1) both; }
-    .vanta-home-input { animation: vanta-appear 700ms ease 350ms both; }
+    .vanta-home-planet { animation: vanta-rise 1500ms cubic-bezier(.16, 1, .3, 1) both; }
+    .vanta-home-sun { animation: vanta-sunrise 1700ms cubic-bezier(.2, 1, .3, 1) 150ms both; }
+    .vanta-home-search { animation: vanta-appear 900ms cubic-bezier(.2, .9, .3, 1) 250ms both; }
   }
 }
-@keyframes vanta-draw {
-  from { transform: scaleX(0); opacity: 0; }
-  15% { opacity: 1; }
+@keyframes vanta-rise {
+  from { transform: translateY(70px); opacity: .25; }
 }
-@keyframes vanta-flare {
-  from { transform: scale(.2); opacity: 0; }
-  30% { transform: scale(1.6); opacity: 1; }
+@keyframes vanta-sunrise {
+  from { transform: translateY(60px) scale(calc(var(--sun-size) * .35)); opacity: 0; }
+  55% { opacity: calc(var(--sun-size) * 1); }
 }
 @keyframes vanta-appear {
-  from { opacity: 0; }
+  from { transform: translateY(10px); opacity: 0; }
 }
