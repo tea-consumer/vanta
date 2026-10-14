@@ -145,3 +145,42 @@ pref("browser.aboutConfig.showWarning", false);
 pref("browser.compactmode.show", true);
 pref("full-screen-api.transition-duration.enter", "0 0");
 pref("full-screen-api.transition-duration.leave", "0 0");
+
+/** ===== INTERFACE (see chrome/vanta.css) =============================== **/
+// Vanta is dark: the browser and websites that support it use their dark
+// appearance whatever the OS is set to. Set to 0 in about:config for light.
+pref("ui.systemUsesDarkTheme", 1);
+// Accent color: "mono" (default), "ice", "sage" or "ember".
+pref("vanta.accent", "mono");
+// Vertical tabs in a compact sidebar that expands while hovered, with the
+// address bar in one slim row on top.
+pref("sidebar.revamp", true);
+pref("sidebar.verticalTabs", true);
+pref("sidebar.visibility", "expand-on-hover");
+// Sidebar tools: history and bookmarks only (no synced tabs, no AI chat).
+pref("sidebar.main.tools", "history,bookmarks");
+// Starting toolbar layout. Firefox builds the toolbar wrong when a new
+// profile starts with vertical tabs already on: the buttons end up reversed
+// (forward before back, after the address bar) and reload goes missing. So
+// new profiles start from this layout instead. currentVersion is Firefox
+// 157's toolbar layout version; newer Firefox migrates it forward.
+pref("browser.uiCustomization.state", "{\"placements\":{\"widget-overflow-fixed-list\":[],\"unified-extensions-area\":[],\"nav-bar\":[\"back-button\",\"forward-button\",\"stop-reload-button\",\"vertical-spacer\",\"urlbar-container\",\"downloads-button\",\"unified-extensions-button\"],\"toolbar-menubar\":[\"menubar-items\"],\"TabsToolbar\":[],\"vertical-tabs\":[\"tabbrowser-tabs\"],\"PersonalToolbar\":[\"personal-bookmarks\"]},\"seen\":[],\"dirtyAreaCache\":[],\"currentVersion\":26,\"newElementCount\":0}");
+// Compact toolbar spacing. Sticky so it matches Firefox's own declaration.
+sticky_pref("browser.uidensity", 1);
+// Bookmarks stay in the sidebar and menu, not a toolbar row on new tabs.
+pref("browser.toolbars.bookmarks.visibility", "never");
+// Fade tabs that were unloaded to free memory.
+pref("browser.tabs.fadeOutUnloadedTabs", true);
+pref("browser.tabs.fadeOutExplicitlyUnloadedTabs", true);
+// Tab hover cards without page thumbnails (thumbnails cost memory and CPU).
+pref("browser.tabs.hoverPreview.showThumbnails", false);
+// No Firefox account or sync in the UI.
+pref("identity.fxaccounts.enabled", false);
+// Firefox's built-in Resource Monitor, in the sidebar: per-tab memory and CPU.
+pref("browser.resourceMonitor.enabled", true);
+// New tab: search and shortcuts only. Vanta's build has no Firefox logo, and
+// no weather or recent-activity sections.
+pref("browser.newtabpage.activity-stream.hideLogo", true);
+pref("browser.newtabpage.activity-stream.logowordmark.alwaysVisible", false);
+pref("browser.newtabpage.activity-stream.showWeather", false);
+pref("browser.newtabpage.activity-stream.feeds.section.highlights", false);
