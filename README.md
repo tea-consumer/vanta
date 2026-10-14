@@ -42,6 +42,8 @@ the files in this repo.
 - `patches/`: our own small patches: default split view shortcuts, and the
   split view tab picker on Vanta's flat background instead of a purple
   gradient.
+- `patches/frame-readback.patch`: smooth trackpad scrolling on Apple Silicon
+  Macs (see `docs/performance.md`, lever 12).
 - `patches/cookiebanners-*`: bring back Firefox's cookie banner handling,
   set to reject automatically (see `docs/cookie-banners.md`).
 - Blackout, a built-in ad and tracker blocker on Firefox's own content
