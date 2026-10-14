@@ -161,6 +161,8 @@ pref("full-screen-api.transition-duration.leave", "0 0");
 pref("ui.systemUsesDarkTheme", 1);
 // Accent color: "mono" (default), "ice", "sage" or "ember".
 pref("vanta.accent", "mono");
+// Toolbar as see-through black glass over the page, like Safari.
+pref("vanta.toolbar.seeThrough", false);
 // Vertical tabs in a compact sidebar that expands while hovered, with the
 // address bar in one slim row on top.
 pref("sidebar.revamp", true);

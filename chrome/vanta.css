@@ -197,6 +197,27 @@ sidebar-main,
   opacity: 0.5;
 }
 
+/* ----- See-through toolbar (vanta.toolbar.seeThrough) -------------------- */
+
+/* Like Safari: the page runs up under the toolbar, which is black glass the
+   page shows through as it scrolls. Firefox cannot blur the page from the
+   toolbar (it lives in another process), so the glass is a dark tint only,
+   which is free for the compositor while scrolling. Firefox also cannot
+   inset the page, so its top sits under the bar until it scrolls. */
+@media -moz-pref("vanta.toolbar.seeThrough") {
+  :root:not([lwtheme]) {
+    #navigator-toolbox {
+      position: relative !important;
+      z-index: 3 !important;
+      background: rgb(0 0 0 / 0.8) !important;
+    }
+
+    #tabbrowser-tabbox {
+      margin-block-start: calc(-1 * var(--vanta-toolbox-height, 40px) - 2px) !important;
+    }
+  }
+}
+
 /* ----- Sidebar expanded on hover: float it over the page ------------------ */
 
 /* The open panel is the frame itself, not a card laid on the page. It
