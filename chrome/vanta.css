@@ -219,6 +219,12 @@ sidebar-main,
    deep red-black. It replaces the gradient
    Firefox paints behind the toolbar, and fades when you switch tabs. */
 @media -moz-pref("vanta.toolbar.pageTint") {
+  /* Black, never Firefox's gradient, also before a page has been sampled
+     and on pages that can't be (about: pages, errors). */
+  :root:not([lwtheme]) {
+    --toolbox-background-image: none !important;
+  }
+
   :root:not([lwtheme])[vanta-page-tint] {
     --vanta-frame: light-dark(
       oklch(from var(--vanta-page-tint) 0.94 min(calc(c * 0.3), 0.03) h),
