@@ -1,6 +1,6 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,705 @@
+@@ -1258,3 +1258,710 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
@@ -458,7 +458,12 @@
 +
 +  // A blank tab the user opened, not a page a site opened and writes into.
 +  // Firefox loads a blank home page (start page, Home button) as blanktab.html.
-+  BLANK: ["about:blank", "chrome://browser/content/blanktab.html"],
++  // A private window opens on about:privatebrowsing; the home covers it too.
++  BLANK: [
++    "about:blank",
++    "chrome://browser/content/blanktab.html",
++    "about:privatebrowsing",
++  ],
 +  isHome(browser) {
 +    return (
 +      this.BLANK.includes(browser.currentURI.spec) &&

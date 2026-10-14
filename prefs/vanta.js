@@ -173,6 +173,8 @@ pref("vanta.newtab.home", true);
 // blank tab, which the window draws the home on.
 pref("browser.startup.page", 1);
 pref("browser.startup.homepage", "about:blank");
+// Private windows keep Vanta's own black look instead of Firefox's purple.
+pref("browser.theme.dark-private-windows", false);
 // The address bar answers as you type (maths, units, time in a city),
 // searches a site by name ("yr oslo"), and opens a result in split view
 // with Shift+Enter.

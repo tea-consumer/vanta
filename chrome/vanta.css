@@ -953,6 +953,8 @@ sidebar-main,
     z-index: 10 !important;
     overflow: hidden !important;
     padding: 24vh 12vw 0 !important;
+    /* Opaque, so a page under it (a private window's own page) never shows. */
+    background: #000 !important;
     color: var(--vanta-text) !important;
     font: 13px/1.4 system-ui, -apple-system, sans-serif !important;
   }
