@@ -3,14 +3,10 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <!-- Blackout on: the total eclipse from Vanta's icon pack
    - (branding/src/private.svg) without its tile: a dark disk, a lit ring and
-   - a faint corona, centered. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-  <defs>
-    <radialGradient id="corona" cx="8" cy="8" r="8" gradientUnits="userSpaceOnUse">
-      <stop offset="0.6" stop-color="#ececf1" stop-opacity="0.3"/>
-      <stop offset="1" stop-color="#ececf1" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <circle cx="8" cy="8" r="8" fill="url(#corona)"/>
-  <circle cx="8" cy="8" r="5.5" fill="#000" stroke="#9a9aa2" stroke-width="1.5"/>
+   - a faint corona, centered. The ring and corona take the toolbar's icon
+   - color (context-fill) so they read on any theme. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="context-fill" fill-opacity="context-fill-opacity">
+  <circle cx="8" cy="8" r="7.75" opacity="0.14"/>
+  <circle cx="8" cy="8" r="6.75" opacity="0.2"/>
+  <circle cx="8" cy="8" r="5.125" fill="#000" stroke="context-fill" stroke-width="1.75"/>
 </svg>
