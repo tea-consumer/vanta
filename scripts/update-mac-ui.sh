@@ -6,12 +6,13 @@
 # *.previous, so `update-mac-ui.sh --undo` puts them back.
 #
 # Usage: update-mac-ui.sh [git refs to merge first...] | --undo
-# Env: VANTA_BUILD_HOST (default fredrik@100.82.195.60),
-#      VANTA_BUILD_REPO, VANTA_WORK (paths on the build machine)
+# Build machine host and paths: scripts/machines.conf (or the env vars
+# VANTA_BUILD_HOST, VANTA_BUILD_REPO, VANTA_WORK).
 set -euo pipefail
-host="${VANTA_BUILD_HOST:-fredrik@100.82.195.60}"
-repo="${VANTA_BUILD_REPO:-/media/disk/Vanta browser/vanta}"
-work="${VANTA_WORK:-/media/disk/vanta-work2}"
+. "$(cd "$(dirname "$0")" && pwd)/machines.conf"
+host="$VANTA_BUILD_HOST"
+repo="$VANTA_BUILD_REPO"
+work="$VANTA_WORK"
 res="/Applications/Vanta.app/Contents/Resources"
 
 if pgrep -xq vanta; then

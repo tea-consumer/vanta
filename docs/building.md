@@ -7,8 +7,9 @@ pull requests.
 ## Machines
 
 - **Linux build machine** (Orpheus, x86_64 NixOS): compiles everything.
-  Repo at `/media/disk/Vanta browser/vanta`, work dir `/media/disk/vanta-work2`
-  (`VANTA_WORK`; it must not contain spaces, mach refuses them).
+  A clean clone of this repo on `main` at `/media/disk/vanta-main`, work dir
+  `/media/disk/vanta-work4` (`VANTA_WORK`; no spaces, mach refuses them).
+  Host and both paths live in `scripts/machines.conf`; change them there.
 - **Mac** (A18 Pro, 8 GB): runs the PGO training pass and the installed
   `/Applications/Vanta.app`. It never compiles, to spare its SSD from swap.
 
@@ -34,8 +35,9 @@ Knobs: `VANTA_LINKER=ld64` (Mozilla's linker for macOS release builds; the
 cross build needs cctools in `~/.mozbuild/cctools`), `VANTA_JOBS`,
 `VANTA_RUST` (default 1.95.0, matching Mozilla's macOS builds so LLVM
 versions line up for cross-language LTO), `VANTA_PGO=0` for
-`build-macos.sh`. `update-mac-ui.sh` reads `VANTA_BUILD_HOST`,
-`VANTA_BUILD_REPO` and `VANTA_WORK`.
+`build-macos.sh`. `update-mac-ui.sh` takes the build machine's host, repo
+and work dir from `scripts/machines.conf`; the env vars of the same names
+override it.
 
 ## A full release build
 
