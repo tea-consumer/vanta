@@ -71,53 +71,43 @@
   max-width: 13rem;
 }
 
-/* Vanta's eclipse, drawn like the icon pack's logo (branding/logo.svg): a
- * black tile, a lit disk and the moon over it, leaving the crescent at the
- * upper left. Off: the moon slides off to the lower right, uncovering the
- * disk, which dims. */
+/* Vanta's total eclipse, as in the icon pack (branding/src/private.svg)
+ * without its tile: a dark moon over the disk, a lit ring and a faint corona.
+ * Off: the moon slides off to the lower right and the disk shows, dim, with
+ * no corona. */
 #vanta-blackout-panel .vb-eclipse {
   flex: none;
   position: relative;
   box-sizing: border-box;
-  width: 36px;
-  height: 36px;
-  border: 1px solid #2a2a2e;
-  border-radius: 22%;
-  background: #000;
+  width: 24px;
+  height: 24px;
+  margin: 6px;
+  border: 1.5px solid #9a9aa2;
+  border-radius: 50%;
+  background: #9a9aa2;
+  box-shadow: 0 0 10px 3px rgba(236, 236, 241, 0.16);
   overflow: hidden;
+  transition: box-shadow 360ms;
 
-  &::before,
   &::after {
     content: "";
     position: absolute;
+    inset: 0;
     border-radius: 50%;
-  }
-
-  &::before {
-    inset: 16.5%;
-    background: #ececf1;
-    transition: background-color 360ms;
-  }
-
-  &::after {
-    top: 21.9%;
-    left: 21.9%;
-    width: 62%;
-    height: 62%;
     background: #000;
     transition: transform 360ms cubic-bezier(0.3, 0, 0.2, 1);
   }
 
-  &[off]::before {
-    background: #9a9aa2;
+  &[off] {
+    box-shadow: none;
   }
 
   &[off]::after {
-    transform: translate(100%, 100%);
+    transform: translate(110%, 110%);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    &::before,
+    &,
     &::after {
       transition: none;
     }
