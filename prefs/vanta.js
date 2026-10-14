@@ -131,6 +131,12 @@ pref("sidebar.verticalTabs", true);
 pref("sidebar.visibility", "expand-on-hover");
 // Sidebar tools: history and bookmarks only (no synced tabs, no AI chat).
 pref("sidebar.main.tools", "history,bookmarks");
+// Starting toolbar layout. Firefox builds the toolbar wrong when a new
+// profile starts with vertical tabs already on: the buttons end up reversed
+// (forward before back, after the address bar) and reload goes missing. So
+// new profiles start from this layout instead. currentVersion is Firefox
+// 157's toolbar layout version; newer Firefox migrates it forward.
+pref("browser.uiCustomization.state", "{\"placements\":{\"widget-overflow-fixed-list\":[],\"unified-extensions-area\":[],\"nav-bar\":[\"back-button\",\"forward-button\",\"stop-reload-button\",\"vertical-spacer\",\"urlbar-container\",\"downloads-button\",\"unified-extensions-button\"],\"toolbar-menubar\":[\"menubar-items\"],\"TabsToolbar\":[],\"vertical-tabs\":[\"tabbrowser-tabs\"],\"PersonalToolbar\":[\"personal-bookmarks\"]},\"seen\":[],\"dirtyAreaCache\":[],\"currentVersion\":26,\"newElementCount\":0}");
 // Compact toolbar spacing. Sticky so it matches Firefox's own declaration.
 sticky_pref("browser.uidensity", 1);
 // Bookmarks stay in the sidebar and menu, not a toolbar row on new tabs.
