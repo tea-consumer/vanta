@@ -1,36 +1,71 @@
 diff --git a/gfx/layers/ProfilerScreenshots.cpp b/gfx/layers/ProfilerScreenshots.cpp
-index 3edc6d01..9c713041 100644
+index 3edc6d01..3133eeca 100644
 --- a/gfx/layers/ProfilerScreenshots.cpp
 +++ b/gfx/layers/ProfilerScreenshots.cpp
-@@ -6,6 +6,7 @@
+@@ -6,6 +6,8 @@
  
  #include "GeckoProfiler.h"
  #include "gfxUtils.h"
++#include "mozilla/Atomics.h"
 +#include "mozilla/StaticPrefs_gfx.h"
  #include "mozilla/TimeStamp.h"
  #include "nsThreadUtils.h"
  
-@@ -60,6 +61,11 @@ bool ProfilerScreenshots::IsEnabled() {
+@@ -60,6 +62,47 @@ bool ProfilerScreenshots::IsEnabled() {
    return profiler_feature_active(ProfilerFeature::Screenshots);
  }
  
++// Vanta: milliseconds since process start of the last APZ scroll activity,
++// plus one so that 0 means "never".
++static Atomic<uint64_t, Relaxed> sLastScrollActivityMs(0);
++
++static uint64_t NowMs() {
++  return uint64_t(
++             (TimeStamp::Now() - TimeStamp::ProcessCreation()).ToMilliseconds()) +
++         1;
++}
++
++/* static */
++void ProfilerScreenshots::NotifyScrollActivity() {
++  if (StaticPrefs::gfx_vanta_frame_readback() == 1) {
++    sLastScrollActivityMs = NowMs();
++  }
++}
++
++/* static */
++bool ProfilerScreenshots::ReadbackActive() {
++  return IsEnabled() || StaticPrefs::gfx_vanta_frame_readback() != 0;
++}
++
 +/* static */
 +bool ProfilerScreenshots::ShouldCapture() {
-+  return IsEnabled() || StaticPrefs::gfx_vanta_frame_readback() != 0;
++  if (IsEnabled()) {
++    return true;
++  }
++  switch (StaticPrefs::gfx_vanta_frame_readback()) {
++    case 0:
++      return false;
++    case 1: {
++      // Keep going for a second after the last scroll step, so momentum
++      // scrolling and the frames right after it stay covered.
++      uint64_t last = sLastScrollActivityMs;
++      return last && NowMs() - last < 1000;
++    }
++    default:
++      return true;
++  }
 +}
 +
  void ProfilerScreenshots::SubmitScreenshot(
      const gfx::IntSize& aOriginalSize, const IntSize& aScaledSize,
      const TimeStamp& aTimeStamp,
-@@ -81,10 +87,19 @@ void ProfilerScreenshots::SubmitScreenshot(
+@@ -81,6 +124,13 @@ void ProfilerScreenshots::SubmitScreenshot(
      return;
    }
  
 +  // Vanta: with the profiler off, the readback above is all
-+  // gfx.vanta.frame-readback=1 wants. Mode 2 also does the JPEG encode below
-+  // but drops the result.
-+  const bool forProfiler = IsEnabled();
-+  if (!forProfiler && StaticPrefs::gfx_vanta_frame_readback() < 2) {
++  // gfx.vanta.frame-readback wants; skip the JPEG encode.
++  if (!IsEnabled()) {
 +    ReturnSurface(backingSurface);
 +    return;
 +  }
@@ -38,25 +73,11 @@ index 3edc6d01..9c713041 100644
    NS_DispatchBackgroundTask(NS_NewRunnableFunction(
        "ProfilerScreenshots::SubmitScreenshot",
        [self = RefPtr<ProfilerScreenshots>{this},
--       backingSurface = std::move(backingSurface),
-+       backingSurface = std::move(backingSurface), forProfiler,
-        windowIdentifier = mWindowIdentifier, originalSize = aOriginalSize,
-        scaledSize = aScaledSize, timeStamp = aTimeStamp]() {
-         // Create a new surface that wraps backingSurface's data but has the
-@@ -101,7 +116,7 @@ void ProfilerScreenshots::SubmitScreenshot(
-         nsresult rv = gfxUtils::EncodeSourceSurface(
-             surf, ImageType::JPEG, u"quality=85"_ns, gfxUtils::eDataURIEncode,
-             nullptr, &dataURL);
--        if (NS_SUCCEEDED(rv)) {
-+        if (NS_SUCCEEDED(rv) && forProfiler) {
-           // Add a marker with the data URL.
-           profiler_add_marker(
-               "CompositorScreenshot", geckoprofiler::category::GRAPHICS,
 diff --git a/gfx/layers/ProfilerScreenshots.h b/gfx/layers/ProfilerScreenshots.h
-index 57d5b346..d0124d76 100644
+index 57d5b346..cf91122e 100644
 --- a/gfx/layers/ProfilerScreenshots.h
 +++ b/gfx/layers/ProfilerScreenshots.h
-@@ -47,6 +47,12 @@ class ProfilerScreenshots final {
+@@ -47,6 +47,24 @@ class ProfilerScreenshots final {
     */
    static bool IsEnabled();
  
@@ -66,14 +87,26 @@ index 57d5b346..d0124d76 100644
 +   */
 +  static bool ShouldCapture();
 +
++  /**
++   * Vanta: whether the readback machinery should stay alive, even on frames
++   * where ShouldCapture() is false (so scrolling doesn't re-allocate it).
++   */
++  static bool ReadbackActive();
++
++  /**
++   * Vanta: called by APZ whenever it scrolls or animates a scroll, so
++   * gfx.vanta.frame-readback=1 only costs anything while scrolling.
++   */
++  static void NotifyScrollActivity();
++
    /**
     * Returns a fixed size that all screenshots should be resized to fit into.
     */
 diff --git a/gfx/layers/ScreenshotGrabber.cpp b/gfx/layers/ScreenshotGrabber.cpp
-index 4ea6c27c..c0a9ac5d 100644
+index 4ea6c27c..9ddff235 100644
 --- a/gfx/layers/ScreenshotGrabber.cpp
 +++ b/gfx/layers/ScreenshotGrabber.cpp
-@@ -65,7 +65,7 @@ ScreenshotGrabber::~ScreenshotGrabber() = default;
+@@ -65,19 +65,19 @@ ScreenshotGrabber::~ScreenshotGrabber() = default;
  
  void ScreenshotGrabber::MaybeGrabScreenshot(
      profiler_screenshots::Window& aWindow, const IntSize& aWindowSize) {
@@ -82,15 +115,50 @@ index 4ea6c27c..c0a9ac5d 100644
      if (!mImpl) {
        mImpl = MakeUnique<profiler_screenshots::ScreenshotGrabberImpl>(
            ProfilerScreenshots::ScreenshotSize());
-@@ -77,7 +77,7 @@ void ScreenshotGrabber::MaybeGrabScreenshot(
+     }
+     mImpl->GrabScreenshot(aWindow, aWindowSize);
+-  } else if (mImpl) {
++  } else if (mImpl && !ProfilerScreenshots::ReadbackActive()) {
+     Destroy();
+   }
  }
  
  void ScreenshotGrabber::MaybeProcessQueue() {
 -  if (ProfilerScreenshots::IsEnabled()) {
-+  if (ProfilerScreenshots::ShouldCapture()) {
++  if (ProfilerScreenshots::ReadbackActive()) {
      if (!mImpl) {
        mImpl = MakeUnique<profiler_screenshots::ScreenshotGrabberImpl>(
            ProfilerScreenshots::ScreenshotSize());
+diff --git a/gfx/layers/apz/src/AsyncPanZoomController.cpp b/gfx/layers/apz/src/AsyncPanZoomController.cpp
+index 386125dd..1f9a4d43 100644
+--- a/gfx/layers/apz/src/AsyncPanZoomController.cpp
++++ b/gfx/layers/apz/src/AsyncPanZoomController.cpp
+@@ -3,6 +3,7 @@
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+ #include "AsyncPanZoomController.h"  // for AsyncPanZoomController, etc
++#include "mozilla/layers/ProfilerScreenshots.h"  // Vanta: frame readback
+ 
+ #include <math.h>       // for fabsf, fabs, atan2
+ #include <stdint.h>     // for uint32_t, uint64_t
+@@ -4766,6 +4767,7 @@ const ScreenMargin AsyncPanZoomController::CalculatePendingDisplayPort(
+ }
+ 
+ void AsyncPanZoomController::ScheduleComposite() {
++  ProfilerScreenshots::NotifyScrollActivity();
+   if (mCompositorController) {
+     mCompositorController->ScheduleRenderOnCompositorThread(
+         wr::RenderReasons::APZ);
+@@ -5132,6 +5134,9 @@ bool AsyncPanZoomController::AdvanceAnimations(const SampleTime& aSampleTime) {
+ 
+   // If any of the deferred tasks starts a new animation, it will request a
+   // new composite directly, so we can just return requestAnimationFrame here.
++  if (requestAnimationFrame) {
++    ProfilerScreenshots::NotifyScrollActivity();
++  }
+   return requestAnimationFrame;
+ }
+ 
 diff --git a/gfx/webrender_bindings/RenderCompositorLayerNative.cpp b/gfx/webrender_bindings/RenderCompositorLayerNative.cpp
 index c00709c3..36abaa86 100644
 --- a/gfx/webrender_bindings/RenderCompositorLayerNative.cpp
@@ -118,7 +186,7 @@ index cfd530ba..5ecf5504 100644
    }
  
 diff --git a/modules/libpref/init/StaticPrefList.yaml b/modules/libpref/init/StaticPrefList.yaml
-index 964f67c0..e68cade9 100644
+index 964f67c0..c6960ab3 100644
 --- a/modules/libpref/init/StaticPrefList.yaml
 +++ b/modules/libpref/init/StaticPrefList.yaml
 @@ -8497,6 +8497,21 @@
@@ -129,8 +197,8 @@ index 964f67c0..e68cade9 100644
 +# profiler is off. On Apple Silicon this small amount of GPU work per frame
 +# keeps the GPU from idling between frames, which otherwise makes trackpad
 +# scrolling stutter on screen even though frames are produced on time.
-+# 0 = off, 1 = downscale + readback, 2 = also JPEG-encode it. On by default
-+# on macOS only, where the stutter was seen.
++# 0 = off, 1 = only while APZ is scrolling (and 1 s after), 2 = every frame.
++# On by default on macOS only, where the stutter was seen.
 +- name: gfx.vanta.frame-readback
 +  type: RelaxedAtomicUint32
 +#ifdef XP_MACOSX
