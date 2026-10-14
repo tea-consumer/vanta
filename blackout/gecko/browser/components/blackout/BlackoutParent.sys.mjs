@@ -9,14 +9,56 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "resource://gre/modules/ContentBlockingAllowList.sys.mjs",
 });
 
+// A page reports at most this many new classes and ids at a time.
+const MAX_NAMES = 5000;
+
 /**
- * Answers a page's request for its Blackout element-hiding style sheet.
+ * Answers a page's requests for its Blackout element-hiding style sheets.
  */
 export class BlackoutParent extends JSWindowActorParent {
   async receiveMessage(message) {
-    if (message.name != "Blackout:GetStyle") {
+    const url = this.#pageUrl();
+    if (!url) {
       return null;
     }
+    let service;
+    try {
+      service = Cc["@mozilla.org/content-classifier-service;1"].getService(
+        Ci.nsIContentClassifierService
+      );
+    } catch (e) {
+      return null;
+    }
+
+    switch (message.name) {
+      case "Blackout:GetStyle":
+        return service.getCosmeticStyle(
+          "blackout",
+          url,
+          Services.prefs.getBoolPref(
+            "vanta.blackout.cosmetic.generic_complex",
+            false
+          )
+        );
+      case "Blackout:GetClassIdStyle": {
+        if (
+          !Services.prefs.getBoolPref("vanta.blackout.cosmetic.generic", true)
+        ) {
+          return null;
+        }
+        const classes = names(message.data?.classes);
+        const ids = names(message.data?.ids);
+        if (!classes && !ids) {
+          return null;
+        }
+        return service.getClassIdStyle("blackout", url, classes, ids);
+      }
+    }
+    return null;
+  }
+
+  // The page to look up rules for, or null when Blackout leaves it alone.
+  #pageUrl() {
     if (
       !Services.prefs.getBoolPref(
         "privacy.trackingprotection.content.protection.enabled",
@@ -37,19 +79,18 @@ export class BlackoutParent extends JSWindowActorParent {
     if (!url?.schemeIs("http") && !url?.schemeIs("https")) {
       return null;
     }
-
-    let service;
-    try {
-      service = Cc["@mozilla.org/content-classifier-service;1"].getService(
-        Ci.nsIContentClassifierService
-      );
-    } catch (e) {
-      return null;
-    }
-    return service.getCosmeticStyle(
-      "blackout",
-      url.spec,
-      Services.prefs.getBoolPref("vanta.blackout.cosmetic.generic", false)
-    );
+    return url.spec;
   }
+}
+
+// The newline-separated list the service takes, from what a content process
+// sent: only strings that are valid class or id names.
+function names(list) {
+  if (!Array.isArray(list)) {
+    return "";
+  }
+  return list
+    .slice(0, MAX_NAMES)
+    .filter(n => typeof n == "string" && n && n.length < 256 && !/\s/.test(n))
+    .join("\n");
 }

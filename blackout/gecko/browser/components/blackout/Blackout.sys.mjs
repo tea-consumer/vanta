@@ -97,7 +97,10 @@ export const Blackout = {
       parent: { esModuleURI: "resource:///actors/BlackoutParent.sys.mjs" },
       child: {
         esModuleURI: "resource:///actors/BlackoutChild.sys.mjs",
-        events: { DOMDocElementInserted: { capture: true } },
+        events: {
+          DOMDocElementInserted: { capture: true },
+          DOMContentLoaded: {},
+        },
       },
       matches: ["http://*/*", "https://*/*"],
       allFrames: true,

@@ -5,6 +5,8 @@
 //! `<lists-dir>` holds the list files (`*.txt`), as Blackout keeps them in the
 //! profile. `requests.tsv` is optional: one `url<TAB>page-url<TAB>type` per
 //! line; without it a synthetic set built from the lists' own hosts is used.
+//! With `BLACKOUT_DECISIONS=<file>` set, writes one 0/1 block decision per
+//! request to that file.
 
 use adblock as filter_engine;
 
@@ -126,26 +128,52 @@ fn main() {
             .collect(),
         None => synthetic_requests(dir),
     };
-    let parsed: Vec<Request> = requests
+    // Gecko hands the engine hosts it already parsed and asks only whether to
+    // block (see content_classifier_engine_check_network_request_preparsed),
+    // so time exactly that.
+    // A request that does not parse stays in as "not blocked", so decisions
+    // line up with the requests file.
+    let preparsed: Vec<_> = requests
         .iter()
-        .filter_map(|(u, s, ty)| Request::new(u, s, ty).ok())
+        .map(|(u, s, ty)| {
+            let r = Request::new(u, s, ty).ok()?;
+            let source = s.split("://").nth(1)?.split(['/', ':', '?']).next()?;
+            Some((u, r.hostname, source.to_string(), ty, r.is_third_party))
+        })
         .collect();
-    let rounds = 20;
-    let mut blocked = 0;
+    let rounds = 5;
+    let mut decisions = Vec::new();
     let t = Instant::now();
     for _ in 0..rounds {
-        blocked = parsed
+        decisions = preparsed
             .iter()
-            .filter(|r| engine.check_network_request(r).matched)
-            .count();
+            .map(|parsed| {
+                parsed
+                    .as_ref()
+                    .map_or(false, |(url, host, source, ty, third_party)| {
+                        let request = Request::preparsed(url, host, source, ty, *third_party);
+                        engine
+                            .check_network_request_subset(&request, false, false)
+                            .matched
+                    })
+            })
+            .collect();
     }
-    let ns = t.elapsed().as_secs_f64() * 1e9 / (rounds * parsed.len()) as f64;
+    let ns = t.elapsed().as_secs_f64() * 1e9 / (rounds * preparsed.len()) as f64;
     println!(
         "network check:                         {:.2} us per request ({} of {} blocked)",
         ns / 1e3,
-        blocked,
-        parsed.len()
+        decisions.iter().filter(|&&d| d).count(),
+        preparsed.len()
     );
+    // One 0/1 line per request, to compare with another blocker.
+    if let Ok(path) = std::env::var("BLACKOUT_DECISIONS") {
+        let lines: String = decisions
+            .iter()
+            .map(|&d| if d { "1\n" } else { "0\n" })
+            .collect();
+        std::fs::write(path, lines).unwrap();
+    }
 
     let generic = blackout::generic_selectors(&engine);
     for url in [
@@ -165,4 +193,29 @@ fn main() {
             all.lines().count()
         );
     }
+
+    // Generic rules by class and id, for a page that uses a few common ones.
+    let classes = [
+        "header",
+        "nav",
+        "article",
+        "ad-slot",
+        "adsbygoogle",
+        "banner-adverts",
+    ];
+    let ids = ["main", "ad_top"];
+    let t = Instant::now();
+    let css = blackout::class_id_css(
+        &engine,
+        "https://news.example/",
+        classes.into_iter(),
+        ids.into_iter(),
+    );
+    println!(
+        "generic hiding for {} classes and {} ids: {} rules ({:.0} us)",
+        classes.len(),
+        ids.len(),
+        css.lines().count(),
+        t.elapsed().as_secs_f64() * 1e6
+    );
 }

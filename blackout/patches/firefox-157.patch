@@ -30,8 +30,93 @@ index 63cfb33..97a19c3 100644
      "contentanalysis",
      "contextualidentity",
      "controlcenter",
+diff --git a/third_party/rust/adblock/.cargo-checksum.json b/third_party/rust/adblock/.cargo-checksum.json
+index 84ef62c..f8d5f0a 100644
+--- a/third_party/rust/adblock/.cargo-checksum.json
++++ b/third_party/rust/adblock/.cargo-checksum.json
+@@ -1 +1 @@
+-{"files":{".cargo_vcs_info.json":"b00bd017ff37acc672407c394c5a314d32f0add995aab039e23ffcd5e123b58d","Cargo.lock":"dabf9a5754288f661379c2aee21fbce8f7dd3978f39fdcc50fc68c9d8e7251bd","Cargo.toml":"5964795c7c71f1900a375075aaadc4aaf3d51e8936c6d98e5b3095f819b51830","Cargo.toml.orig":"1a0148cd26da6e032c9a1cd3a149497143c0f7d60313eeb4eb76a568fb005fdd","LICENSE":"3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04","README.md":"2f6e62c5187d264629da4eb2b19c7f291641791d8e082a48bbcf8b1a4764768a","benches/bench_cosmetic_matching.rs":"b54caa41ace4bfcc9d99f2f65c1d5429963840696fb14d3b5303b183a5641815","benches/bench_matching.rs":"9c22717a248265d8df6758d321a3841cfc54a41ef523835f2133dbe3cfaec867","benches/bench_memory.rs":"6999e2df26a006f50cff3ba3f81c538722c626a2a60541cbdab5aa25608cc0bb","benches/bench_redirect_performance.rs":"de1a6b287deeb54d9e860dbe71d81ccf147c36890c0b5f2b14ae27725f90582e","benches/bench_regex.rs":"bdef7618e3783d8acc5538f053a5c0f170edeb1e77c147b967272d14aa780fa9","benches/bench_rules.rs":"0d737a71dc3599aa138d122cc36496e63189845a61fa532879c66ac563ed47d9","benches/bench_serialization.rs":"c1b26beab21861b7c89d20956f3488d11a5b022e4181c588732fcb8db85ae19b","benches/bench_url.rs":"679ed5dfcd0ef1e375fe80527aca6a79c92e390337440046f0f7695f0c28aef6","rust-toolchain.toml":"2b71daaba53183937d92bda09e8235ca0ba68656268ce1188da5e40396ca1135","rustfmt.toml":"8f201bf4d9ff69411e98031ad1b168f58ce02d91fd33bc80406115c2506355d4","src/blocker.rs":"2614cea6c4f0ccb82042acc7fa56fb92a0af1c9f162e2de180cbac3e4e09e872","src/content_blocking.rs":"9d52175ff368d3d1d4b63569793e4b6a68203cbbe08109fb30d462667a61aaff","src/cosmetic_filter_cache.rs":"74d71868757155533b143208b37a9f47aecbce883e6b5ec8e4d1517a01551812","src/cosmetic_filter_cache_builder.rs":"d0780ae4820a2bdfa779d619ecd9db561911470f159885188a06773d48654f44","src/cosmetic_filter_utils.rs":"383e657cd3dd41d0d9abcfad3cc6f389cfb234ef45c8aebbb21eade79972a96c","src/data_format/mod.rs":"c9fcaa2d0d68839f8f168e51d405b47bfac89ca38161475fc7830537ed426ab5","src/engine.rs":"08ac95232ead10a4d1530e82d60ace581694102ef440b8b331ea8c2bc5f15f6c","src/filters/abstract_network.rs":"3cd9c17a9a0d3cabd5d77c008f6ed607c0d9b0a9d1a168be0b429b41e87f9f7f","src/filters/cosmetic.rs":"f6435fdb228b359377c0cdd66bfc4425c0c00a117b7dfccad80f1825c7420e98","src/filters/fb_builder.rs":"6a8aeefcf21ce2dd93053833e621e0175672e93a44a3fed573be2829d84014ae","src/filters/fb_network.rs":"742860d588ab9419498b3d56c1719a67d969185191e872aa4c0a71d6b75f2a6e","src/filters/fb_network_builder.rs":"1f09d680f397a5f819ab7cec0dd522095104e31db16dda74b5270885642db9e4","src/filters/filter_data_context.rs":"94a4c9071f960f6f92fe6fca8953af520695d12e5d87fef92ce4cbd1d6522f54","src/filters/mod.rs":"528d8f1be7ed39c7c9093d4d676ab32406afeef53934acd5320078f6877a2db9","src/filters/network.rs":"e912b45fa940e3e61d263605c2d640794f58e0ab78150f7a29757b5c46613060","src/filters/network_matchers.rs":"f54a82bef4a8206320f0f8abfb4fcf796644fe4a15bce7847c9b82213ade01a6","src/filters/token_selector.rs":"8ae1b3b332c10e8afea21e6a2c0c6a2a3a19a4a40186d79dd8e21dc294930ce1","src/flatbuffers/containers/fb_index.rs":"680bf6f38056adc2f17bbe4ef813c1c67c2a3d60c2e061613928f169bc463651","src/flatbuffers/containers/flat_map.rs":"2ab4caee817acd0dbe0fb815866563bb6c2dc3149b82e7e04435a4acab1edd7c","src/flatbuffers/containers/flat_multimap.rs":"429a6a56f57ebb97a634d1433c4cfeac6ca961157338bcdf27605b89eda629b9","src/flatbuffers/containers/flat_serialize.rs":"112828e2459c894a8ca0c3a9a86e0f7705b2f09cf4cf209a2d679b0f5f071d60","src/flatbuffers/containers/flat_set.rs":"f392229687bb959d97447b311bb9b81921f3c2a2ec90584ecdbb8198590582d7","src/flatbuffers/containers/hash_index.rs":"4eed102b3c378c61d5359dec8f0d172e9d50bdb0dc51ab221b118bd0db1282d7","src/flatbuffers/containers/hash_map.rs":"94f053cdb84d865da394c39de4afd767b497f2e802e2f8b8c1ad41d93e696b05","src/flatbuffers/containers/hash_set.rs":"d12a4615a8d6fe6caeeb9f42ffb81bc271c3d457dd689ae702b24c7bb8fee745","src/flatbuffers/containers/mod.rs":"21822526c6876bb1b358ce5078bd9d1ff929f8f192fb8ee1500848077b0cb379","src/flatbuffers/containers/sorted_index.rs":"0cc0fc53504626b776b24166a048b73745037476d3671cfceab21808c5e2ba63","src/flatbuffers/fb_network_filter.fbs":"c4eb3504fb78ffeb72324208b0ad86fabac8a32d5dc3855cd8e314454b7c11a3","src/flatbuffers/fb_network_filter_generated.rs":"34f3e4280eb23b8c9c48bc840680b60cb9458da8ebdbae0a6bbcdab4ecf3d684","src/flatbuffers/mod.rs":"705c64e9d161bc1b7a3456b116ce80ccfe6cd72f19c773d7bd79f2730e4d6a7c","src/flatbuffers/unsafe_tools.rs":"f563a78978197713a07dc57d1f839509df1260159ec543b4c7489cb18084aa5c","src/lib.rs":"e557542db94d5950d89fc503cd5dfc54577c1d953806dcb34bbe4613b05f144f","src/lists.rs":"2b47178fe72336ef6fec605f0f06f16db5ecdee0a45a94014e293c4304052536","src/network_filter_list.rs":"daa797f859e86f7e66cafea5171670e587d9c13eecacbc0e0d3f0ce7d5a975f0","src/optimizer.rs":"7e362789fc6fd8a158d3586ee60af873804e114a2655e003adc8ed37d698e972","src/regex_manager.rs":"8cb73e11d51cc94e85a3204da196ef345c59a4ab378075f9832fd7bcfd37e29b","src/request.rs":"b9435c71441feda88ea877bb2d19067006bc4f1f87cf88e8f857db8b5242b2ce","src/resources/mod.rs":"131269e5ce05918218947d6948447f7379386fed8e9efbe83b0a3429f1eacb48","src/resources/resource_assembler.rs":"251c619af9ea29eb816441028d1a1830e83f68dfafb92abeb7d51fd661644185","src/resources/resource_storage.rs":"de50b021dc1c3ae901507d6eeeaf278af85520eca20594b5b7d3a8944ba09697","src/url_parser/mod.rs":"fd6e7db9a4bf380ec4ab8660c3dc94fe5b38d124db309ad6d6ea2cf60e095ca0","src/url_parser/parser.rs":"84f347ba725a05e2777b4840127c875f9a4de5bae55fe19fc041e3620ac380e3","src/utils.rs":"bef836d44c0b070f4c3250d6d46469b7e87df635d282f5c61433c0f2c4d1af98"},"package":"698c1e831aaee3d583efe775790acc7d59fd99d8060e7385b99d2d369a5cdca8"}
+\ No newline at end of file
++{"files":{".cargo_vcs_info.json":"b00bd017ff37acc672407c394c5a314d32f0add995aab039e23ffcd5e123b58d","Cargo.lock":"dabf9a5754288f661379c2aee21fbce8f7dd3978f39fdcc50fc68c9d8e7251bd","Cargo.toml":"5964795c7c71f1900a375075aaadc4aaf3d51e8936c6d98e5b3095f819b51830","Cargo.toml.orig":"1a0148cd26da6e032c9a1cd3a149497143c0f7d60313eeb4eb76a568fb005fdd","LICENSE":"3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04","README.md":"2f6e62c5187d264629da4eb2b19c7f291641791d8e082a48bbcf8b1a4764768a","benches/bench_cosmetic_matching.rs":"b54caa41ace4bfcc9d99f2f65c1d5429963840696fb14d3b5303b183a5641815","benches/bench_matching.rs":"9c22717a248265d8df6758d321a3841cfc54a41ef523835f2133dbe3cfaec867","benches/bench_memory.rs":"6999e2df26a006f50cff3ba3f81c538722c626a2a60541cbdab5aa25608cc0bb","benches/bench_redirect_performance.rs":"de1a6b287deeb54d9e860dbe71d81ccf147c36890c0b5f2b14ae27725f90582e","benches/bench_regex.rs":"bdef7618e3783d8acc5538f053a5c0f170edeb1e77c147b967272d14aa780fa9","benches/bench_rules.rs":"0d737a71dc3599aa138d122cc36496e63189845a61fa532879c66ac563ed47d9","benches/bench_serialization.rs":"c1b26beab21861b7c89d20956f3488d11a5b022e4181c588732fcb8db85ae19b","benches/bench_url.rs":"679ed5dfcd0ef1e375fe80527aca6a79c92e390337440046f0f7695f0c28aef6","rust-toolchain.toml":"2b71daaba53183937d92bda09e8235ca0ba68656268ce1188da5e40396ca1135","rustfmt.toml":"8f201bf4d9ff69411e98031ad1b168f58ce02d91fd33bc80406115c2506355d4","src/blocker.rs":"2614cea6c4f0ccb82042acc7fa56fb92a0af1c9f162e2de180cbac3e4e09e872","src/content_blocking.rs":"9d52175ff368d3d1d4b63569793e4b6a68203cbbe08109fb30d462667a61aaff","src/cosmetic_filter_cache.rs":"74d71868757155533b143208b37a9f47aecbce883e6b5ec8e4d1517a01551812","src/cosmetic_filter_cache_builder.rs":"d0780ae4820a2bdfa779d619ecd9db561911470f159885188a06773d48654f44","src/cosmetic_filter_utils.rs":"383e657cd3dd41d0d9abcfad3cc6f389cfb234ef45c8aebbb21eade79972a96c","src/data_format/mod.rs":"c9fcaa2d0d68839f8f168e51d405b47bfac89ca38161475fc7830537ed426ab5","src/engine.rs":"08ac95232ead10a4d1530e82d60ace581694102ef440b8b331ea8c2bc5f15f6c","src/filters/abstract_network.rs":"3cd9c17a9a0d3cabd5d77c008f6ed607c0d9b0a9d1a168be0b429b41e87f9f7f","src/filters/cosmetic.rs":"f6435fdb228b359377c0cdd66bfc4425c0c00a117b7dfccad80f1825c7420e98","src/filters/fb_builder.rs":"6a8aeefcf21ce2dd93053833e621e0175672e93a44a3fed573be2829d84014ae","src/filters/fb_network.rs":"742860d588ab9419498b3d56c1719a67d969185191e872aa4c0a71d6b75f2a6e","src/filters/fb_network_builder.rs":"1f09d680f397a5f819ab7cec0dd522095104e31db16dda74b5270885642db9e4","src/filters/filter_data_context.rs":"94a4c9071f960f6f92fe6fca8953af520695d12e5d87fef92ce4cbd1d6522f54","src/filters/mod.rs":"528d8f1be7ed39c7c9093d4d676ab32406afeef53934acd5320078f6877a2db9","src/filters/network.rs":"e912b45fa940e3e61d263605c2d640794f58e0ab78150f7a29757b5c46613060","src/filters/network_matchers.rs":"dc87cadd1fd20b20167e0066c88cf75cf694beb63bd3d593b445e635d9b8835a","src/filters/token_selector.rs":"8ae1b3b332c10e8afea21e6a2c0c6a2a3a19a4a40186d79dd8e21dc294930ce1","src/flatbuffers/containers/fb_index.rs":"680bf6f38056adc2f17bbe4ef813c1c67c2a3d60c2e061613928f169bc463651","src/flatbuffers/containers/flat_map.rs":"2ab4caee817acd0dbe0fb815866563bb6c2dc3149b82e7e04435a4acab1edd7c","src/flatbuffers/containers/flat_multimap.rs":"429a6a56f57ebb97a634d1433c4cfeac6ca961157338bcdf27605b89eda629b9","src/flatbuffers/containers/flat_serialize.rs":"112828e2459c894a8ca0c3a9a86e0f7705b2f09cf4cf209a2d679b0f5f071d60","src/flatbuffers/containers/flat_set.rs":"f392229687bb959d97447b311bb9b81921f3c2a2ec90584ecdbb8198590582d7","src/flatbuffers/containers/hash_index.rs":"4eed102b3c378c61d5359dec8f0d172e9d50bdb0dc51ab221b118bd0db1282d7","src/flatbuffers/containers/hash_map.rs":"94f053cdb84d865da394c39de4afd767b497f2e802e2f8b8c1ad41d93e696b05","src/flatbuffers/containers/hash_set.rs":"d12a4615a8d6fe6caeeb9f42ffb81bc271c3d457dd689ae702b24c7bb8fee745","src/flatbuffers/containers/mod.rs":"21822526c6876bb1b358ce5078bd9d1ff929f8f192fb8ee1500848077b0cb379","src/flatbuffers/containers/sorted_index.rs":"0cc0fc53504626b776b24166a048b73745037476d3671cfceab21808c5e2ba63","src/flatbuffers/fb_network_filter.fbs":"c4eb3504fb78ffeb72324208b0ad86fabac8a32d5dc3855cd8e314454b7c11a3","src/flatbuffers/fb_network_filter_generated.rs":"34f3e4280eb23b8c9c48bc840680b60cb9458da8ebdbae0a6bbcdab4ecf3d684","src/flatbuffers/mod.rs":"705c64e9d161bc1b7a3456b116ce80ccfe6cd72f19c773d7bd79f2730e4d6a7c","src/flatbuffers/unsafe_tools.rs":"f563a78978197713a07dc57d1f839509df1260159ec543b4c7489cb18084aa5c","src/lib.rs":"e557542db94d5950d89fc503cd5dfc54577c1d953806dcb34bbe4613b05f144f","src/lists.rs":"2b47178fe72336ef6fec605f0f06f16db5ecdee0a45a94014e293c4304052536","src/network_filter_list.rs":"daa797f859e86f7e66cafea5171670e587d9c13eecacbc0e0d3f0ce7d5a975f0","src/optimizer.rs":"7e362789fc6fd8a158d3586ee60af873804e114a2655e003adc8ed37d698e972","src/regex_manager.rs":"8cb73e11d51cc94e85a3204da196ef345c59a4ab378075f9832fd7bcfd37e29b","src/request.rs":"b9435c71441feda88ea877bb2d19067006bc4f1f87cf88e8f857db8b5242b2ce","src/resources/mod.rs":"131269e5ce05918218947d6948447f7379386fed8e9efbe83b0a3429f1eacb48","src/resources/resource_assembler.rs":"251c619af9ea29eb816441028d1a1830e83f68dfafb92abeb7d51fd661644185","src/resources/resource_storage.rs":"de50b021dc1c3ae901507d6eeeaf278af85520eca20594b5b7d3a8944ba09697","src/url_parser/mod.rs":"fd6e7db9a4bf380ec4ab8660c3dc94fe5b38d124db309ad6d6ea2cf60e095ca0","src/url_parser/parser.rs":"84f347ba725a05e2777b4840127c875f9a4de5bae55fe19fc041e3620ac380e3","src/utils.rs":"bef836d44c0b070f4c3250d6d46469b7e87df635d282f5c61433c0f2c4d1af98"},"package":"698c1e831aaee3d583efe775790acc7d59fd99d8060e7385b99d2d369a5cdca8"}
+\ No newline at end of file
+diff --git a/third_party/rust/adblock/src/filters/network_matchers.rs b/third_party/rust/adblock/src/filters/network_matchers.rs
+index e28fbd6..7584469 100644
+--- a/third_party/rust/adblock/src/filters/network_matchers.rs
++++ b/third_party/rust/adblock/src/filters/network_matchers.rs
+@@ -5,7 +5,32 @@
+ //! to their type, protocol, and party (first-party or third-party). The code is designed to
+ //! efficiently determine if a request should be blocked or allowed based on the defined filters.
+ 
+-use memchr::memmem;
++// Vanta Blackout: substring search for the short needles and haystacks of URL
++// matching. `memchr::memmem::find` builds a searcher on every call, which costs
++// more than it saves at these sizes and made it the single biggest cost of a
++// request check.
++#[inline]
++fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
++    let Some((&first, rest)) = needle.split_first() else {
++        return Some(0);
++    };
++    if needle.len() > haystack.len() {
++        return None;
++    }
++    let last_start = haystack.len() - needle.len();
++    let mut i = 0;
++    while let Some(offset) = memchr::memchr(first, &haystack[i..=last_start]) {
++        let pos = i + offset;
++        if &haystack[pos + 1..pos + needle.len()] == rest {
++            return Some(pos);
++        }
++        i = pos + 1;
++        if i > last_start {
++            break;
++        }
++    }
++    None
++}
+ 
+ use crate::filters::network::{NetworkFilterMask, NetworkFilterMaskHelper};
+ use crate::regex_manager::RegexManager;
+@@ -14,8 +39,7 @@ use crate::utils::{self, Hash};
+ use std::collections::HashMap;
+ 
+ fn get_url_after_hostname<'a>(url: &'a str, hostname: &str) -> &'a str {
+-    let start =
+-        memmem::find(url.as_bytes(), hostname.as_bytes()).unwrap_or(url.len() - hostname.len());
++    let start = find(url.as_bytes(), hostname.as_bytes()).unwrap_or(url.len() - hostname.len());
+     &url[start + hostname.len()..]
+ }
+ 
+@@ -41,8 +65,7 @@ fn is_anchored_by_hostname(
+     } else if filter_hostname_len == hostname_len {
+         // If they have the same len(), they should be equal
+         filter_hostname == hostname
+-    } else if let Some(match_index) = memmem::find(hostname.as_bytes(), filter_hostname.as_bytes())
+-    {
++    } else if let Some(match_index) = find(hostname.as_bytes(), filter_hostname.as_bytes()) {
+         if match_index == 0 {
+             // `filter_hostname` is a prefix of `hostname` and needs to match full a label.
+             //
+@@ -87,7 +110,7 @@ where
+     }
+ 
+     let request_url = request.get_url(mask.match_case());
+-    filters.any(|f| memmem::find(request_url.as_bytes(), f.as_bytes()).is_some())
++    filters.any(|f| find(request_url.as_bytes(), f.as_bytes()).is_some())
+ }
+ 
+ // pattern|
+@@ -193,7 +216,7 @@ where
+                     filters,
+                     key,
+                     request,
+-                    memmem::find(request_url.as_bytes(), hostname.as_bytes()).unwrap_or_default()
++                    find(request_url.as_bytes(), hostname.as_bytes()).unwrap_or_default()
+                         + hostname.len(),
+                     regex_manager,
+                 )
 diff --git a/toolkit/components/content-classifier/ContentClassifierService.cpp b/toolkit/components/content-classifier/ContentClassifierService.cpp
-index e56eb77..ef8abc8 100644
+index e56eb77..e958078 100644
 --- a/toolkit/components/content-classifier/ContentClassifierService.cpp
 +++ b/toolkit/components/content-classifier/ContentClassifierService.cpp
 @@ -23,7 +23,10 @@
@@ -117,10 +202,46 @@ index e56eb77..ef8abc8 100644
    }
  
    ContentClassifierPrefMirror::Init();
-@@ -1137,6 +1168,67 @@ NS_IMETHODIMP ContentClassifierService::ProbeFeature(
+@@ -1137,6 +1168,122 @@ NS_IMETHODIMP ContentClassifierService::ProbeFeature(
    return NS_OK;
  }
  
++namespace {
++
++// Vanta Blackout: runs aGetCss with aEngine on the URL classifier thread, the
++// only thread engines are used on, and resolves aPromise with the style sheet
++// it writes. A failure resolves with an empty sheet: hiding nothing is the
++// safe outcome.
++template <typename GetCss>
++nsresult ResolveWithStyle(RefPtr<ContentClassifierEngine> aEngine,
++                          dom::Promise* aPromise, GetCss&& aGetCss) {
++  nsIThread* backgroundThread = nsUrlClassifierDBService::BackgroundThread();
++  if (!backgroundThread) {
++    return NS_ERROR_NOT_INITIALIZED;
++  }
++  nsMainThreadPtrHandle<dom::Promise> promiseHolder(
++      new nsMainThreadPtrHolder<dom::Promise>("Blackout style promise",
++                                              aPromise));
++  return backgroundThread->Dispatch(
++      NS_NewRunnableFunction(
++          "Blackout style",
++          [engine = std::move(aEngine), getCss = std::forward<GetCss>(aGetCss),
++           promiseHolder]() {
++            nsCString css;
++            if (NS_FAILED(getCss(engine, css))) {
++              css.Truncate();
++            }
++            NS_DispatchToMainThread(NS_NewRunnableFunction(
++                "Blackout style resolve",
++                [promiseHolder, css = std::move(css)]() {
++                  promiseHolder->MaybeResolve(NS_ConvertUTF8toUTF16(css));
++                }));
++          }),
++      NS_DISPATCH_NORMAL);
++}
++
++}  // namespace
++
 +NS_IMETHODIMP ContentClassifierService::GetCosmeticStyle(
 +    const nsACString& aFeatureName, const nsACString& aUrl,
 +    bool aIncludeGeneric, JSContext* aCx, dom::Promise** aPromise) {
@@ -147,34 +268,53 @@ index e56eb77..ef8abc8 100644
 +    return NS_OK;
 +  }
 +
-+  nsMainThreadPtrHandle<dom::Promise> promiseHolder(
-+      new nsMainThreadPtrHolder<dom::Promise>(
-+          "ContentClassifierService::GetCosmeticStyle promise", promise));
-+
-+  // Engines are only ever used on the URL classifier thread, which is also
-+  // where network requests are checked against them.
-+  nsIThread* backgroundThread = nsUrlClassifierDBService::BackgroundThread();
-+  if (backgroundThread) {
-+    rv = backgroundThread->Dispatch(
-+        NS_NewRunnableFunction(
-+            "ContentClassifierService::GetCosmeticStyle",
-+            [engine = std::move(engine), url = nsCString(aUrl), aIncludeGeneric,
-+             promiseHolder]() {
-+              nsCString css;
-+              if (NS_FAILED(
-+                      engine->GetCosmeticCss(url, aIncludeGeneric, css))) {
-+                css.Truncate();
-+              }
-+              NS_DispatchToMainThread(NS_NewRunnableFunction(
-+                  "ContentClassifierService::GetCosmeticStyle resolve",
-+                  [promiseHolder, css = std::move(css)]() {
-+                    promiseHolder->MaybeResolve(NS_ConvertUTF8toUTF16(css));
-+                  }));
-+            }),
-+        NS_DISPATCH_NORMAL);
-+  } else {
-+    rv = NS_ERROR_NOT_INITIALIZED;
++  rv = ResolveWithStyle(std::move(engine), promise,
++                        [url = nsCString(aUrl), aIncludeGeneric](
++                            ContentClassifierEngine* aEngine, nsCString& aCss) {
++                          return aEngine->GetCosmeticCss(url, aIncludeGeneric,
++                                                         aCss);
++                        });
++  if (NS_FAILED(rv)) {
++    promise->MaybeReject(rv);
 +  }
++  promise.forget(aPromise);
++  return NS_OK;
++}
++
++NS_IMETHODIMP ContentClassifierService::GetClassIdStyle(
++    const nsACString& aFeatureName, const nsACString& aUrl,
++    const nsACString& aClasses, const nsACString& aIds, JSContext* aCx,
++    dom::Promise** aPromise) {
++  NS_ENSURE_ARG_POINTER(aPromise);
++  MOZ_ASSERT(NS_IsMainThread());
++  if (!IsInitialized()) {
++    return NS_ERROR_NOT_INITIALIZED;
++  }
++
++  RefPtr<dom::Promise> promise;
++  nsresult rv = MakeProbePromise(aCx, getter_AddRefs(promise));
++  NS_ENSURE_SUCCESS(rv, rv);
++
++  RefPtr<ContentClassifierEngine> engine;
++  {
++    MutexAutoLock lock(mLock);
++    if (auto entry = mEngines.Lookup(nsCString(aFeatureName))) {
++      engine = entry.Data();
++    }
++  }
++  if (!engine) {
++    promise->MaybeResolve(nsString());
++    promise.forget(aPromise);
++    return NS_OK;
++  }
++
++  rv =
++      ResolveWithStyle(std::move(engine), promise,
++                       [url = nsCString(aUrl), classes = nsCString(aClasses),
++                        ids = nsCString(aIds)](ContentClassifierEngine* aEngine,
++                                               nsCString& aCss) {
++                         return aEngine->GetClassIdCss(url, classes, ids, aCss);
++                       });
 +  if (NS_FAILED(rv)) {
 +    promise->MaybeReject(rv);
 +  }
@@ -185,7 +325,7 @@ index e56eb77..ef8abc8 100644
  // Parses a byte buffer of adblock-format filter list text into rules.
  // Tolerates both LF and CRLF line endings; skips empty lines.
  static void ParseFilterListRules(const nsTArray<uint8_t>& aData,
-@@ -1205,6 +1297,24 @@ static RefPtr<ListBytesPromise> FetchListBytesFromRemoteSettings(
+@@ -1205,6 +1352,24 @@ static RefPtr<ListBytesPromise> FetchListBytesFromRemoteSettings(
  nsresult BuildEngineFromRules(const ContentClassifierFeature& aFeature,
                                const nsTArray<nsCString>& aRules,
                                RefPtr<ContentClassifierEngine>& aEngineOutput) {
@@ -210,7 +350,7 @@ index e56eb77..ef8abc8 100644
    if (aRules.IsEmpty()) {
      MOZ_LOG_FMT(gContentClassifierLog, LogLevel::Info,
                  "BuildEngineFromRules - no rules for feature \"{}\"; ",
-@@ -1625,6 +1735,31 @@ ContentClassifierService::FetchEngineDataForFeature(
+@@ -1625,6 +1790,31 @@ ContentClassifierService::FetchEngineDataForFeature(
      return FetchEngineDataForTestFeature(aFeature);
    }
  
@@ -243,10 +383,10 @@ index e56eb77..ef8abc8 100644
      return EngineRulesPromise::CreateAndReject(NS_ERROR_NOT_AVAILABLE,
                                                 __func__);
 diff --git a/toolkit/components/content-classifier/content_classifier_engine/ContentClassifierEngine.h b/toolkit/components/content-classifier/content_classifier_engine/ContentClassifierEngine.h
-index 1e1391c..f606980 100644
+index 1e1391c..bdc4f9f 100644
 --- a/toolkit/components/content-classifier/content_classifier_engine/ContentClassifierEngine.h
 +++ b/toolkit/components/content-classifier/content_classifier_engine/ContentClassifierEngine.h
-@@ -95,6 +95,27 @@ class ContentClassifierEngine final {
+@@ -95,6 +95,39 @@ class ContentClassifierEngine final {
      return content_classifier_engine_from_rules(&aRules, &mEngine);
    }
  
@@ -271,11 +411,23 @@ index 1e1391c..f606980 100644
 +                                                  aIncludeGeneric, &aCss);
 +  }
 +
++  // Vanta Blackout: the style sheet of generic rules that target the CSS
++  // classes and ids in aClasses and aIds (newline-separated) on the page at
++  // aUrl. Same thread rules as GetCosmeticCss.
++  nsresult GetClassIdCss(const nsACString& aUrl, const nsACString& aClasses,
++                         const nsACString& aIds, nsCString& aCss) {
++    if (!mEngine) {
++      return NS_ERROR_NOT_INITIALIZED;
++    }
++    return content_classifier_engine_class_id_css(mEngine, &aUrl, &aClasses,
++                                                  &aIds, &aCss);
++  }
++
    const ContentClassifierFeature& Feature() const { return mFeature; }
  
    ContentClassifierEngineResult CheckNetworkRequest(
 diff --git a/toolkit/components/content-classifier/content_classifier_engine/src/lib.rs b/toolkit/components/content-classifier/content_classifier_engine/src/lib.rs
-index ecfe964..8439d24 100644
+index ecfe964..423d3d1 100644
 --- a/toolkit/components/content-classifier/content_classifier_engine/src/lib.rs
 +++ b/toolkit/components/content-classifier/content_classifier_engine/src/lib.rs
 @@ -2,20 +2,39 @@
@@ -328,7 +480,7 @@ index ecfe964..8439d24 100644
      *out_engine = Box::into_raw(boxed_engine);
      NS_OK
  }
-@@ -125,6 +144,74 @@ pub unsafe extern "C" fn content_classifier_engine_check_network_request_prepars
+@@ -125,6 +144,96 @@ pub unsafe extern "C" fn content_classifier_engine_check_network_request_prepars
      NS_OK
  }
  
@@ -400,14 +552,36 @@ index ecfe964..8439d24 100644
 +    NS_OK
 +}
 +
++/// Vanta Blackout: writes the style sheet of generic rules that target the
++/// newline-separated CSS `classes` and `ids` of a page at `url` to `out_css`.
++#[no_mangle]
++pub unsafe extern "C" fn content_classifier_engine_class_id_css(
++    engine: *const ContentClassifierFFIEngine,
++    url: &nsACString,
++    classes: &nsACString,
++    ids: &nsACString,
++    out_css: *mut nsCString,
++) -> nsresult {
++    if engine.is_null() || out_css.is_null() {
++        return NS_ERROR_INVALID_ARG;
++    }
++
++    let url_str = String::from_utf8_lossy(url.as_ref());
++    let classes = String::from_utf8_lossy(classes.as_ref());
++    let ids = String::from_utf8_lossy(ids.as_ref());
++    let css = blackout::class_id_css(&(*engine).engine, &url_str, classes.lines(), ids.lines());
++    (*out_css).assign(&css);
++    NS_OK
++}
++
  struct SchemelessSiteResolver {}
  
  impl adblock::url_parser::ResolvesDomain for SchemelessSiteResolver {
 diff --git a/toolkit/components/content-classifier/nsIContentClassifierService.idl b/toolkit/components/content-classifier/nsIContentClassifierService.idl
-index 3aa1bf2..042ea30 100644
+index 3aa1bf2..559e395 100644
 --- a/toolkit/components/content-classifier/nsIContentClassifierService.idl
 +++ b/toolkit/components/content-classifier/nsIContentClassifierService.idl
-@@ -108,6 +108,17 @@ interface nsIContentClassifierService : nsISupports {
+@@ -108,6 +108,29 @@ interface nsIContentClassifierService : nsISupports {
      [implicit_jscontext] Promise probeFeature(
          in ACString aFeatureName,
          in nsIContentClassifierProbeRequest aRequest);
@@ -422,6 +596,18 @@ index 3aa1bf2..042ea30 100644
 +    [implicit_jscontext] Promise getCosmeticStyle(in ACString aFeatureName,
 +                                                  in ACString aUrl,
 +                                                  in boolean aIncludeGeneric);
++
++    /**
++     * Vanta Blackout: resolves with a user style sheet of the generic rules
++     * that target the CSS classes and ids found on the page at aUrl. aClasses
++     * and aIds are newline-separated. Leaves out rules the page's site has
++     * exceptions for, and resolves with an empty string when the site turns
++     * generic hiding off or the feature has no engine.
++     */
++    [implicit_jscontext] Promise getClassIdStyle(in ACString aFeatureName,
++                                                 in ACString aUrl,
++                                                 in ACString aClasses,
++                                                 in ACString aIds);
  };
  
  /**

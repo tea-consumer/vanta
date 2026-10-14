@@ -31,7 +31,7 @@ index 8a1611d..28e0671 100644
      "contextualidentity",
      "controlcenter",
 diff --git a/toolkit/components/content-classifier/ContentClassifierService.cpp b/toolkit/components/content-classifier/ContentClassifierService.cpp
-index 3ff3514..3848607 100644
+index 3ff3514..092d58b 100644
 --- a/toolkit/components/content-classifier/ContentClassifierService.cpp
 +++ b/toolkit/components/content-classifier/ContentClassifierService.cpp
 @@ -23,7 +23,10 @@
@@ -117,10 +117,46 @@ index 3ff3514..3848607 100644
    }
  
    ContentClassifierPrefMirror::Init();
-@@ -1249,6 +1280,67 @@ NS_IMETHODIMP ContentClassifierService::ProbeFeature(
+@@ -1249,6 +1280,122 @@ NS_IMETHODIMP ContentClassifierService::ProbeFeature(
    return NS_OK;
  }
  
++namespace {
++
++// Vanta Blackout: runs aGetCss with aEngine on the URL classifier thread, the
++// only thread engines are used on, and resolves aPromise with the style sheet
++// it writes. A failure resolves with an empty sheet: hiding nothing is the
++// safe outcome.
++template <typename GetCss>
++nsresult ResolveWithStyle(RefPtr<ContentClassifierEngine> aEngine,
++                          dom::Promise* aPromise, GetCss&& aGetCss) {
++  nsIThread* backgroundThread = nsUrlClassifierDBService::BackgroundThread();
++  if (!backgroundThread) {
++    return NS_ERROR_NOT_INITIALIZED;
++  }
++  nsMainThreadPtrHandle<dom::Promise> promiseHolder(
++      new nsMainThreadPtrHolder<dom::Promise>("Blackout style promise",
++                                              aPromise));
++  return backgroundThread->Dispatch(
++      NS_NewRunnableFunction(
++          "Blackout style",
++          [engine = std::move(aEngine), getCss = std::forward<GetCss>(aGetCss),
++           promiseHolder]() {
++            nsCString css;
++            if (NS_FAILED(getCss(engine, css))) {
++              css.Truncate();
++            }
++            NS_DispatchToMainThread(NS_NewRunnableFunction(
++                "Blackout style resolve",
++                [promiseHolder, css = std::move(css)]() {
++                  promiseHolder->MaybeResolve(NS_ConvertUTF8toUTF16(css));
++                }));
++          }),
++      NS_DISPATCH_NORMAL);
++}
++
++}  // namespace
++
 +NS_IMETHODIMP ContentClassifierService::GetCosmeticStyle(
 +    const nsACString& aFeatureName, const nsACString& aUrl,
 +    bool aIncludeGeneric, JSContext* aCx, dom::Promise** aPromise) {
@@ -147,34 +183,53 @@ index 3ff3514..3848607 100644
 +    return NS_OK;
 +  }
 +
-+  nsMainThreadPtrHandle<dom::Promise> promiseHolder(
-+      new nsMainThreadPtrHolder<dom::Promise>(
-+          "ContentClassifierService::GetCosmeticStyle promise", promise));
-+
-+  // Engines are only ever used on the URL classifier thread, which is also
-+  // where network requests are checked against them.
-+  nsIThread* backgroundThread = nsUrlClassifierDBService::BackgroundThread();
-+  if (backgroundThread) {
-+    rv = backgroundThread->Dispatch(
-+        NS_NewRunnableFunction(
-+            "ContentClassifierService::GetCosmeticStyle",
-+            [engine = std::move(engine), url = nsCString(aUrl), aIncludeGeneric,
-+             promiseHolder]() {
-+              nsCString css;
-+              if (NS_FAILED(
-+                      engine->GetCosmeticCss(url, aIncludeGeneric, css))) {
-+                css.Truncate();
-+              }
-+              NS_DispatchToMainThread(NS_NewRunnableFunction(
-+                  "ContentClassifierService::GetCosmeticStyle resolve",
-+                  [promiseHolder, css = std::move(css)]() {
-+                    promiseHolder->MaybeResolve(NS_ConvertUTF8toUTF16(css));
-+                  }));
-+            }),
-+        NS_DISPATCH_NORMAL);
-+  } else {
-+    rv = NS_ERROR_NOT_INITIALIZED;
++  rv = ResolveWithStyle(std::move(engine), promise,
++                        [url = nsCString(aUrl), aIncludeGeneric](
++                            ContentClassifierEngine* aEngine, nsCString& aCss) {
++                          return aEngine->GetCosmeticCss(url, aIncludeGeneric,
++                                                         aCss);
++                        });
++  if (NS_FAILED(rv)) {
++    promise->MaybeReject(rv);
 +  }
++  promise.forget(aPromise);
++  return NS_OK;
++}
++
++NS_IMETHODIMP ContentClassifierService::GetClassIdStyle(
++    const nsACString& aFeatureName, const nsACString& aUrl,
++    const nsACString& aClasses, const nsACString& aIds, JSContext* aCx,
++    dom::Promise** aPromise) {
++  NS_ENSURE_ARG_POINTER(aPromise);
++  MOZ_ASSERT(NS_IsMainThread());
++  if (!IsInitialized()) {
++    return NS_ERROR_NOT_INITIALIZED;
++  }
++
++  RefPtr<dom::Promise> promise;
++  nsresult rv = MakeProbePromise(aCx, getter_AddRefs(promise));
++  NS_ENSURE_SUCCESS(rv, rv);
++
++  RefPtr<ContentClassifierEngine> engine;
++  {
++    MutexAutoLock lock(mLock);
++    if (auto entry = mEngines.Lookup(nsCString(aFeatureName))) {
++      engine = entry.Data();
++    }
++  }
++  if (!engine) {
++    promise->MaybeResolve(nsString());
++    promise.forget(aPromise);
++    return NS_OK;
++  }
++
++  rv =
++      ResolveWithStyle(std::move(engine), promise,
++                       [url = nsCString(aUrl), classes = nsCString(aClasses),
++                        ids = nsCString(aIds)](ContentClassifierEngine* aEngine,
++                                               nsCString& aCss) {
++                         return aEngine->GetClassIdCss(url, classes, ids, aCss);
++                       });
 +  if (NS_FAILED(rv)) {
 +    promise->MaybeReject(rv);
 +  }
@@ -185,7 +240,7 @@ index 3ff3514..3848607 100644
  // Parses a byte buffer of adblock-format filter list text into rules.
  // Tolerates both LF and CRLF line endings; skips empty lines.
  static void ParseFilterListRules(const nsTArray<uint8_t>& aData,
-@@ -1317,6 +1409,24 @@ static RefPtr<ListBytesPromise> FetchListBytesFromRemoteSettings(
+@@ -1317,6 +1464,24 @@ static RefPtr<ListBytesPromise> FetchListBytesFromRemoteSettings(
  nsresult BuildEngineFromRules(const ContentClassifierFeature& aFeature,
                                const nsTArray<nsCString>& aRules,
                                RefPtr<ContentClassifierEngine>& aEngineOutput) {
@@ -210,7 +265,7 @@ index 3ff3514..3848607 100644
    if (aRules.IsEmpty()) {
      MOZ_LOG_FMT(gContentClassifierLog, LogLevel::Info,
                  "BuildEngineFromRules - no rules for feature \"{}\"; ",
-@@ -1737,6 +1847,31 @@ ContentClassifierService::FetchEngineDataForFeature(
+@@ -1737,6 +1902,31 @@ ContentClassifierService::FetchEngineDataForFeature(
      return FetchEngineDataForTestFeature(aFeature);
    }
  
@@ -243,10 +298,10 @@ index 3ff3514..3848607 100644
      return EngineRulesPromise::CreateAndReject(NS_ERROR_NOT_AVAILABLE,
                                                 __func__);
 diff --git a/toolkit/components/content-classifier/content_classifier_engine/ContentClassifierEngine.h b/toolkit/components/content-classifier/content_classifier_engine/ContentClassifierEngine.h
-index b907ed7..8b6ab0b 100644
+index b907ed7..f3a3a3d 100644
 --- a/toolkit/components/content-classifier/content_classifier_engine/ContentClassifierEngine.h
 +++ b/toolkit/components/content-classifier/content_classifier_engine/ContentClassifierEngine.h
-@@ -104,6 +104,27 @@ class ContentClassifierEngine final {
+@@ -104,6 +104,39 @@ class ContentClassifierEngine final {
      return content_classifier_engine_from_rules(&aRules, &mEngine);
    }
  
@@ -271,11 +326,23 @@ index b907ed7..8b6ab0b 100644
 +                                                  aIncludeGeneric, &aCss);
 +  }
 +
++  // Vanta Blackout: the style sheet of generic rules that target the CSS
++  // classes and ids in aClasses and aIds (newline-separated) on the page at
++  // aUrl. Same thread rules as GetCosmeticCss.
++  nsresult GetClassIdCss(const nsACString& aUrl, const nsACString& aClasses,
++                         const nsACString& aIds, nsCString& aCss) {
++    if (!mEngine) {
++      return NS_ERROR_NOT_INITIALIZED;
++    }
++    return content_classifier_engine_class_id_css(mEngine, &aUrl, &aClasses,
++                                                  &aIds, &aCss);
++  }
++
    const ContentClassifierFeature& Feature() const { return mFeature; }
  
    ContentClassifierEngineResult CheckNetworkRequest(
 diff --git a/toolkit/components/content-classifier/content_classifier_engine/src/lib.rs b/toolkit/components/content-classifier/content_classifier_engine/src/lib.rs
-index b739220..629d3ba 100644
+index b739220..642484e 100644
 --- a/toolkit/components/content-classifier/content_classifier_engine/src/lib.rs
 +++ b/toolkit/components/content-classifier/content_classifier_engine/src/lib.rs
 @@ -2,22 +2,41 @@
@@ -330,7 +397,7 @@ index b739220..629d3ba 100644
      *out_engine = Box::into_raw(boxed_engine);
      NS_OK
  }
-@@ -182,6 +201,74 @@ pub unsafe extern "C" fn content_classifier_engine_check_network_request_prepars
+@@ -182,6 +201,96 @@ pub unsafe extern "C" fn content_classifier_engine_check_network_request_prepars
      NS_OK
  }
  
@@ -402,14 +469,112 @@ index b739220..629d3ba 100644
 +    NS_OK
 +}
 +
++/// Vanta Blackout: writes the style sheet of generic rules that target the
++/// newline-separated CSS `classes` and `ids` of a page at `url` to `out_css`.
++#[no_mangle]
++pub unsafe extern "C" fn content_classifier_engine_class_id_css(
++    engine: *const ContentClassifierFFIEngine,
++    url: &nsACString,
++    classes: &nsACString,
++    ids: &nsACString,
++    out_css: *mut nsCString,
++) -> nsresult {
++    if engine.is_null() || out_css.is_null() {
++        return NS_ERROR_INVALID_ARG;
++    }
++
++    let url_str = String::from_utf8_lossy(url.as_ref());
++    let classes = String::from_utf8_lossy(classes.as_ref());
++    let ids = String::from_utf8_lossy(ids.as_ref());
++    let css = blackout::class_id_css(&(*engine).engine, &url_str, classes.lines(), ids.lines());
++    (*out_css).assign(&css);
++    NS_OK
++}
++
  struct SchemelessSiteResolver {}
  
  impl etp_engine::url_parser::ResolvesDomain for SchemelessSiteResolver {
+diff --git a/toolkit/components/content-classifier/etp_engine/src/filters/network_matchers.rs b/toolkit/components/content-classifier/etp_engine/src/filters/network_matchers.rs
+index f4acc04..d2cdec4 100644
+--- a/toolkit/components/content-classifier/etp_engine/src/filters/network_matchers.rs
++++ b/toolkit/components/content-classifier/etp_engine/src/filters/network_matchers.rs
+@@ -9,7 +9,32 @@
+ //! to their type, protocol, and party (first-party or third-party). The code is designed to
+ //! efficiently determine if a request should be blocked or allowed based on the defined filters.
+ 
+-use memchr::memmem;
++// Vanta Blackout: substring search for the short needles and haystacks of URL
++// matching. `memchr::memmem::find` builds a searcher on every call, which costs
++// more than it saves at these sizes and made it the single biggest cost of a
++// request check.
++#[inline]
++fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
++    let Some((&first, rest)) = needle.split_first() else {
++        return Some(0);
++    };
++    if needle.len() > haystack.len() {
++        return None;
++    }
++    let last_start = haystack.len() - needle.len();
++    let mut i = 0;
++    while let Some(offset) = memchr::memchr(first, &haystack[i..=last_start]) {
++        let pos = i + offset;
++        if &haystack[pos + 1..pos + needle.len()] == rest {
++            return Some(pos);
++        }
++        i = pos + 1;
++        if i > last_start {
++            break;
++        }
++    }
++    None
++}
+ 
+ use crate::filters::network::{NetworkFilterMask, NetworkFilterMaskHelper};
+ use crate::regex_manager::RegexManager;
+@@ -18,8 +43,7 @@ use crate::utils::{self, Hash};
+ use std::collections::HashMap;
+ 
+ fn get_url_after_hostname<'a>(url: &'a str, hostname: &str) -> &'a str {
+-    let start =
+-        memmem::find(url.as_bytes(), hostname.as_bytes()).unwrap_or(url.len() - hostname.len());
++    let start = find(url.as_bytes(), hostname.as_bytes()).unwrap_or(url.len() - hostname.len());
+     &url[start + hostname.len()..]
+ }
+ 
+@@ -45,8 +69,7 @@ fn is_anchored_by_hostname(
+     } else if filter_hostname_len == hostname_len {
+         // If they have the same len(), they should be equal
+         filter_hostname == hostname
+-    } else if let Some(match_index) = memmem::find(hostname.as_bytes(), filter_hostname.as_bytes())
+-    {
++    } else if let Some(match_index) = find(hostname.as_bytes(), filter_hostname.as_bytes()) {
+         if match_index == 0 {
+             // `filter_hostname` is a prefix of `hostname` and needs to match full a label.
+             //
+@@ -91,7 +114,7 @@ where
+     }
+ 
+     let request_url = request.get_url(mask.match_case());
+-    filters.any(|f| memmem::find(request_url.as_bytes(), f.as_bytes()).is_some())
++    filters.any(|f| find(request_url.as_bytes(), f.as_bytes()).is_some())
+ }
+ 
+ // pattern|
+@@ -197,7 +220,7 @@ where
+                     filters,
+                     key,
+                     request,
+-                    memmem::find(request_url.as_bytes(), hostname.as_bytes()).unwrap_or_default()
++                    find(request_url.as_bytes(), hostname.as_bytes()).unwrap_or_default()
+                         + hostname.len(),
+                     regex_manager,
+                 )
 diff --git a/toolkit/components/content-classifier/nsIContentClassifierService.idl b/toolkit/components/content-classifier/nsIContentClassifierService.idl
-index 3aa1bf2..042ea30 100644
+index 3aa1bf2..559e395 100644
 --- a/toolkit/components/content-classifier/nsIContentClassifierService.idl
 +++ b/toolkit/components/content-classifier/nsIContentClassifierService.idl
-@@ -108,6 +108,17 @@ interface nsIContentClassifierService : nsISupports {
+@@ -108,6 +108,29 @@ interface nsIContentClassifierService : nsISupports {
      [implicit_jscontext] Promise probeFeature(
          in ACString aFeatureName,
          in nsIContentClassifierProbeRequest aRequest);
@@ -424,6 +589,18 @@ index 3aa1bf2..042ea30 100644
 +    [implicit_jscontext] Promise getCosmeticStyle(in ACString aFeatureName,
 +                                                  in ACString aUrl,
 +                                                  in boolean aIncludeGeneric);
++
++    /**
++     * Vanta Blackout: resolves with a user style sheet of the generic rules
++     * that target the CSS classes and ids found on the page at aUrl. aClasses
++     * and aIds are newline-separated. Leaves out rules the page's site has
++     * exceptions for, and resolves with an empty string when the site turns
++     * generic hiding off or the feature has no engine.
++     */
++    [implicit_jscontext] Promise getClassIdStyle(in ACString aFeatureName,
++                                                 in ACString aUrl,
++                                                 in ACString aClasses,
++                                                 in ACString aIds);
  };
  
  /**

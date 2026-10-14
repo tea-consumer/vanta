@@ -18,7 +18,7 @@ from their maintainers, never bundled.
 page asks for https://ads.example/tag.js
   -> nsHttpChannel::AsyncOpen
   -> URL classifier worker thread (already used by ETP for every request)
-       content classifier: "blackout" engine checks the URL      ~3 us
+       content classifier: "blackout" engine checks the URL      ~5 us
   -> main thread: blocked? cancel with NS_ERROR_TRACKING_URI
      (same path as ETP: shield icon, SmartBlock shims, per-site toggle)
 ```
@@ -31,7 +31,12 @@ page asks for https://ads.example/tag.js
 - **Element hiding** (`##` rules): when a page's document starts, a small window
   actor asks the parent process for that site's rules. The engine answers on
   the same classifier thread, and the actor applies them as one user style
-  sheet. Pages with nothing to hide get no sheet and no style work.
+  sheet. Generic rules (the ones meant for every site, tens of thousands of
+  `##.ad-slot` style rules) are matched to the page instead of sent whole:
+  when the browser is idle after DOMContentLoaded, after load and once more
+  5 s later, the actor lists the CSS classes and ids the page uses and gets
+  back only the rules that target them. Pages with nothing to hide get no
+  sheet and no style work.
 - **Lists** are downloaded into `<profile>/blackout/lists/` on first start and
   refreshed daily with conditional requests (ETag / If-Modified-Since), so an
   unchanged list costs one empty 304 response. After a change the engine is
@@ -43,42 +48,89 @@ page asks for https://ads.example/tag.js
 
 ## Default lists
 
+The defaults are uBlock Origin's own default lists, so the two can be compared
+like for like:
+
 | List | What it adds | License |
 |---|---|---|
+| uBlock filters, badware, privacy, quick fixes, unbreak | uBlock Origin's own lists | GPLv3 |
 | EasyList | Ads, international baseline | GPLv3 / CC BY-SA 3.0 |
 | EasyPrivacy | Trackers and analytics | GPLv3 / CC BY-SA 3.0 |
 | Peter Lowe's list | Ad and tracking servers | Free to use |
-| AdGuard Base (without EasyList) | Ads EasyList misses, many non-English | GPLv3 |
+| Online Malicious URL Blocklist (URLhaus) | Malware sites | CC0 / MIT |
 
 The set is one pref, `vanta.blackout.lists` (whitespace-separated `id=url`
-entries), so adding or removing a list needs no rebuild.
+entries), so adding or removing a list needs no rebuild. AdGuard Base, for
+example, adds `adguard-base=https://filters.adtidy.org/extension/ublock/filters/2_without_easylist.txt`
+(1-2 us more per request, mostly more element hiding).
 
-Not in the defaults, on purpose:
+### uBlock Origin's list syntax
 
-- **uBlock Origin's lists** use `!#if` / `!#include` preprocessor lines that
-  this engine does not evaluate. Fed in raw, they apply rules meant for other
-  platforms. Supporting them needs a small preprocessor first.
-- **AdGuard Tracking Protection** triples engine memory (about 30 MB) for
-  little over EasyPrivacy.
-- **Annoyance lists** (cookie banners, newsletters): Firefox's own cookie
-  banner handling covers the main case.
+uBlock Origin's lists are written for uBlock Origin, so the engine glue
+(`blackout.rs`) translates them as it loads them:
+
+- `!#if` / `!#else` / `!#endif` blocks are evaluated as uBlock Origin on
+  Firefox would (`env_firefox`, `ext_ublock`, `cap_user_stylesheet` hold;
+  anything else, such as `env_chromium` or `cap_html_filtering`, does not).
+- `@@...$redirect-rule` exceptions only switch off a redirect in uBlock Origin.
+  The engine would read them as full exceptions and let the ad through, so
+  they are dropped (Gecko does not redirect anyway).
+- `$redirect=` rules are kept as plain blocks; `$redirect-rule` and
+  `$removeparam` rules are dropped, since Gecko only asks whether to block and
+  they would cost time on every request for nothing.
+- `$denyallow=` becomes the rule plus exceptions for the allowed hosts (only
+  for rules limited to some sites, where that means the same thing).
+- `$~document` is dropped, since rules never apply to top-level pages unless
+  they ask to.
+
+What the engine still skips: `$popup` (popup windows are not network
+requests the classifier sees), `$to=`, `$header=`, `$replace=`, `$urlskip=`
+and a few other uBlock-only options, HTML filtering (`##^`) and regular
+expressions with lookaround. Together with scriptlets (below) these are the
+gap to uBlock Origin.
 
 ## Numbers
 
-Measured with `blackout/bench` on the default four lists (213k lines), on a
-cloud x86 machine. The engine code is the same on the Mac.
+Both blockers measured on the same machine (cloud x86), on the same lists
+(the defaults above, 9 lists) and the same 205,560 real requests from 2,000
+sites (the request set adblock-rust benchmarks with). Blackout is timed the
+way Gecko calls it (hosts already parsed, block or not); uBlock Origin's own
+engine (`@gorhill/ubo-core` 0.1.30, with WASM and the real public suffix
+list) is timed through its `matchRequest`, after a warm-up pass.
 
-| | |
-|---|---|
-| Network check | about 3-4 us per request, on the classifier thread |
-| Start with cached engine | 25-35 ms, on a background thread |
-| First start or list update (parse + cache) | 200-290 ms, on a background thread |
-| Engine memory | about 11 MB, in the parent process only (15 MB right after a list update, until the next start) |
-| Element-hiding rules for nytimes.com | 32 rules, 2 KB, 0.1 ms |
-| Element-hiding rules for browserbench.org | none |
+| | Blackout | uBlock Origin |
+|---|---|---|
+| Requests blocked | 83,581 | 83,584 |
+| Network check | **5.2 us** per request | 5.9 us |
+| Start with cached engine | **35 ms** | 210 ms |
+| First start or list update | **0.2-0.3 s** | 1.0 s |
+| Engine memory | **12.5 MB** | at least 49 MB |
 
-For comparison: EasyList + EasyPrivacy alone is 1.9 us and 7 MB; adding
-AdGuard Tracking Protection on top of the defaults is 4.1 us and 30 MB.
+Blackout blocks every request uBlock Origin blocks but 3 (one script on
+nbcnews.com that only a regular expression with lookahead catches), and
+nothing uBlock Origin lets through. The per-request time is the engine alone; in the browser uBlock
+Origin also pays for each request's trip to its extension process, which
+Blackout does not make. Blackout's lead on the network check comes from one
+change to Firefox's matching code (below); without it the two are even.
+
+Element hiding: site rules for nytimes.com are 13 rules in 0.1 ms;
+browserbench.org gets none. Matching a page's classes and ids to generic
+rules takes 0.1-0.25 ms on the classifier thread (cnn.com: 1,062 classes and
+294 ids, 14 rules).
+
+To reproduce: `blackout/bench` (`cargo run --release -- <lists> <requests.tsv>`,
+with `BLACKOUT_DECISIONS=<file>` to save its decisions) and
+`blackout/bench/compare` (`requests.py` converts adblock-rust's
+`data/requests.json`; `ubo.mjs` runs uBlock Origin's engine).
+
+### The matching change
+
+Firefox's filter engine looked for substrings with `memchr::memmem::find`,
+which builds a new searcher on every call. On short URLs and host names that
+setup costs more than the search, and it was the largest single cost of a
+check. The patch replaces it in `network_matchers.rs` (vendored `adblock`
+crate in 157, in-tree `etp_engine` in 158) with a plain first-byte scan that
+returns the same results; that is the 13% that puts Blackout ahead.
 
 ### Speedometer
 
@@ -88,11 +140,12 @@ lower it. Why it should not:
 - Every request already goes through ETP's classifier thread in Strict mode.
   Blackout adds one engine lookup inside that same step, not a new thread hop.
 - browserbench.org gets no element-hiding rules, so no style sheet is added.
-- Generic element-hiding rules (the ones every site gets, about 500
-  selectors including costly attribute selectors) are **off by default**
-  (`vanta.blackout.cosmetic.generic`). They would add style-matching work to
-  every page, Speedometer's included, for little gain once the ad requests
-  themselves are blocked.
+- The class and id survey runs only when the browser is idle, three times per
+  page, and adds rules only for classes and ids that lists target.
+- The other generic rules (about 550 selectors every page would get, mostly
+  attribute selectors such as `a[href^="..."]`) are off by default
+  (`vanta.blackout.cosmetic.generic_complex`). uBlock Origin applies them;
+  they would add style-matching work to every page.
 
 This still has to be confirmed on the real build: run Speedometer 3.1 with
 `privacy.trackingprotection.content.protection.enabled` on and off.
@@ -104,10 +157,11 @@ This still has to be confirmed on the real build: run Speedometer 3.1 with
 | `privacy.trackingprotection.content.protection.enabled` | `true` | Master switch (Firefox's pref) |
 | `privacy.trackingprotection.content.protection.engines` | `blackout` | Engines that block, normal windows |
 | `privacy.trackingprotection.content.protection.engines.pbmode` | `blackout` | Same, private windows |
-| `vanta.blackout.lists` | 4 lists | `id=url` entries |
+| `vanta.blackout.lists` | 9 lists | `id=url` entries |
 | `vanta.blackout.update_interval` | `86400` | Seconds between list refreshes |
 | `vanta.blackout.cosmetic.enabled` | `true` | Element hiding |
-| `vanta.blackout.cosmetic.generic` | `false` | Generic element hiding |
+| `vanta.blackout.cosmetic.generic` | `true` | Generic element hiding, matched to the page's classes and ids |
+| `vanta.blackout.cosmetic.generic_complex` | `false` | The other generic rules, on every page |
 
 ETP Strict and its Disconnect lists keep running alongside Blackout.
 
@@ -116,26 +170,32 @@ ETP Strict and its Disconnect lists keep running alongside Blackout.
 - `blackout/patches/firefox-<major>.patch`: changes to Firefox's own files, one
   patch per Firefox major version (157, 158): the `blackout` feature in
   `ContentClassifierService.cpp`, the engine-cache and element-hiding entry
-  points in the engine glue, `getCosmeticStyle()` on
-  `nsIContentClassifierService`, and the startup hooks.
+  points in the engine glue, `getCosmeticStyle()` and `getClassIdStyle()` on
+  `nsIContentClassifierService`, the matching change, and the startup hooks.
 - `blackout/gecko/`: new files copied into the tree.
-  `content_classifier_engine/src/blackout.rs` builds and caches the engine and
-  writes element-hiding style sheets; `browser/components/blackout/` holds the
+  `content_classifier_engine/src/blackout.rs` translates uBlock Origin's list
+  syntax, builds and caches the engine and writes element-hiding style sheets; `browser/components/blackout/` holds the
   list updater and the element-hiding actors.
 - `prefs/blackout.js`: the prefs above.
 - `scripts/apply-blackout.sh`: applies all of it; `apply-vanta.sh` calls it.
 - `blackout/bench/`: the benchmark behind the numbers above
-  (`cargo run --release -- <folder with *.txt lists>`).
+  (`cargo run --release -- <folder with *.txt lists> [requests.tsv]`). It
+  builds against crates.io's `adblock` 0.12.1, without the matching change;
+  to include it, point a `[patch.crates-io]` entry at the patched
+  `third_party/rust/adblock` of a Firefox 157 tree.
+- `blackout/bench/compare/`: the uBlock Origin side of the comparison.
 
 ## Not in this version
 
-- Scriptlet injection (`##+js`) and redirect resources (`$redirect`). They are
-  what defeats anti-adblock scripts and YouTube's in-video ads, but the
-  standard resource set is uBlock Origin's own JavaScript, and Vanta's ground
-  rule is no code from other projects' browsers. Rules that redirect are
+- Scriptlets (`##+js`): the small scripts lists inject to defeat anti-adblock
+  and YouTube's in-video ads. Vanta is getting its own implementations under
+  the names the lists use (uBlock Origin's are GPLv3 code from another
+  project). Until then those rules do nothing. Rules that redirect are
   applied as plain blocks; Firefox's SmartBlock shims still replace the
   common trackers (Google Analytics, Tag Manager and so on) so sites that
   expect them keep working.
+- The uBlock-only options listed above, and procedural element hiding
+  (`:has-text()`, `:upward()` and the like).
 - A Blackout panel or blocked-count badge. The shield already shows what was
   blocked; a Vanta-styled view can follow.
 
@@ -145,5 +205,5 @@ ETP Strict and its Disconnect lists keep running alongside Blackout.
   probed against the `blackout` feature.
 - Logs: set `MOZ_LOG=ContentClassifier:5`, and `vanta.blackout.loglevel` to
   `Debug` for the list updater.
-- First start: `<profile>/blackout/lists/` fills with four `.txt` files and
+- First start: `<profile>/blackout/lists/` fills with nine `.txt` files and
   `engine.dat` appears a moment later.
