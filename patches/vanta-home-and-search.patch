@@ -1,6 +1,6 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,919 @@
+@@ -1258,3 +1258,1081 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
@@ -402,42 +402,54 @@
 +};
 +delayedStartupPromise.then(() => VantaSearch.init());
 +
-+// Vanta: DuckDuckGo is the search engine, and its results page wears the
-+// Vanta look. The engine is set once, on first run, so a later choice in
-+// Settings sticks. The skin is a user style sheet scoped to duckduckgo.com,
-+// shared by every window; vanta.search.skin turns it off.
++// Vanta: search results drawn by Vanta. Searches go to DuckDuckGo's
++// script-free results page (private, no trackers, no scripts) and Vanta
++// styles all of it: RESULTS is the whole look of that page. DuckDuckGo's
++// regular pages (images, news) get a lighter skin, DDG, whose rules only
++// match that page's markup. The engine is added
++// and made the default once, so a later choice in Settings sticks;
++// vanta.search.skin turns both styles off.
 +var VantaSearchSkin = {
-+  ENGINE_PREF: "vanta.search.duckduckgoSet",
++  ENGINE: "Vanta",
++  ENGINE_PREF: "vanta.search.engineSet",
 +  SKIN_PREF: "vanta.search.skin",
 +
 +  init() {
 +    this.setEngine();
 +    if (Services.prefs.getBoolPref(this.SKIN_PREF, true)) {
-+      let sss = Cc["@mozilla.org/content/style-sheet-service;1"].getService(
-+        Ci.nsIStyleSheetService
-+      );
-+      let uri = Services.io.newURI(
-+        "data:text/css;charset=utf-8," +
-+          encodeURIComponent(
-+            '@-moz-document domain("duckduckgo.com") {\n' + this.CSS + "\n}"
-+          )
-+      );
-+      if (!sss.sheetRegistered(uri, sss.USER_SHEET)) {
-+        sss.loadAndRegisterSheet(uri, sss.USER_SHEET);
-+      }
++      this.register("html.duckduckgo.com", this.RESULTS);
++      this.register("duckduckgo.com", this.DDG);
++    }
++  },
++
++  // A user style sheet for one site, shared by every window.
++  register(domain, css) {
++    let sss = Cc["@mozilla.org/content/style-sheet-service;1"].getService(
++      Ci.nsIStyleSheetService
++    );
++    let uri = Services.io.newURI(
++      "data:text/css;charset=utf-8," +
++        encodeURIComponent(`@-moz-document domain("${domain}") {\n${css}\n}`)
++    );
++    if (!sss.sheetRegistered(uri, sss.USER_SHEET)) {
++      sss.loadAndRegisterSheet(uri, sss.USER_SHEET);
 +    }
 +  },
 +
 +  async setEngine() {
-+    if (Services.prefs.getBoolPref(this.ENGINE_PREF, false)) {
-+      return;
-+    }
 +    let { SearchService } = ChromeUtils.importESModule(
 +      "moz-src:///toolkit/components/search/SearchService.sys.mjs"
 +    );
 +    await SearchService.init();
-+    let engine = SearchService.getEngineByName("DuckDuckGo");
++    let engine = SearchService.getEngineByName(this.ENGINE);
 +    if (!engine) {
++      engine = await SearchService.addUserEngine({
++        name: this.ENGINE,
++        url: "https://html.duckduckgo.com/html/?q={searchTerms}",
++        suggestUrl: "https://duckduckgo.com/ac/?q={searchTerms}&type=list",
++      });
++    }
++    if (Services.prefs.getBoolPref(this.ENGINE_PREF, false)) {
 +      return;
 +    }
 +    await SearchService.setDefault(engine, SearchService.CHANGE_REASON.USER);
@@ -445,7 +457,157 @@
 +    Services.prefs.setBoolPref(this.ENGINE_PREF, true);
 +  },
 +
-+  CSS: `
++  RESULTS: `
++    /* Vanta's results page. DuckDuckGo's script-free HTML page supplies the
++       results; everything you see is drawn here: true black, your search set
++       large like the new tab's heading, results as type, and the new tab's
++       horizon low in the window. */
++
++    html, body {
++      background: #000 !important;
++      color: #fff !important;
++      margin: 0 !important;
++    }
++    body {
++      font: 400 16px/1.55 "SF Pro Text", -apple-system, "Inter", "Helvetica Neue", sans-serif !important;
++      -moz-osx-font-smoothing: grayscale;
++      padding: 0 0 22vh 12vw !important;
++      max-width: 760px !important;
++    }
++
++    /* The horizon from the new tab, low and dim, so the page reads as the same
++       place a little later in the evening. */
++    html::before {
++      content: "";
++      position: fixed;
++      left: 50%;
++      top: 94vh;
++      width: 420vw;
++      aspect-ratio: 1;
++      margin-left: -210vw;
++      border-radius: 50%;
++      background: #000;
++      box-shadow:
++        0 -1px 0 rgba(170, 185, 215, .4),
++        0 -8px 30px -6px rgba(170, 185, 215, .14),
++        0 -50px 140px -30px rgba(170, 185, 215, .08);
++      pointer-events: none;
++      z-index: 0;
++    }
++    body > * { position: relative; z-index: 1; }
++
++    /* Header: no logo, no box. The query is the page's heading. */
++    .header__logo-wrap, .header__logo, .search__button, .site-wrapper-border,
++    #state_hidden, .result__extras__url > span:not(.result__icon),
++    .header__form .frm__select, #bottom_spacing2,
++    .feedback-btn, .result--ad, .badge--ad, #zero_click_wrapper {
++      display: none !important;
++    }
++    .header, .header-wrap, .header__form, .search, .search--header {
++      all: unset !important;
++      display: block !important;
++    }
++    .header { padding-top: 11vh !important; }
++    .header::before {
++      content: "DuckDuckGo · private";
++      display: block;
++      margin: 0 0 18px 2px;
++      font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
++      letter-spacing: .18em;
++      text-transform: uppercase;
++      color: rgba(255, 255, 255, .45);
++    }
++    .search__input {
++      all: unset !important;
++      display: block !important;
++      width: 100% !important;
++      font: 650 56px/1.1 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
++      letter-spacing: -.035em !important;
++      color: #fff !important;
++      caret-color: #fff !important;
++      text-rendering: geometricPrecision;
++    }
++
++    /* Results: the site in small spaced capitals, the title, then the words. */
++    .serp__results, .results, #links { all: unset !important; display: block !important; margin-top: 7vh !important; }
++    .result {
++      all: unset !important;
++      display: block !important;
++      margin: 0 0 42px !important;
++    }
++    .result__body {
++      display: flex !important;
++      flex-direction: column !important;
++      padding: 0 !important;
++      background: none !important;
++      border: 0 !important;
++    }
++    .result__extras { order: -1; margin: 0 0 8px !important; }
++    .result__extras__url { display: flex !important; align-items: center !important; gap: 10px !important; }
++    .result__icon, .result__icon a { display: inline-flex !important; }
++    .result__icon__img {
++      width: 14px !important;
++      height: 14px !important;
++      border-radius: 3px;
++      opacity: .85;
++      filter: grayscale(.6);
++    }
++    .result__url {
++      font: 600 11.5px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
++      letter-spacing: .16em !important;
++      text-transform: uppercase !important;
++      color: rgba(255, 255, 255, .4) !important;
++      text-decoration: none !important;
++      white-space: nowrap;
++      overflow: hidden;
++      text-overflow: ellipsis;
++      max-width: 100%;
++    }
++    .result__title { margin: 0 !important; font: inherit !important; }
++    .result__a {
++      font: 500 26px/1.22 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
++      letter-spacing: -.02em !important;
++      color: #fff !important;
++      text-decoration: none !important;
++    }
++    .result__a:visited { color: rgba(255, 255, 255, .5) !important; }
++    .result__a:hover { text-decoration: underline 1px !important; text-underline-offset: 6px !important; }
++    .result__snippet {
++      display: block !important;
++      margin-top: 8px !important;
++      font-size: 16px !important;
++      line-height: 1.6 !important;
++      color: rgba(255, 255, 255, .55) !important;
++      text-decoration: none !important;
++    }
++    .result__snippet b { color: #fff !important; font-weight: 500 !important; }
++
++    /* Next page: a word, not a button. */
++    .nav-link form { display: inline !important; }
++    .nav-link input[type="submit"] {
++      all: unset !important;
++      cursor: pointer !important;
++      font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
++      letter-spacing: .18em !important;
++      text-transform: uppercase !important;
++      color: rgba(255, 255, 255, .6) !important;
++      margin-right: 28px !important;
++    }
++    .nav-link input[type="submit"]:hover { color: #fff !important; }
++
++    @media (prefers-reduced-motion: no-preference) {
++      .result { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
++      .result:nth-child(2) { animation-delay: 40ms; }
++      .result:nth-child(3) { animation-delay: 80ms; }
++      .result:nth-child(4) { animation-delay: 120ms; }
++      .result:nth-child(n+5) { animation-delay: 160ms; }
++    }
++    @keyframes vanta-result-in {
++      from { opacity: 0; transform: translateY(8px); }
++    }
++  `,
++
++  DDG: `
 +    /* Vanta's skin for DuckDuckGo results: the same editorial voice as the new
 +       tab. True black, your search set large like a heading, results as quiet
 +       type with no boxes. Only stable hooks (ids, data-testid) are used, since
@@ -481,7 +643,7 @@
 +    }
 +    [data-testid="search-form-input-wrapper"] button { opacity: .35 !important; }
 +    [data-testid="search-form-input-wrapper"] button:hover { opacity: .8 !important; }
-+    #search_form_input {
++    #react-search-form #search_form_input {
 +      font: 650 44px/1.15 "Inter Display", -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif !important;
 +      letter-spacing: -.035em !important;
 +      color: #fff !important;
@@ -489,7 +651,7 @@
 +      padding: 0 !important;
 +      text-rendering: geometricPrecision;
 +    }
-+    #search_form_input::placeholder { color: rgba(255,255,255,.17) !important; }
++    #react-search-form #search_form_input::placeholder { color: rgba(255,255,255,.17) !important; }
 +    #header-hamburger-menu-btn { opacity: .45 !important; }
 +
 +    /* Tabs and filters: the small spaced capitals of the new tab's date line. */
