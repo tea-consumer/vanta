@@ -47,17 +47,45 @@ frontend_patch() {
   [ -z "$(git show "$1" | sed -n 's|^+++ b/||p' |
     grep -vE '\.(css|mjs|js|ftl|xhtml|html|svg|json)$' || true)" ]
 }
-changed_patches="$(git diff --name-only "$built" HEAD -- 'patches/*.patch' | grep -v '^patches/.*/' || true)"
-other="$(git diff --name-only "$built" HEAD |
-  grep -vE '^(chrome/|prefs/vanta\.js$|docs/|README|\.claude/|\.github/|tools/|blackout/(test|bench)/|patches/experimental/|branding/src/|\.gitignore$|flake\.nix$)' |
-  grep -vE '^scripts/(build-macos|build-macos-cross|run-profile-macos|repack-ui|update-mac-ui|fetch-firefox|preview-ui)\.sh$|^scripts/make-branding\.py$' |
-  grep -vE '^patches/[^/]*\.patch$' || true)"
-for p in $changed_patches; do
-  { [ -z "$(git ls-tree "$built" "$p")" ] || frontend_patch "$built:$p"; } &&
-  { [ -z "$(git ls-tree HEAD "$p")" ] || frontend_patch "HEAD:$p"; } ||
-    other="$other${other:+
-}$p"
-done
+# Sort every changed file by what it does to the shipped app:
+#   - doesn't ship (docs, tests, tools, build scripts): ignored
+#   - chrome CSS, prefs/vanta.js, front-end-only patches: repacked below
+#   - front-end files copied into the tree as is (Blackout and Vanta modules,
+#     cookie banner rules): copied again below
+#   - anything else (C++, Rust, build files, icons, toolchain): full build
+frontend_file='\.(css|mjs|js|ftl|xhtml|html|svg|json)$'
+changed_patches=""
+copied=""
+other=""
+while IFS=$'\t' read -r status path; do
+  [ -n "$path" ] || continue
+  case "$path" in
+    *.md|docs/*|.claude/*|.github/*|tools/*|blackout/test/*|blackout/bench/*|\
+    patches/experimental/*|branding/src/*|.gitignore|flake.nix) continue ;;
+    scripts/apply-vanta.sh|scripts/apply-blackout.sh) other="$other$path"$'\n'; continue ;;
+    scripts/*) continue ;;
+    chrome/*|prefs/vanta.js) continue ;;
+    patches/*/*) other="$other$path"$'\n' ;;
+    patches/*.patch)
+      if { [ -z "$(git ls-tree "$built" "$path")" ] || frontend_patch "$built:$path"; } &&
+         { [ -z "$(git ls-tree HEAD "$path")" ] || frontend_patch "HEAD:$path"; }; then
+        changed_patches="$changed_patches $path"
+      elif [ -f "$here/$path" ] &&
+           (cd "$src" && patch -p1 -R -s -f --dry-run < "$here/$path" >/dev/null 2>&1); then
+        : # already in the build (e.g. it was built in as an experimental patch)
+      else
+        other="$other$path"$'\n'
+      fi ;;
+    blackout/gecko/*|gecko/*|cookiebanners/*.json)
+      if [ "$status" != D ] && [[ "$path" =~ $frontend_file ]]; then
+        copied="$copied $path"
+      else
+        other="$other$path"$'\n'
+      fi ;;
+    *) other="$other$path"$'\n' ;;
+  esac
+done < <(git diff --name-status --no-renames "$built" HEAD)
+other="${other%$'\n'}"
 if [ -n "$other" ]; then
   git reset -q --hard "$before"
   printf 'needs a full rebuild, these changed:\n%s\n' "$other" >&2
@@ -78,6 +106,17 @@ for p in $changed_patches; do
 done
 rm -f "$work/.old.patch"
 
+# Front-end files apply-vanta.sh and apply-blackout.sh copy in as is.
+for f in $copied; do
+  case "$f" in
+    blackout/gecko/*) dest="${f#blackout/gecko/}" ;;
+    gecko/*) dest="${f#gecko/}" ;;
+    cookiebanners/*) dest="toolkit/components/cookiebanners/${f#cookiebanners/}" ;;
+  esac
+  mkdir -p "$src/$(dirname "$dest")"
+  cp "$here/$f" "$src/$dest"
+done
+
 # Interface CSS: regenerated whole, the same way apply-vanta.sh builds it.
 cat "$here/chrome/vanta.css" "$here/chrome/split-view.css" > "$src/browser/themes/shared/vanta.css"
 
@@ -97,13 +136,19 @@ export PATH="$HOME/.rustup/toolchains/${VANTA_RUST:-1.95.0}-x86_64-unknown-linux
 export VANTA_ROOT="$here" MOZCONFIG="$here/mozconfigs/macos-a18-cross"
 export VANTA_PGO_STAGE=use VANTA_PGO_DIR="$work/pgo" VANTA_LINKER="${VANTA_LINKER:-ld64}"
 # Keep the build ID of the installed build, so the new front end's
-# AppConstants match the compiled code they ship next to.
-[ -f "$work/.final-buildid" ] && export MOZ_BUILD_DATE="$(cat "$work/.final-buildid")"
+# AppConstants match the compiled code they ship next to. Read it from the
+# AppConstants the final build packaged, not from buildid.h: `build faster`
+# doesn't regenerate that, and it can be stale.
+app="$obj/dist/vanta/Vanta.app/Contents/Resources"
+buildid="$(unzip -p "$app/omni.ja" modules/AppConstants.sys.mjs 2>/dev/null |
+  sed -n 's/^ *MOZ_BUILDID: *"\([0-9]*\)".*/\1/p' | head -1 || true)"
+[ -n "$buildid" ] || buildid="$(cat "$work/.final-buildid" 2>/dev/null || true)"
+[ -n "$buildid" ] || { echo "repack-ui: can't find the installed build's build ID" >&2; exit 1; }
+export MOZ_BUILD_DATE="$buildid"
 cd "$src"
 ./mach --no-interactive build faster
 ./mach package
 
-app="$obj/dist/vanta/Vanta.app/Contents/Resources"
 ui="$work/out/ui"
 mkdir -p "$ui"
 cp "$app/omni.ja" "$ui/omni.ja"
