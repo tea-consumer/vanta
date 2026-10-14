@@ -15,4 +15,5 @@ MOZ_SRC_FILES += [
 FINAL_TARGET_FILES.actors += [
     "BlackoutChild.sys.mjs",
     "BlackoutParent.sys.mjs",
+    "BlackoutScriptlets.js",
 ]

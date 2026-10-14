@@ -20,5 +20,8 @@ pref("vanta.blackout.update_interval", 86400);
 pref("vanta.blackout.cosmetic.enabled", true);
 pref("vanta.blackout.cosmetic.generic", true);
 pref("vanta.blackout.cosmetic.generic_complex", false);
+// Scriptlets: the small page-side scripts lists ask for (##+js rules),
+// run in pages before their own scripts.
+pref("vanta.blackout.scriptlets.enabled", true);
 
 pref("vanta.blackout.loglevel", "Warn");

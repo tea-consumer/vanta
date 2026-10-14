@@ -37,6 +37,11 @@ page asks for https://ads.example/tag.js
   5 s later, the actor lists the CSS classes and ids the page uses and gets
   back only the rules that target them. Pages with nothing to hide get no
   sheet and no style work.
+- **Scriptlets** (`##+js(...)` rules): small scripts the lists ask for to
+  switch off anti-adblock code, ad setups and trackers that request blocking
+  cannot reach. Vanta has its own implementations (below); when a page's
+  window is created, the same window actor runs the ones listed for the
+  page's site inside the page, before any of the page's own scripts.
 - **Lists** are downloaded into `<profile>/blackout/lists/` on first start and
   refreshed daily with conditional requests (ETag / If-Modified-Since), so an
   unchanged list costs one empty 304 response. After a change the engine is
@@ -45,6 +50,50 @@ page asks for https://ads.example/tag.js
 - **Turning it off for a site** uses the existing shield in the address bar.
   Blocked ads and trackers appear there under "Tracking content", and the
   site toggle turns off both request blocking and element hiding.
+
+## Scriptlets
+
+`BlackoutScriptlets.js` is Vanta's own code (MPL-2.0) for the scriptlets the
+lists use, under the names and arguments the lists use (`set`, `aopr`, `acs`,
+`nostif`, `json-prune`, `rmnt` and so on, 38 scriptlets plus their aliases).
+uBlock Origin's implementations are GPLv3 code from another project, so none
+of it is used. On the default lists they cover 98% of the site/scriptlet
+pairs (37,196 of 37,946, on 24,542 sites).
+
+- **Table.** While building the engine, `blackout.rs` takes the `##+js` rules
+  out of the lists and writes `<profile>/blackout/scriptlets.json` next to
+  the engine cache: each distinct call once, and for each site the calls and
+  exceptions (`#@#+js(...)`, and `#@#+js()` for "none here"). `!#if` blocks
+  and comments are honoured as for the other rules.
+- **Trusted lists.** `trusted-*` scriptlets (and `rpnt`) can rewrite what a
+  page shows or sends, so as in uBlock Origin only lists from uBlock Origin's
+  own sites may use them. The updater saves those lists as `<id>.trusted.txt`;
+  `trusted-*` rules in any other list are dropped.
+- **Sharing.** After each engine build the parent process drops calls the
+  library does not have and shares the table with the content processes
+  (`Services.ppmm.sharedData`), split by the hosts' first letter so a page
+  only reads a small string. The library source is shared too.
+- **Injection.** At `DOMWindowCreated`, the actor looks up the page's host,
+  its parent domains, their `name.*` forms and `*`. If anything is listed, it
+  runs the library in the page's own realm with `PrecompiledScript` (compiled
+  once per process); on the first page of a process, before that compile has
+  finished, it uses a sandbox on the page's window instead. Both run before
+  the page's scripts and are not subject to the page's CSP.
+- **Cost.** Pages with no scriptlets for their site pay about 0.4 ms for the
+  lookup (measured in Firefox 157, a fresh process per site); pages with some
+  pay 1-5 ms on the first page of a process, the same as uBlock Origin's
+  injection work. browserbench.org has none.
+
+Not done: `trusted-click-element` (Blackout does not click consent buttons;
+cookie banners are PR #4's job) and a long tail (`edit-object-on-setter`,
+`json-edit`, `xml-prune`, `prevent-innerHTML` and a few others, 2% of uses).
+The rules for those are skipped.
+
+Tested in a real Firefox 157 (`blackout/test/scriptlets/`): every scriptlet
+above that the default lists use most, with and without a strict CSP, in both
+the sandbox and the precompiled path, plus site matching (subdomains,
+`example.*`), exceptions, alias exceptions, `#@#+js()` and the shield's
+per-site switch.
 
 ## Default lists
 
@@ -86,8 +135,8 @@ uBlock Origin's lists are written for uBlock Origin, so the engine glue
 What the engine still skips: `$popup` (popup windows are not network
 requests the classifier sees), `$to=`, `$header=`, `$replace=`, `$urlskip=`
 and a few other uBlock-only options, HTML filtering (`##^`) and regular
-expressions with lookaround. Together with scriptlets (below) these are the
-gap to uBlock Origin.
+expressions with lookaround. These and the scriptlets above that Vanta does
+not have are the gap to uBlock Origin.
 
 ## Numbers
 
@@ -162,6 +211,7 @@ This still has to be confirmed on the real build: run Speedometer 3.1 with
 | `vanta.blackout.cosmetic.enabled` | `true` | Element hiding |
 | `vanta.blackout.cosmetic.generic` | `true` | Generic element hiding, matched to the page's classes and ids |
 | `vanta.blackout.cosmetic.generic_complex` | `false` | The other generic rules, on every page |
+| `vanta.blackout.scriptlets.enabled` | `true` | Scriptlets (needs `vanta.blackout.cosmetic.enabled`, whose actor runs them) |
 
 ETP Strict and its Disconnect lists keep running alongside Blackout.
 
@@ -174,8 +224,12 @@ ETP Strict and its Disconnect lists keep running alongside Blackout.
   `nsIContentClassifierService`, the matching change, and the startup hooks.
 - `blackout/gecko/`: new files copied into the tree.
   `content_classifier_engine/src/blackout.rs` translates uBlock Origin's list
-  syntax, builds and caches the engine and writes element-hiding style sheets; `browser/components/blackout/` holds the
-  list updater and the element-hiding actors.
+  syntax, builds and caches the engine, writes element-hiding style sheets
+  and the scriptlet table; `browser/components/blackout/` holds the list
+  updater, the page actors and the scriptlet library.
+  The actor registration sets `safeForUntrustedWebProcess`: without it
+  Firefox 157 keeps the actor out of web content processes, and element
+  hiding silently did nothing.
 - `prefs/blackout.js`: the prefs above.
 - `scripts/apply-blackout.sh`: applies all of it; `apply-vanta.sh` calls it.
 - `blackout/bench/`: the benchmark behind the numbers above
@@ -187,13 +241,10 @@ ETP Strict and its Disconnect lists keep running alongside Blackout.
 
 ## Not in this version
 
-- Scriptlets (`##+js`): the small scripts lists inject to defeat anti-adblock
-  and YouTube's in-video ads. Vanta is getting its own implementations under
-  the names the lists use (uBlock Origin's are GPLv3 code from another
-  project). Until then those rules do nothing. Rules that redirect are
-  applied as plain blocks; Firefox's SmartBlock shims still replace the
-  common trackers (Google Analytics, Tag Manager and so on) so sites that
-  expect them keep working.
+- Redirects to neutered resources: rules that redirect are applied as plain
+  blocks; Firefox's SmartBlock shims still replace the common trackers
+  (Google Analytics, Tag Manager and so on) so sites that expect them keep
+  working.
 - The uBlock-only options listed above, and procedural element hiding
   (`:has-text()`, `:upward()` and the like).
 - A Blackout panel or blocked-count badge. The shield already shows what was
@@ -205,5 +256,6 @@ ETP Strict and its Disconnect lists keep running alongside Blackout.
   probed against the `blackout` feature.
 - Logs: set `MOZ_LOG=ContentClassifier:5`, and `vanta.blackout.loglevel` to
   `Debug` for the list updater.
-- First start: `<profile>/blackout/lists/` fills with nine `.txt` files and
-  `engine.dat` appears a moment later.
+- First start: `<profile>/blackout/lists/` fills with nine `.txt` files (the
+  five uBlock Origin lists as `.trusted.txt`), and `engine.dat` and
+  `scriptlets.json` appear a moment later.

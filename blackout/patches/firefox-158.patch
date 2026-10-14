@@ -31,7 +31,7 @@ index 8a1611d..28e0671 100644
      "contextualidentity",
      "controlcenter",
 diff --git a/toolkit/components/content-classifier/ContentClassifierService.cpp b/toolkit/components/content-classifier/ContentClassifierService.cpp
-index 3ff3514..092d58b 100644
+index 3ff3514..2313da1 100644
 --- a/toolkit/components/content-classifier/ContentClassifierService.cpp
 +++ b/toolkit/components/content-classifier/ContentClassifierService.cpp
 @@ -23,7 +23,10 @@
@@ -82,7 +82,7 @@ index 3ff3514..092d58b 100644
          return true;
        }
      }
-@@ -187,6 +204,16 @@ bool HasAnyActiveRemoteSettingsFeatures() {
+@@ -187,15 +204,28 @@ bool HasAnyActiveRemoteSettingsFeatures() {
    return false;
  }
  
@@ -97,9 +97,26 @@ index 3ff3514..092d58b 100644
 +}
 +
  void NotifyListsLoadedForTesting() {
-   if (!StaticPrefs::privacy_trackingprotection_content_testing()) {
+-  if (!StaticPrefs::privacy_trackingprotection_content_testing()) {
++  nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
++  if (!obs) {
      return;
-@@ -423,6 +450,8 @@ void ContentClassifierService::OnPrefChange(const char* aPref, void*) {
+   }
+-  nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
+-  if (obs) {
+-    obs->NotifyObservers(
+-        nullptr, NS_CONTENT_CLASSIFIER_FILTER_LISTS_LOADED_TOPIC, nullptr);
++  // Vanta Blackout: the scriptlet table is rewritten with the engine.
++  obs->NotifyObservers(nullptr, "content-classifier-engines-updated", nullptr);
++  if (!StaticPrefs::privacy_trackingprotection_content_testing()) {
++    return;
+   }
++  obs->NotifyObservers(nullptr, NS_CONTENT_CLASSIFIER_FILTER_LISTS_LOADED_TOPIC,
++                       nullptr);
+ }
+ 
+ }  // namespace
+@@ -423,6 +453,8 @@ void ContentClassifierService::OnPrefChange(const char* aPref, void*) {
      // Feature just became enabled. Start the RS client if list names are set.
      if (HasAnyActiveRemoteSettingsFeatures()) {
        service->InitRSClient();
@@ -108,7 +125,7 @@ index 3ff3514..092d58b 100644
      }
      return;
    }
-@@ -607,6 +636,8 @@ void ContentClassifierService::Init() {
+@@ -607,6 +639,8 @@ void ContentClassifierService::Init() {
    // to avoid interfering with the test-only HTTP loading path.
    if (sEnabled && HasAnyActiveRemoteSettingsFeatures()) {
      InitRSClient();
@@ -117,7 +134,7 @@ index 3ff3514..092d58b 100644
    }
  
    ContentClassifierPrefMirror::Init();
-@@ -1249,6 +1280,122 @@ NS_IMETHODIMP ContentClassifierService::ProbeFeature(
+@@ -1249,6 +1283,122 @@ NS_IMETHODIMP ContentClassifierService::ProbeFeature(
    return NS_OK;
  }
  
@@ -240,7 +257,7 @@ index 3ff3514..092d58b 100644
  // Parses a byte buffer of adblock-format filter list text into rules.
  // Tolerates both LF and CRLF line endings; skips empty lines.
  static void ParseFilterListRules(const nsTArray<uint8_t>& aData,
-@@ -1317,6 +1464,24 @@ static RefPtr<ListBytesPromise> FetchListBytesFromRemoteSettings(
+@@ -1317,6 +1467,24 @@ static RefPtr<ListBytesPromise> FetchListBytesFromRemoteSettings(
  nsresult BuildEngineFromRules(const ContentClassifierFeature& aFeature,
                                const nsTArray<nsCString>& aRules,
                                RefPtr<ContentClassifierEngine>& aEngineOutput) {
@@ -265,7 +282,7 @@ index 3ff3514..092d58b 100644
    if (aRules.IsEmpty()) {
      MOZ_LOG_FMT(gContentClassifierLog, LogLevel::Info,
                  "BuildEngineFromRules - no rules for feature \"{}\"; ",
-@@ -1737,6 +1902,31 @@ ContentClassifierService::FetchEngineDataForFeature(
+@@ -1737,6 +1905,31 @@ ContentClassifierService::FetchEngineDataForFeature(
      return FetchEngineDataForTestFeature(aFeature);
    }
  

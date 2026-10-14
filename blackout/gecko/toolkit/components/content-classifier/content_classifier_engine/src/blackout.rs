@@ -14,7 +14,7 @@
 
 use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::hash::{Hash, Hasher};
 use std::io::Write;
@@ -91,29 +91,54 @@ fn store_cache(cache: &Path, key: u64, engine: &Engine) {
 
 /// Builds the Blackout engine from every `*.txt` list in `lists_dir`, using
 /// the engine cached at `cache` when the lists have not changed since it was
-/// written. Returns `None` when there are no lists yet.
+/// written. Also keeps the lists' scriptlet rules current in
+/// `scriptlets.json` next to the cache (see `Scriptlets`). Returns `None`
+/// when there are no lists yet.
 pub fn engine_from_list_dir(lists_dir: &Path, cache: &Path) -> Option<Engine> {
     let files = list_files(lists_dir);
     if files.is_empty() {
         return None;
     }
     let key = cache_key(&files);
-    if let Some(engine) = load_cache(cache, key) {
-        return Some(engine);
+    let scriptlets_path = cache.with_file_name(SCRIPTLETS_FILE);
+    let cached = load_cache(cache, key);
+    let scriptlets_current = Scriptlets::is_current(&scriptlets_path, key);
+    if cached.is_some() && scriptlets_current {
+        return cached;
     }
 
-    let texts: Vec<String> = files
+    let texts: Vec<(bool, String)> = files
         .iter()
-        .filter_map(|f| fs::read(f).ok())
-        .map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
+        .filter_map(|f| Some((is_trusted_list(f), fs::read(f).ok()?)))
+        .map(|(trusted, bytes)| (trusted, String::from_utf8_lossy(&bytes).into_owned()))
         .collect();
     let mut rules = Vec::new();
-    for line in texts.iter().flat_map(|text| preprocess(text)) {
-        adapt(line, &mut rules);
+    let mut scriptlets = Scriptlets::default();
+    for (trusted, text) in &texts {
+        for line in preprocess(text) {
+            if !scriptlets.add(line, *trusted) {
+                adapt(line, &mut rules);
+            }
+        }
+    }
+    if !scriptlets_current {
+        scriptlets.store(&scriptlets_path, key);
+    }
+    if cached.is_some() {
+        return cached;
     }
     let engine = Engine::from_rules(rules, ParseOptions::default());
     store_cache(cache, key, &engine);
     Some(engine)
+}
+
+/// Lists Blackout.sys.mjs saved as `<id>.trusted.txt` come from uBlock
+/// Origin's own servers. Only their rules may use the `trusted-` scriptlets,
+/// which can change a page in arbitrary ways (as in uBlock Origin itself).
+fn is_trusted_list(file: &Path) -> bool {
+    file.file_name()
+        .and_then(|n| n.to_str())
+        .map_or(false, |n| n.ends_with(".trusted.txt"))
 }
 
 // The `!#if` conditions that hold for Blackout. uBlock Origin's lists keep
@@ -312,6 +337,248 @@ fn parse_not(tokens: &[&str], pos: &mut usize) -> bool {
     }
 }
 
+const SCRIPTLETS_FILE: &str = "scriptlets.json";
+
+/// The lists' scriptlet rules (`example.com##+js(set-constant, ads, false)`),
+/// for BlackoutChild.sys.mjs to run in pages. The engine is not involved:
+/// pages need them before any of their own scripts run, so the table goes to
+/// every content process up front and is looked up there by host name.
+///
+/// Written as JSON: `scripts` holds each distinct scriptlet call as
+/// `[name, arg1, ...]`; `hosts` maps a host name (`example.com`, an entity
+/// such as `example.*`, or `*` for every site) to the calls that run there;
+/// `exceptions` maps host names to the calls that must not run there, with
+/// `-1` meaning none at all.
+#[derive(Default)]
+struct Scriptlets {
+    scripts: Vec<String>,
+    index: HashMap<String, usize>,
+    hosts: BTreeMap<String, Vec<i64>>,
+    exceptions: BTreeMap<String, Vec<i64>>,
+}
+
+impl Scriptlets {
+    /// Takes `line` if it is a scriptlet rule, and says whether it was one.
+    fn add(&mut self, line: &str, trusted: bool) -> bool {
+        // Comments, including commented-out scriptlet rules.
+        if line.starts_with('!') || line.starts_with('[') {
+            return false;
+        }
+        let (marker, exception) = match (line.find("#@#+js("), line.find("##+js(")) {
+            (Some(i), _) => (i, true),
+            (None, Some(i)) => (i, false),
+            (None, None) => return false,
+        };
+        let domains = &line[..marker];
+        let call = line[marker..].splitn(2, "+js(").nth(1).unwrap_or("");
+        let Some(call) = call.trim_end().strip_suffix(')') else {
+            return true;
+        };
+        let args = scriptlet_args(call);
+        let script = match args.first() {
+            // `#@#+js()` turns off every scriptlet on its sites.
+            None if exception => -1,
+            None => return true,
+            Some(name) => {
+                if !trusted && needs_trust(name) {
+                    return true;
+                }
+                self.script(&args) as i64
+            }
+        };
+
+        let mut any_included = false;
+        for domain in domains.split(',').map(str::trim).filter(|d| !d.is_empty()) {
+            // Regular-expression domains are rare and left out.
+            if domain.starts_with('/') {
+                continue;
+            }
+            match domain.strip_prefix('~') {
+                Some(negated) => push(&mut self.exceptions, negated, script),
+                None if exception => push(&mut self.exceptions, domain, script),
+                None => {
+                    push(&mut self.hosts, domain, script);
+                    any_included = true;
+                }
+            }
+        }
+        if !exception && !any_included {
+            push(&mut self.hosts, "*", script);
+        }
+        true
+    }
+
+    fn script(&mut self, args: &[String]) -> usize {
+        let json = json_array(args);
+        if let Some(&i) = self.index.get(&json) {
+            return i;
+        }
+        self.scripts.push(json.clone());
+        self.index.insert(json, self.scripts.len() - 1);
+        self.scripts.len() - 1
+    }
+
+    fn is_current(path: &Path, key: u64) -> bool {
+        // The key is the start of the file: {"key":"<hex>",...
+        let mut header = [0u8; 32];
+        fs::File::open(path)
+            .and_then(|mut f| std::io::Read::read_exact(&mut f, &mut header))
+            .map_or(false, |_| {
+                header.starts_with(format!("{{\"key\":\"{key:016x}\"").as_bytes())
+            })
+    }
+
+    fn store(&self, path: &Path, key: u64) {
+        let mut json = format!("{{\"key\":\"{key:016x}\",\"scripts\":[");
+        json.push_str(&self.scripts.join(","));
+        json.push_str("],\"hosts\":");
+        json_map(&mut json, &self.hosts);
+        json.push_str(",\"exceptions\":");
+        json_map(&mut json, &self.exceptions);
+        json.push('}');
+        let tmp = path.with_extension("tmp");
+        if fs::write(&tmp, json).is_err() || fs::rename(&tmp, path).is_err() {
+            let _ = fs::remove_file(&tmp);
+        }
+    }
+}
+
+/// Scriptlets that can change what a page shows or sends at will, which only
+/// lists from a trusted source may use (as in uBlock Origin).
+fn needs_trust(name: &str) -> bool {
+    let name = name.strip_suffix(".js").unwrap_or(name);
+    name.starts_with("trusted-") || name == "replace-node-text" || name == "rpnt"
+}
+
+fn push(map: &mut BTreeMap<String, Vec<i64>>, host: &str, script: i64) {
+    let scripts = map.entry(host.to_ascii_lowercase()).or_default();
+    if !scripts.contains(&script) {
+        scripts.push(script);
+    }
+}
+
+/// Splits the inside of `+js(...)` into the scriptlet name and its
+/// arguments: comma-separated and trimmed, where `\,` is a literal comma and
+/// an argument wrapped in matching quotes keeps its commas and spaces.
+fn scriptlet_args(call: &str) -> Vec<String> {
+    let mut args = Vec::new();
+    let mut rest = call.trim();
+    if rest.is_empty() {
+        return args;
+    }
+    loop {
+        let (arg, remainder) = next_arg(rest);
+        args.push(arg);
+        match remainder {
+            Some(r) => rest = r.trim_start(),
+            None => return args,
+        }
+    }
+}
+
+/// The argument at the start of `text`, and what follows its comma (`None`
+/// when it was the last one).
+fn next_arg(text: &str) -> (String, Option<&str>) {
+    if let Some(quote) = text
+        .chars()
+        .next()
+        .filter(|c| matches!(c, '"' | '\'' | '`'))
+    {
+        let body = &text[1..];
+        let mut escaped = false;
+        for (i, c) in body.char_indices() {
+            if escaped {
+                escaped = false;
+            } else if c == '\\' {
+                escaped = true;
+            } else if c == quote {
+                let after = body[i + 1..].trim_start();
+                if after.is_empty() {
+                    return (unescape(&body[..i], quote), None);
+                }
+                if let Some(rest) = after.strip_prefix(',') {
+                    return (unescape(&body[..i], quote), Some(rest));
+                }
+            }
+        }
+        // Without a closing quote, the quote is part of the argument.
+    }
+    let mut arg = String::new();
+    let mut chars = text.char_indices();
+    while let Some((i, c)) = chars.next() {
+        match c {
+            '\\' => match chars.next() {
+                Some((_, ',')) => arg.push(','),
+                Some((_, other)) => {
+                    arg.push('\\');
+                    arg.push(other);
+                }
+                None => arg.push('\\'),
+            },
+            ',' => return (arg.trim().to_string(), Some(&text[i + 1..])),
+            c => arg.push(c),
+        }
+    }
+    (arg.trim().to_string(), None)
+}
+
+fn unescape(text: &str, quote: char) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '\\' && chars.peek() == Some(&quote) {
+            out.push(quote);
+            chars.next();
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
+fn json_string(out: &mut String, s: &str) {
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            c if (c as u32) < 0x20 || c == '\u{2028}' || c == '\u{2029}' => {
+                out.push_str(&format!("\\u{:04x}", c as u32))
+            }
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+}
+
+fn json_array(items: &[String]) -> String {
+    let mut out = String::from("[");
+    for (i, item) in items.iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        json_string(&mut out, item);
+    }
+    out.push(']');
+    out
+}
+
+fn json_map(out: &mut String, map: &BTreeMap<String, Vec<i64>>) {
+    out.push('{');
+    for (i, (host, scripts)) in map.iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        json_string(out, host);
+        out.push(':');
+        out.push('[');
+        let list: Vec<String> = scripts.iter().map(|s| s.to_string()).collect();
+        out.push_str(&list.join(","));
+        out.push(']');
+    }
+    out.push('}');
+}
+
 /// The generic selectors (`##.ad-banner` and the like) every site gets,
 /// computed once per engine. Used to leave them out when only site-specific
 /// hiding is wanted.
@@ -423,6 +690,58 @@ mod tests {
             ]
         );
         assert!(adapted("*$script,3p,denyallow=cdn.example").is_empty());
+    }
+
+    #[test]
+    fn scriptlet_arguments() {
+        let args = |call: &str| super::scriptlet_args(call);
+        assert_eq!(
+            args("set, ads.enabled, false"),
+            ["set", "ads.enabled", "false"]
+        );
+        assert_eq!(
+            args(" rmnt , script, '\"data-adm-url\"' "),
+            ["rmnt", "script", "\"data-adm-url\""]
+        );
+        assert_eq!(
+            args("rpnt, script, 'a, b', c"),
+            ["rpnt", "script", "a, b", "c"]
+        );
+        assert_eq!(args("acs, a\\,b"), ["acs", "a,b"]);
+        assert_eq!(args("nano-stb, , 10000"), ["nano-stb", "", "10000"]);
+        assert_eq!(
+            args("set-cookie, GPC, 1, , reload, 1"),
+            ["set-cookie", "GPC", "1", "", "reload", "1"]
+        );
+        assert_eq!(args("nowoif"), ["nowoif"]);
+        assert!(args("").is_empty());
+        assert_eq!(args("aopr, 'unclosed, x"), ["aopr", "'unclosed", "x"]);
+    }
+
+    #[test]
+    fn scriptlet_rules() {
+        let mut s = super::Scriptlets::default();
+        assert!(s.add("a.com,~b.a.com##+js(set, x, 1)", false));
+        assert!(s.add("c.*##+js(set, x, 1)", false));
+        assert!(s.add("d.com#@#+js(set, x, 1)", false));
+        assert!(s.add("e.com#@#+js()", false));
+        assert!(s.add("f.com##+js(trusted-set, x, 1)", false));
+        assert!(s.add("g.com##+js(trusted-set, x, 1)", true));
+        assert!(!s.add("a.com##.ad", false));
+        assert!(!s.add("! h.com##+js(set, x, 1)", false));
+        assert!(s.add("i.com##+js(rpnt, script, a, b)", false));
+        assert_eq!(
+            s.scripts,
+            [r#"["set","x","1"]"#, r#"["trusted-set","x","1"]"#]
+        );
+        assert_eq!(s.hosts["a.com"], [0]);
+        assert_eq!(s.hosts["c.*"], [0]);
+        assert!(!s.hosts.contains_key("f.com"));
+        assert!(!s.hosts.contains_key("i.com"));
+        assert_eq!(s.hosts["g.com"], [1]);
+        assert_eq!(s.exceptions["b.a.com"], [0]);
+        assert_eq!(s.exceptions["d.com"], [0]);
+        assert_eq!(s.exceptions["e.com"], [-1]);
     }
 
     #[test]
