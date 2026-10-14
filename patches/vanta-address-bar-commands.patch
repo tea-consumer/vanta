@@ -1,0 +1,159 @@
+diff --git a/browser/components/urlbar/QuickActionsLoaderDefault.sys.mjs b/browser/components/urlbar/QuickActionsLoaderDefault.sys.mjs
+index 838512e..873bc7a 100644
+--- a/browser/components/urlbar/QuickActionsLoaderDefault.sys.mjs
++++ b/browser/components/urlbar/QuickActionsLoaderDefault.sys.mjs
+@@ -10,6 +10,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
+   ActionsProviderQuickActions:
+     "moz-src:///browser/components/urlbar/ActionsProviderQuickActions.sys.mjs",
+   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
++  ContentBlockingAllowList:
++    "resource://gre/modules/ContentBlockingAllowList.sys.mjs",
+   DevToolsShim: "chrome://devtools-startup/content/DevToolsShim.sys.mjs",
+   ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
+   ResetProfile: "resource://gre/modules/ResetProfile.sys.mjs",
+@@ -78,6 +80,37 @@ ChromeUtils.defineLazyGetter(lazy, "gFluentStrings", function () {
+   );
+ });
+ 
++// Vanta: Blackout is the content blocker (privacy.trackingprotection.content.
++// protection.enabled); a site where it is off is on the content blocking
++// allow list, the same per-site switch as the shield and the Blackout panel.
++let blackoutOn = () =>
++  Services.prefs.getBoolPref(
++    "privacy.trackingprotection.content.protection.enabled",
++    false
++  );
++let blackoutApplies = () =>
++  ["http", "https"].includes(currentBrowser().currentURI.scheme);
++let blackoutOffHere = () =>
++  lazy.ContentBlockingAllowList.includes(currentBrowser());
++let toggleBlackoutHere = (_queryContext, controller) => {
++  let window = controller.browserWindow;
++  if (blackoutOffHere()) {
++    window.gProtectionsHandler.enableForCurrentPage(false);
++  } else {
++    window.gProtectionsHandler.disableForCurrentPage(false);
++  }
++  window.gBrowser.reloadTab(window.gBrowser.selectedTab);
++  return { focusContent: true };
++};
++let backgroundTabs = window =>
++  window.gBrowser.tabs.filter(
++    tab =>
++      !tab.selected &&
++      !tab.splitview?.hasActiveTab &&
++      !tab.hasAttribute("pending") &&
++      !tab.soundPlaying
++  );
++
+ const DEFAULT_ACTIONS = {
+   addons: {
+     l10nCommands: ["quickactions-cmd-addons3"],
+@@ -343,6 +376,74 @@ const DEFAULT_ACTIONS = {
+     isUnsupported: () => !lazy.ExperimentAPI.labsEnabled,
+     onPick: openUrlFun("about:preferences#experimental"),
+   },
++  // Vanta's own commands: type a verb, pick the action.
++  "vanta-blackout-off": {
++    l10nCommands: ["vanta-quickactions-cmd-blackout-off"],
++    icon: "chrome://browser/content/blackout/blackout-icon-off.svg",
++    label: "vanta-quickactions-blackout-off",
++    isUnsupported: () => !blackoutOn(),
++    isInactive: () => !blackoutApplies() || blackoutOffHere(),
++    onPick: toggleBlackoutHere,
++  },
++  "vanta-blackout-on": {
++    l10nCommands: ["vanta-quickactions-cmd-blackout-on"],
++    icon: "chrome://browser/content/blackout/blackout-icon.svg",
++    label: "vanta-quickactions-blackout-on",
++    isUnsupported: () => !blackoutOn(),
++    isInactive: () => !blackoutApplies() || !blackoutOffHere(),
++    onPick: toggleBlackoutHere,
++  },
++  "vanta-split": {
++    l10nCommands: ["vanta-quickactions-cmd-split"],
++    icon: "chrome://browser/skin/split-view-left-16.svg",
++    label: "vanta-quickactions-split",
++    isInactive: () => {
++      let tab = currentWindow().gBrowser.selectedTab;
++      return tab.pinned || !!tab.splitview;
++    },
++    onPick: (_queryContext, controller) => {
++      controller.browserWindow.BrowserCommands.addTabSplitView();
++      return { focusContent: true };
++    },
++  },
++  "vanta-unload": {
++    l10nCommands: ["vanta-quickactions-cmd-unload"],
++    icon: "chrome://browser/skin/tab.svg",
++    label: "vanta-quickactions-unload",
++    isInactive: () => !backgroundTabs(currentWindow()).length,
++    onPick: (_queryContext, controller) => {
++      let { gBrowser } = controller.browserWindow;
++      for (let tab of backgroundTabs(controller.browserWindow)) {
++        gBrowser.discardBrowser(tab);
++      }
++      return { focusContent: true };
++    },
++  },
++  "vanta-totality": {
++    l10nCommands: ["vanta-quickactions-cmd-totality"],
++    icon: "chrome://browser/skin/fullscreen.svg",
++    label: "vanta-quickactions-totality",
++    onPick: (_queryContext, controller) => {
++      controller.browserWindow.BrowserCommands.toggleVantaTotality();
++      return { focusContent: true };
++    },
++  },
++  ...Object.fromEntries(
++    ["mono", "ice", "sage", "ember"].map(accent => [
++      `vanta-theme-${accent}`,
++      {
++        l10nCommands: [`vanta-quickactions-cmd-theme-${accent}`],
++        icon: "chrome://browser/skin/customize.svg",
++        label: `vanta-quickactions-theme-${accent}`,
++        isInactive: () =>
++          Services.prefs.getStringPref("vanta.accent", "mono") == accent,
++        onPick: () => {
++          Services.prefs.setStringPref("vanta.accent", accent);
++          return { focusContent: true };
++        },
++      },
++    ])
++  ),
+ };
+ 
+ function openInspector(window) {
+diff --git a/browser/locales/en-US/browser/browser.ftl b/browser/locales/en-US/browser/browser.ftl
+index 065b99e..ef390a2 100644
+--- a/browser/locales/en-US/browser/browser.ftl
++++ b/browser/locales/en-US/browser/browser.ftl
+@@ -391,6 +391,28 @@ quickactions-cmd-themes2 = themes, add-ons, addons
+ quickactions-update = Update { -brand-short-name }
+ quickactions-cmd-update = update
+ 
++## Vanta: address bar commands. The cmd strings are comma-separated words
++## that bring up the action as you type them.
++
++vanta-quickactions-blackout-off = Turn Blackout off for this site
++vanta-quickactions-cmd-blackout-off = blackout, block ads, ads
++vanta-quickactions-blackout-on = Turn Blackout on for this site
++vanta-quickactions-cmd-blackout-on = blackout, block ads, ads
++vanta-quickactions-split = Split view
++vanta-quickactions-cmd-split = split, split view, side by side
++vanta-quickactions-unload = Unload background tabs
++vanta-quickactions-cmd-unload = unload, unload tabs, free memory, sleep tabs
++vanta-quickactions-totality = Totality mode
++vanta-quickactions-cmd-totality = totality, focus, focus mode
++vanta-quickactions-theme-mono = Vanta theme: Mono
++vanta-quickactions-cmd-theme-mono = theme mono, mono
++vanta-quickactions-theme-ice = Vanta theme: Ice
++vanta-quickactions-cmd-theme-ice = theme ice, ice
++vanta-quickactions-theme-sage = Vanta theme: Sage
++vanta-quickactions-cmd-theme-sage = theme sage, sage
++vanta-quickactions-theme-ember = Vanta theme: Ember
++vanta-quickactions-cmd-theme-ember = theme ember, ember
++
+ # Opens the view-source UI with current pages source
+ quickactions-viewsource2 = View page source
+ quickactions-cmd-viewsource2 = view source, source, page source

@@ -161,6 +161,14 @@ pref("full-screen-api.transition-duration.leave", "0 0");
 pref("ui.systemUsesDarkTheme", 1);
 // Accent color: "mono" (default), "ice", "sage" or "ember".
 pref("vanta.accent", "mono");
+// Dropping a tab onto another tab opens the two in split view, instead of
+// making a tab group (patches/vanta-tabs-with-weight.patch).
+pref("vanta.tabs.dropToSplit", true);
+// Address bar commands: typing a verb such as "blackout", "split",
+// "unload", "totality" or "ember" offers the action as a button under the
+// address bar (patches/vanta-address-bar-commands.patch adds Vanta's own).
+pref("browser.urlbar.suggest.quickactions", true);
+pref("browser.urlbar.quickactions.timesToShowOnboardingLabel", 0);
 // Toolbar as see-through black glass over the page, like Safari.
 pref("vanta.toolbar.seeThrough", false);
 // Frame (toolbar, rail, border) black with a faint tint of the page colour.

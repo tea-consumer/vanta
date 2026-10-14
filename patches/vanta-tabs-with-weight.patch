@@ -1,0 +1,27 @@
+diff --git a/browser/components/tabbrowser/content/drag-and-drop.js b/browser/components/tabbrowser/content/drag-and-drop.js
+index a059099..3ee1368 100644
+--- a/browser/components/tabbrowser/content/drag-and-drop.js
++++ b/browser/components/tabbrowser/content/drag-and-drop.js
+@@ -530,7 +530,21 @@
+           });
+         } else {
+           this.finishAnimateTabMove();
+-          if (shouldCreateGroupOnDrop) {
++          if (
++            shouldCreateGroupOnDrop &&
++            Services.prefs.getBoolPref("vanta.tabs.dropToSplit", false) &&
++            movingTabs.length == 1 &&
++            isTab(draggedTab) &&
++            isTab(dropElement)
++          ) {
++            // Vanta: dropping one tab onto another opens the two in split
++            // view, instead of grouping them.
++            gBrowser.addTabSplitView(
++              dropBefore ? [draggedTab, dropElement] : [dropElement, draggedTab],
++              { insertBefore: dropElement }
++            );
++            gBrowser.selectedTab = draggedTab;
++          } else if (shouldCreateGroupOnDrop) {
+             // This makes the tab group contents reflect the visual order of
+             // the tabs right before dropping.
+             let tabsInGroup = dropBefore

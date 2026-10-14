@@ -1,0 +1,56 @@
+diff --git a/browser/base/content/browser-commands.js b/browser/base/content/browser-commands.js
+index 757c5b1..5152072 100644
+--- a/browser/base/content/browser-commands.js
++++ b/browser/base/content/browser-commands.js
+@@ -104,6 +104,16 @@ var BrowserCommands = {
+     gBrowser.selectedTab?.splitview?.unsplitTabs("keyboard_shortcut");
+   },
+ 
++  // Vanta: Totality mode. The toolbar and tab rail fade into the dark frame
++  // so only the page is lit (chrome/vanta.css styles [vanta-totality]). The
++  // same shortcut, or the "totality" address bar command, brings them back.
++  toggleVantaTotality() {
++    if (document.documentElement.toggleAttribute("vanta-totality")) {
++      // The toolbar stays visible while it has focus, so hand it to the page.
++      gBrowser.selectedBrowser.focus();
++    }
++  },
++
+   duplicateTab() {
+     duplicateTabIn(gBrowser.selectedTab, "tab");
+   },
+diff --git a/browser/base/content/browser-sets.inc.xhtml b/browser/base/content/browser-sets.inc.xhtml
+index 2f93c84..a7e3354 100644
+--- a/browser/base/content/browser-sets.inc.xhtml
++++ b/browser/base/content/browser-sets.inc.xhtml
+@@ -90,6 +90,7 @@
+     <command id="Browser:ShowAllTabs" />
+     <command id="Browser:AddTabSplitView" />
+     <command id="Browser:SeparateTabSplitView" />
++    <command id="Vanta:Totality" />
+     <command id="cmd_fullZoomReduce" />
+     <command id="cmd_fullZoomEnlarge" />
+     <command id="cmd_fullZoomReset" />
+@@ -377,6 +378,8 @@
+          current tab with a tab picker, Accel+Alt+Shift+S to separate). -->
+     <key id="key_addTabSplitView" command="Browser:AddTabSplitView" key="S" modifiers="accel,alt"/>
+     <key id="key_separateTabSplitView" command="Browser:SeparateTabSplitView" key="S" modifiers="accel,alt,shift"/>
++    <!-- Vanta: Totality mode (Accel+Alt+T): only the page stays lit. -->
++    <key id="key_vantaTotality" command="Vanta:Totality" key="T" modifiers="accel,alt"/>
+     <key id="key_duplicateTab" command="Browser:DuplicateTab"/>
+ 
+ #ifdef XP_GNOME
+diff --git a/browser/base/content/browser-sets.js b/browser/base/content/browser-sets.js
+index 1da8c65..adc1dae 100644
+--- a/browser/base/content/browser-sets.js
++++ b/browser/base/content/browser-sets.js
+@@ -214,6 +214,9 @@ document.addEventListener(
+           case "Browser:SeparateTabSplitView":
+             BrowserCommands.separateTabSplitView();
+             break;
++          case "Vanta:Totality":
++            BrowserCommands.toggleVantaTotality();
++            break;
+           case "cmd_fullZoomReduce":
+             FullZoom.reduce();
+             break;
