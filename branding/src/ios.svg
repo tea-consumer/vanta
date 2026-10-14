@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Vanta for iOS: the Eclipse on a full-bleed black square -->
+  <rect width="1024" height="1024" fill="#000000"/>
+  <path d="M478.547 853.365A343 343 0 1 1 853.365 478.547A318 318 0 1 0 478.547 853.365Z" fill="#ececf1" fill-rule="evenodd"/>
+</svg>

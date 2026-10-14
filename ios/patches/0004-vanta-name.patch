@@ -1,0 +1,13 @@
+diff --git a/firefox-ios/Client/Configuration/Fennec.xcconfig b/firefox-ios/Client/Configuration/Fennec.xcconfig
+index 1d55b9c..2a40ef4 100644
+--- a/firefox-ios/Client/Configuration/Fennec.xcconfig
++++ b/firefox-ios/Client/Configuration/Fennec.xcconfig
+@@ -7,7 +7,7 @@
+ #include "version.xcconfig"
+ 
+ INFOPLIST_FILE = Client/Info.plist
+-MOZ_BUNDLE_DISPLAY_NAME = Fennec ($(USER))
++MOZ_BUNDLE_DISPLAY_NAME = Vanta
+ MOZ_BUNDLE_ID = org.mozilla.ios.Fennec
+ // Flag to indicate if we want to include the debug settings bundle or not
+ INCLUDE_SETTINGS_BUNDLE = YES
