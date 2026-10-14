@@ -408,8 +408,10 @@ sidebar-main,
     outline: none !important;
     box-shadow: none !important;
     mask:
-      radial-gradient(ellipse var(--vanta-moon-r) var(--vanta-moon-r) at var(--vanta-moon-at) var(--vanta-moon-at), transparent 98%, black 100%),
-      radial-gradient(ellipse 50% 50% at 50% 50%, black 98%, transparent 100%) !important;
+      radial-gradient(ellipse var(--vanta-moon-r) var(--vanta-moon-r) at var(--vanta-moon-at) var(--vanta-moon-at), transparent calc(100% - 0.75px), black 100%),
+      radial-gradient(ellipse 50% 50% at 50% 50%, black calc(100% - 0.75px), transparent 100%) !important;
+    /* A 0.75px soft edge: about one and a half device pixels on Retina,
+       the same smoothing the SVG crescent gets. */
     mask-composite: intersect !important;
     animation: vanta-tab-close-totality 300ms ease-in both !important;
   }
@@ -638,9 +640,9 @@ sidebar-main,
   border-radius: 50% !important;
   transform: rotate(45deg) !important;
   background:
-    radial-gradient(ellipse max(0.01px, 50% - var(--download-progress-pcent)) clamp(0.01px, (50% - var(--download-progress-pcent)) * 1000, 50%) at 50% 50%, var(--moon-dark) 97%, transparent 100%),
-    radial-gradient(ellipse max(0.01px, var(--download-progress-pcent) - 50%) clamp(0.01px, (var(--download-progress-pcent) - 50%) * 1000, 50%) at 50% 50%, var(--moon-lit) 97%, transparent 100%),
-    linear-gradient(to right, var(--moon-lit) 50%, var(--moon-dark) 50%) !important;
+    radial-gradient(ellipse max(0.01px, 50% - var(--download-progress-pcent)) clamp(0.01px, (50% - var(--download-progress-pcent)) * 1000, 50%) at 50% 50%, var(--moon-dark) calc(100% - 0.75px), transparent 100%),
+    radial-gradient(ellipse max(0.01px, var(--download-progress-pcent) - 50%) clamp(0.01px, (var(--download-progress-pcent) - 50%) * 1000, 50%) at 50% 50%, var(--moon-lit) calc(100% - 0.75px), transparent 100%),
+    linear-gradient(to right, var(--moon-lit) calc(50% - 0.5px), var(--moon-dark) calc(50% + 0.5px)) !important;
 }
 
 /* Registering the progress as a percentage lets it animate: Firefox
