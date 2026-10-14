@@ -84,6 +84,14 @@ EOF
 # Blackout, the built-in ad and tracker blocker.
 bash "$here/scripts/apply-blackout.sh" "$PWD"
 
+# Vanta's own startup modules (gecko/ mirrors the Firefox tree layout).
+cp "$here/gecko/browser/modules/VantaIntegrations.sys.mjs" browser/modules/
+if ! grep -q VantaIntegrations browser/modules/moz.build; then
+  printf '\nMOZ_SRC_FILES += ["VantaIntegrations.sys.mjs"]\n' >> browser/modules/moz.build
+  printf '\n# Vanta\ncategory browser-idle-startup moz-src:///browser/modules/VantaIntegrations.sys.mjs VantaIntegrations.ensureNativeMessagingDir\n' \
+    >> browser/components/BrowserComponents.manifest
+fi
+
 # Our own patches, if any.
 for p in "$here"/patches/*.patch; do
   [ -e "$p" ] || continue

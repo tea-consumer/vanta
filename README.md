@@ -46,6 +46,10 @@ the files in this repo.
   set to reject automatically (see `docs/cookie-banners.md`).
 - Blackout, a built-in ad and tracker blocker on Firefox's own content
   classifier (`docs/blackout.md`, `scripts/apply-blackout.sh`).
+- `gecko/`: Vanta's own browser modules, copied into the Firefox tree by
+  `apply-vanta.sh`. `VantaIntegrations.sys.mjs` creates the native messaging
+  folder so desktop apps like Bitwarden can reach their extension (Touch ID
+  unlock) on a Mac without Firefox installed.
 - Build flags: cross-language PGO and LTO, CPU-specific tuning, PHC off.
   Every lever and why is in [`docs/performance.md`](docs/performance.md).
 
