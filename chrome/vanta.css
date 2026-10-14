@@ -189,6 +189,41 @@ sidebar-main,
 
 
 
+/* At rest the address bar is a title: the site's name, centred. Click or
+   type and the full address is back where it always was. */
+#urlbar .urlbar-input-box {
+  position: relative !important;
+}
+
+#urlbar:not([focused], :focus-within, [open], [usertyping]) {
+  .urlbar-input-box[vanta-host] {
+    > .urlbar-input,
+    > #urlbar-scheme {
+      opacity: 0 !important;
+    }
+
+    &::after {
+      content: attr(vanta-host);
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      color: var(--vanta-text);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+  }
+
+  /* No search-engine chip, and no padlock or shield while the site is
+     fine: warnings still show. */
+  .searchmode-switcher,
+  #trust-icon-container:not(.insecure, .breached) {
+    display: none !important;
+  }
+}
+
 /* ----- Tabs ----------------------------------------------------------------- */
 
 #tabbrowser-tabs[orient="vertical"] .tab-background {
@@ -741,4 +776,33 @@ sidebar-main,
 #urlbar-input::selection {
   background-color: var(--vanta-accent) !important;
   color: var(--vanta-on-accent) !important;
+}
+
+/* ----- Vanta's own toolbar ------------------------------------------------ */
+/* Vanta's glyphs: thin strokes, round ends. They are masks (data: images
+   can't take the toolbar's context colour), painted in the icon colour. */
+#back-button > .toolbarbutton-icon {
+  list-style-image: none !important;
+  background-color: var(--toolbarbutton-icon-fill) !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 3.5 5.5 8l4.5 4.5'/%3E%3C/svg%3E") center / 16px 16px no-repeat !important;
+}
+#forward-button > .toolbarbutton-icon {
+  list-style-image: none !important;
+  background-color: var(--toolbarbutton-icon-fill) !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 3.5 10.5 8 6 12.5'/%3E%3C/svg%3E") center / 16px 16px no-repeat !important;
+}
+#reload-button > .toolbarbutton-icon {
+  list-style-image: none !important;
+  background-color: var(--toolbarbutton-icon-fill) !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.34 4.02A5.2 5.2 0 1 1 5.80 3.29'/%3E%3Ccircle cx='11.34' cy='4.02' r='1.7' fill='black' stroke='none'/%3E%3C/svg%3E") center / 16px 16px no-repeat !important;
+}
+#stop-button > .toolbarbutton-icon {
+  list-style-image: none !important;
+  background-color: var(--toolbarbutton-icon-fill) !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 4.5l7 7M11.5 4.5l-7 7'/%3E%3C/svg%3E") center / 16px 16px no-repeat !important;
+}
+#unified-extensions-button > .toolbarbutton-icon {
+  list-style-image: none !important;
+  background-color: var(--toolbarbutton-icon-fill) !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='5' cy='5' r='1.9'/%3E%3Ccircle cx='11' cy='5' r='1.9'/%3E%3Ccircle cx='5' cy='11' r='1.9'/%3E%3Ccircle cx='11' cy='11' r='1.9' fill='black'/%3E%3C/svg%3E") center / 16px 16px no-repeat !important;
 }

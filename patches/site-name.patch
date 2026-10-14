@@ -1,0 +1,40 @@
+--- a/browser/base/content/browser-init.js
++++ b/browser/base/content/browser-init.js
+@@ -1258,3 +1258,37 @@
+   },
+ };
+ delayedStartupPromise.then(() => VantaPageTint.init());
++
++// Vanta: at rest the address bar shows only the site's name (vanta.css
++// draws it from the vanta-host attribute, centred).
++var VantaSiteName = {
++  init() {
++    gBrowser.addTabsProgressListener(this);
++    gBrowser.tabContainer.addEventListener("TabSelect", () => this.update());
++    this.update();
++  },
++  onLocationChange(browser, webProgress) {
++    if (webProgress.isTopLevel && browser == gBrowser.selectedBrowser) {
++      this.update();
++    }
++  },
++  update() {
++    let box = gURLBar.querySelector(".urlbar-input-box");
++    if (!box) {
++      return;
++    }
++    let host = "";
++    try {
++      let uri = gBrowser.currentURI;
++      if (uri.schemeIs("https") || uri.schemeIs("http")) {
++        host = uri.host.replace(/^www\./, "");
++      }
++    } catch (e) {}
++    if (host) {
++      box.setAttribute("vanta-host", host);
++    } else {
++      box.removeAttribute("vanta-host");
++    }
++  },
++};
++delayedStartupPromise.then(() => VantaSiteName.init());
