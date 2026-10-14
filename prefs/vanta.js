@@ -169,6 +169,10 @@ pref("vanta.toolbar.pageTint", true);
 // tonight's moon, over a sunlit planet horizon with a sunrise as it opens. Drawn by the window on a blank page, so a new tab
 // costs no extra process.
 pref("vanta.newtab.home", true);
+// The Vanta home is also the start page and the Home button: both open a
+// blank tab, which the window draws the home on.
+pref("browser.startup.page", 1);
+pref("browser.startup.homepage", "about:blank");
 // The address bar answers as you type (maths, units, time in a city),
 // searches a site by name ("yr oslo"), and opens a result in split view
 // with Shift+Enter.
