@@ -63,10 +63,13 @@ No build. Merge the change to `main`, then on the Mac (Vanta closed):
     scripts/update-mac-ui.sh origin/main
 
 To try a pull request before merging it: `scripts/update-mac-ui.sh origin/pr/<n>`.
-Patches in `patches/` that only touch CSS, JS, Fluent or markup count as
-front end too: `repack-ui.sh` takes out the old version and applies the new
-one. If the change touches anything compiled, it stops and lists the files:
-those need the full build above.
+`repack-ui.sh` looks only at what ships in the app. Docs, tests, tools and
+build scripts are ignored. `chrome/`, `prefs/vanta.js`, patches that only
+touch CSS, JS, Fluent or markup, and the CSS/JS/SVG/JSON files under
+`blackout/gecko/`, `gecko/` and `cookiebanners/` are repacked. Anything
+compiled (C++, Rust, build files, icons, `apply-*.sh`) makes it stop and list
+the files: those need the full build above. It keeps the installed build's
+ID, read from the AppConstants in its omni.ja.
 
 ## Bumping Firefox
 

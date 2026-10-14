@@ -65,11 +65,15 @@ case "$stage" in
       | xargs -0 "$profdata" merge -o "$VANTA_PGO_DIR/merged.profdata"
     cp "$(find "$VANTA_PGO_DIR/raw" -name en-US.log | head -1)" "$VANTA_PGO_DIR/en-US.log"
     export VANTA_PGO_STAGE=use
+    # One build ID for the whole build. Without it, XUL and platform.ini get
+    # the start-of-build time and application.ini and AppConstants a later
+    # one, because buildid.h is regenerated during packaging.
+    export MOZ_BUILD_DATE="$(date +%Y%m%d%H%M%S)"
     ./mach --no-interactive build
     ./mach package
     ls -1 obj-vanta/dist/*.dmg
     # scripts/repack-ui.sh reuses this build ID for front-end-only updates.
-    sed -n 's/^BuildID=//p' obj-vanta/dist/vanta/Vanta.app/Contents/Resources/application.ini > "$work/.final-buildid"
+    echo "$MOZ_BUILD_DATE" > "$work/.final-buildid"
     # ...and checks against the commit the tree was made from that nothing
     # compiled has changed since.
     head -1 "$src/.vanta-applied" > "$work/.final-commit"
