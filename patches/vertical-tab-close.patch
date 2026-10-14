@@ -1,6 +1,16 @@
 --- a/browser/components/tabbrowser/Tabbrowser.sys.mjs
 +++ b/browser/components/tabbrowser/Tabbrowser.sys.mjs
-@@ -6361,7 +6361,6 @@
+@@ -6316,6 +6316,9 @@
+     }
+ 
+     let isVisibleTab = aTab.visible;
++    // Vanta: the current tab closes differently (its eclipse goes total), and
++    // #beginRemoveTab is about to select another tab.
++    let wasSelected = aTab.selected;
+     // We have to sample the tab width now, since #beginRemoveTab might
+     // end up modifying the DOM in such a way that aTab gets a new
+     // frame created for it (for example, by updating the visually selected
+@@ -6361,7 +6364,6 @@
        isLastTab ||
        aTab.pinned ||
        !isVisibleTab ||
@@ -8,7 +18,7 @@
        this._removingTabs.size >
          3 /* don't want lots of concurrent animations */ ||
        !aTab.hasAttribute(
-@@ -6380,6 +6379,20 @@
+@@ -6380,6 +6382,20 @@
      Glean.browserTabclose.timeNoAnim.cancel(aTab._closeTimeNoAnimTimerId);
      aTab._closeTimeNoAnimTimerId = null;
  
@@ -16,7 +26,7 @@
 +    // (the tab's light goes out, then its row closes up). The tab is removed
 +    // once those animations end, or straight away if there are none.
 +    if (this.tabContainer.verticalMode) {
-+      aTab.setAttribute("vanta-closing", "true");
++      aTab.setAttribute("vanta-closing", wasSelected ? "selected" : "true");
 +      let closing = aTab
 +        .getAnimations({ subtree: true })
 +        .filter(a => a.animationName?.startsWith("vanta-tab-close"));

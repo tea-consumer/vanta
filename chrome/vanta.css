@@ -380,6 +380,57 @@ sidebar-main,
   animation-name: vanta-tab-close-dusk-rail !important;
 }
 
+/* Closing the current tab from the compact rail (say with a shortcut): it
+   already wears the eclipse, so the eclipse goes total. The dark disc slides
+   to the centre and grows until the crescent thins away, the last light on
+   the upper-left rim, while the favicon darkens with it. Meanwhile the
+   eclipse swings onto the tab that takes over. The disc's size and place
+   start from the logo's own geometry (see --vanta-crescent). */
+@property --vanta-totality {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+#tabbrowser-tabs[orient="vertical"]:not([expanded]) .tabbrowser-tab[vanta-closing="selected"] {
+  animation-delay: 260ms !important;
+
+  & .tab-stack {
+    mask: none !important;
+    animation: none !important;
+  }
+
+  & .tab-background {
+    --vanta-moon-r: calc(46.33% + var(--vanta-totality) * 4.2%);
+    --vanta-moon-at: calc(54.33% - var(--vanta-totality) * 4.33%);
+    background: var(--vanta-accent) !important;
+    border-color: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+    mask:
+      radial-gradient(ellipse var(--vanta-moon-r) var(--vanta-moon-r) at var(--vanta-moon-at) var(--vanta-moon-at), transparent 98%, black 100%),
+      radial-gradient(ellipse 50% 50% at 50% 50%, black 98%, transparent 100%) !important;
+    mask-composite: intersect !important;
+    animation: vanta-tab-close-totality 300ms ease-in both !important;
+  }
+
+  & .tab-icon-stack {
+    animation: vanta-tab-close-iconfade 300ms ease-in both !important;
+  }
+}
+
+@keyframes vanta-tab-close-totality {
+  to {
+    --vanta-totality: 1;
+  }
+}
+
+@keyframes vanta-tab-close-iconfade {
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes vanta-tab-close-dusk {
   from {
     --vanta-dusk: 260px;
