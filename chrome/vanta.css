@@ -353,6 +353,62 @@ sidebar-main,
   }
 }
 
+/* Closing a tab is nightfall: darkness rises from the lower right until the
+   last light leaves the tab's upper-left edge, then the row closes and the
+   tabs below glide up. Vertical tabs only animate this with Vanta's
+   tabbrowser patch (patches/vertical-tab-close.patch), which sets
+   [vanta-closing] and removes the tab when the vanta-tab-close animations
+   end. Firefox skips the animation under Reduce Motion. */
+@property --vanta-dusk {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+#tabbrowser-tabs[orient="vertical"] .tabbrowser-tab[vanta-closing] {
+  pointer-events: none !important;
+  animation: vanta-tab-close-row 180ms ease-in-out 200ms both !important;
+
+  & .tab-stack {
+    mask: radial-gradient(circle at 0 0, black var(--vanta-dusk), transparent calc(var(--vanta-dusk) + 10px)) !important;
+    animation: vanta-tab-close-dusk 260ms ease-in both !important;
+  }
+}
+
+/* The rail's round tab is small, so night starts closer to it. */
+#tabbrowser-tabs[orient="vertical"]:not([expanded]) .tabbrowser-tab[vanta-closing] .tab-stack {
+  animation-name: vanta-tab-close-dusk-rail !important;
+}
+
+@keyframes vanta-tab-close-dusk {
+  from {
+    --vanta-dusk: 260px;
+  }
+  to {
+    --vanta-dusk: -10px;
+  }
+}
+
+@keyframes vanta-tab-close-dusk-rail {
+  from {
+    --vanta-dusk: 60px;
+  }
+  to {
+    --vanta-dusk: -10px;
+  }
+}
+
+@keyframes vanta-tab-close-row {
+  from {
+    max-height: 44px;
+  }
+  to {
+    max-height: 0;
+    padding-block: 0;
+    margin-block: 0;
+  }
+}
+
 /* The Eclipse's style, beyond its shape: darkness is the material and light
    is the accent. Nothing gets a plate or a fill to say "this one"; it is
    lit instead. Light falls from the upper left, and when something happens

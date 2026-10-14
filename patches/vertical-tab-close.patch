@@ -1,0 +1,31 @@
+--- a/browser/components/tabbrowser/Tabbrowser.sys.mjs
++++ b/browser/components/tabbrowser/Tabbrowser.sys.mjs
+@@ -6361,7 +6361,6 @@
+       isLastTab ||
+       aTab.pinned ||
+       !isVisibleTab ||
+-      this.tabContainer.verticalMode ||
+       this._removingTabs.size >
+         3 /* don't want lots of concurrent animations */ ||
+       !aTab.hasAttribute(
+@@ -6380,6 +6379,20 @@
+     Glean.browserTabclose.timeNoAnim.cancel(aTab._closeTimeNoAnimTimerId);
+     aTab._closeTimeNoAnimTimerId = null;
+ 
++    // Vanta: vertical tabs close with an animation from Vanta's stylesheet
++    // (the tab's light goes out, then its row closes up). The tab is removed
++    // once those animations end, or straight away if there are none.
++    if (this.tabContainer.verticalMode) {
++      aTab.setAttribute("vanta-closing", "true");
++      let closing = aTab
++        .getAnimations({ subtree: true })
++        .filter(a => a.animationName?.startsWith("vanta-tab-close"));
++      let done = () => this._endRemoveTab(aTab);
++      Promise.allSettled(closing.map(a => a.finished)).then(done);
++      this.documentGlobal.setTimeout(done, 1000);
++      return;
++    }
++
+     aTab.style.maxWidth = ""; // ensure that fade-out transition happens
+     aTab.removeAttribute("fadein");
+     aTab.removeAttribute("bursting");
