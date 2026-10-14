@@ -120,6 +120,19 @@
         "presence": "#cc-main .cm",
         "optOut": "#cc-main .cm [data-role=\"necessary\"]"
       }
+    },
+    {
+      "id": "vanta-sourcepoint",
+      "domains": [
+        "privacy-mgmt.com",
+        "sp-prod.net"
+      ],
+      "click": {
+        "presence": ".message-container > #notice",
+        "skipPresenceVisibilityCheck": true,
+        "runContext": "child",
+        "optOut": ".sp_choice_type_13"
+      }
     }
   ]
 }

@@ -31,4 +31,5 @@ for p in "$here"/patches/*.patch; do
 done
 
 # Vanta's own cookie banner rules (packaged by patches/cookiebanners-2).
-cp "$here/cookiebanners/vanta-rules.json" toolkit/components/cookiebanners/vanta-rules.json
+cp "$here"/cookiebanners/vanta-rules.json "$here"/cookiebanners/vanta-site-rules.json \
+  toolkit/components/cookiebanners/
