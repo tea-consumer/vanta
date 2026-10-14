@@ -1,14 +1,17 @@
 Vanta: restore Firefox's cookie banner handling (toolkit/components/cookiebanners).
 
-Mozilla removed this feature in Firefox 155 (bug 2058143, part 8, hg rev
-dfc9e3c70dca). This patch is that removal reversed, against Firefox 157.0.1,
-limited to what desktop needs:
+Mozilla removed this feature in Firefox 155 (bug 2058143, parts 7 and 8, hg
+revs c3b49c86ffa0 and dfc9e3c70dca). This patch is those removals reversed,
+against Firefox 157.0.1, limited to what desktop needs:
 
   - toolkit/components/cookiebanners/ (service, cookie injector, actors, tests)
   - the cookiebanners.* static and runtime prefs
   - the CookieBanner JSWindowActor registration
   - nsILoadInfo.hasInjectedCookieForCookieBannerHandling and its IPC field
   - the Glean metrics registration and the rules-list Remote Settings dump
+  - the clear-data integration, so "Forget About This Site" and
+    Clear-Site-Data also reset per-site cookie banner state (flag bits 26
+    and 27, which Mozilla left vacant)
 
 Left out on purpose: the protections-panel/settings UI, Nimbus feature, legacy
 Telemetry scalars (the Glean metrics' telemetry_mirror lines are dropped), the
@@ -16,6 +19,50 @@ Android/GeckoView API, and lint/docs/perf-test references.
 
 Every line here is Mozilla's own code. Vanta's changes are in cookiebanners-2.
 
+diff --git a/browser/modules/Sanitizer.sys.mjs b/browser/modules/Sanitizer.sys.mjs
+index f0d146337..0720ffd22 100644
+--- a/browser/modules/Sanitizer.sys.mjs
++++ b/browser/modules/Sanitizer.sys.mjs
+@@ -518,6 +518,7 @@ export var Sanitizer = {
+             progress,
+             principalsForShutdownClearing,
+             Ci.nsIClearDataService.CLEAR_COOKIES |
++              Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXECUTED_RECORD |
+               Ci.nsIClearDataService.CLEAR_FINGERPRINTING_PROTECTION_STATE |
+               Ci.nsIClearDataService.CLEAR_BOUNCE_TRACKING_PROTECTION_STATE
+           );
+@@ -526,6 +527,7 @@ export var Sanitizer = {
+           await clearData(
+             range,
+             Ci.nsIClearDataService.CLEAR_COOKIES |
++              Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXECUTED_RECORD |
+               Ci.nsIClearDataService.CLEAR_FINGERPRINTING_PROTECTION_STATE |
+               Ci.nsIClearDataService.CLEAR_BOUNCE_TRACKING_PROTECTION_STATE
+           );
+@@ -547,6 +549,7 @@ export var Sanitizer = {
+             progress,
+             principalsForShutdownClearing,
+             Ci.nsIClearDataService.CLEAR_DOM_STORAGES |
++              Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXECUTED_RECORD |
+               Ci.nsIClearDataService.CLEAR_FINGERPRINTING_PROTECTION_STATE
+           );
+         } else {
+@@ -554,6 +557,7 @@ export var Sanitizer = {
+           await clearData(
+             range,
+             Ci.nsIClearDataService.CLEAR_DOM_STORAGES |
++              Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXECUTED_RECORD |
+               Ci.nsIClearDataService.CLEAR_FINGERPRINTING_PROTECTION_STATE
+           );
+         }
+@@ -690,6 +694,7 @@ export var Sanitizer = {
+             Ci.nsIClearDataService.CLEAR_CLIENT_AUTH_REMEMBER_SERVICE |
+             Ci.nsIClearDataService.CLEAR_CERT_EXCEPTIONS |
+             Ci.nsIClearDataService.CLEAR_CREDENTIAL_MANAGER_STATE |
++            Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXCEPTION |
+             Ci.nsIClearDataService.CLEAR_FINGERPRINTING_PROTECTION_STATE
+         );
+         Glean.browserSanitizer.sitesettings.stopAndAccumulate(timerId);
 diff --git a/ipc/glue/BackgroundUtils.cpp b/ipc/glue/BackgroundUtils.cpp
 index e91cf98b0..27506f885 100644
 --- a/ipc/glue/BackgroundUtils.cpp
@@ -10422,6 +10469,607 @@ index ee5e57c5b..d6ce82660 100644
          "devtools-compatibility-browsers.json",
          "devtools-devices.json",
          "example.json",
+diff --git a/toolkit/components/cleardata/ClearDataService.sys.mjs b/toolkit/components/cleardata/ClearDataService.sys.mjs
+index 1dad73fc9..99d3aaa42 100644
+--- a/toolkit/components/cleardata/ClearDataService.sys.mjs
++++ b/toolkit/components/cleardata/ClearDataService.sys.mjs
+@@ -332,6 +332,160 @@ const CookieCleaner = {
+   },
+ };
+ 
++// A cleaner for clearing cookie banner handling exceptions.
++const CookieBannerExceptionCleaner = {
++  async deleteAll() {
++    try {
++      Services.cookieBanners.removeAllDomainPrefs(false);
++    } catch (e) {
++      // Don't throw an error if the cookie banner handling is disabled.
++      if (e.result != Cr.NS_ERROR_NOT_AVAILABLE) {
++        throw e;
++      }
++    }
++  },
++
++  async deleteByPrincipal(aPrincipal) {
++    try {
++      Services.cookieBanners.removeDomainPref(aPrincipal.URI, false);
++    } catch (e) {
++      // Don't throw an error if the cookie banner handling is disabled.
++      if (e.result != Cr.NS_ERROR_NOT_AVAILABLE) {
++        throw e;
++      }
++    }
++  },
++
++  async deleteBySite(aSchemelessSite, aOriginAttributesPattern) {
++    let { privateBrowsingId } = aOriginAttributesPattern;
++
++    try {
++      let uri = Services.io.newURI("https://" + aSchemelessSite);
++
++      // privateBrowsingId unset clears both normal and private browsing.
++      // Otherwise only clear either normal or private browsing depending on the
++      // value.
++      if (
++        privateBrowsingId == null ||
++        privateBrowsingId ===
++          Services.scriptSecurityManager.DEFAULT_PRIVATE_BROWSING_ID
++      ) {
++        Services.cookieBanners.removeDomainPref(uri, false);
++      }
++      if (
++        privateBrowsingId == null ||
++        privateBrowsingId !==
++          Services.scriptSecurityManager.DEFAULT_PRIVATE_BROWSING_ID
++      ) {
++        Services.cookieBanners.removeDomainPref(uri, true);
++      }
++    } catch (e) {
++      // Don't throw an error if the cookie banner handling is disabled.
++      if (e.result != Cr.NS_ERROR_NOT_AVAILABLE) {
++        throw e;
++      }
++    }
++  },
++
++  async deleteByHost(aHost, aOriginAttributes) {
++    try {
++      let isPrivate =
++        !!aOriginAttributes.privateBrowsingId &&
++        aOriginAttributes.privateBrowsingId !==
++          Services.scriptSecurityManager.DEFAULT_PRIVATE_BROWSING_ID;
++
++      Services.cookieBanners.removeDomainPref(
++        Services.io.newURI("https://" + aHost),
++        isPrivate
++      );
++    } catch (e) {
++      // Don't throw an error if the cookie banner handling is disabled.
++      if (e.result != Cr.NS_ERROR_NOT_AVAILABLE) {
++        throw e;
++      }
++    }
++  },
++};
++
++// A cleaner for cleaning cookie banner handling executed records.
++const CookieBannerExecutedRecordCleaner = {
++  async deleteAll() {
++    try {
++      Services.cookieBanners.removeAllExecutedRecords(false);
++    } catch (e) {
++      // Don't throw an error if the cookie banner handling is disabled.
++      if (e.result != Cr.NS_ERROR_NOT_AVAILABLE) {
++        throw e;
++      }
++    }
++  },
++
++  async deleteByPrincipal(aPrincipal) {
++    try {
++      Services.cookieBanners.removeExecutedRecordForSite(
++        aPrincipal.baseDomain,
++        false
++      );
++    } catch (e) {
++      // Don't throw an error if the cookie banner handling is disabled.
++      if (e.result != Cr.NS_ERROR_NOT_AVAILABLE) {
++        throw e;
++      }
++    }
++  },
++
++  async deleteBySite(aSchemelessSite, aOriginAttributesPattern) {
++    let { privateBrowsingId } = aOriginAttributesPattern;
++
++    try {
++      // privateBrowsingId unset clears both normal and private browsing.
++      // Otherwise only clear either normal or private browsing depending on the
++      // value
++      if (
++        privateBrowsingId == null ||
++        privateBrowsingId ===
++          Services.scriptSecurityManager.DEFAULT_PRIVATE_BROWSING_ID
++      ) {
++        Services.cookieBanners.removeExecutedRecordForSite(
++          aSchemelessSite,
++          false
++        );
++      }
++      if (
++        privateBrowsingId == null ||
++        privateBrowsingId !==
++          Services.scriptSecurityManager.DEFAULT_PRIVATE_BROWSING_ID
++      ) {
++        Services.cookieBanners.removeExecutedRecordForSite(
++          aSchemelessSite,
++          true
++        );
++      }
++    } catch (e) {
++      // Don't throw an error if the cookie banner handling is disabled.
++      if (e.result != Cr.NS_ERROR_NOT_AVAILABLE) {
++        throw e;
++      }
++    }
++  },
++
++  async deleteByHost(aHost, aOriginAttributes) {
++    try {
++      let isPrivate =
++        !!aOriginAttributes.privateBrowsingId &&
++        aOriginAttributes.privateBrowsingId !==
++          Services.scriptSecurityManager.DEFAULT_PRIVATE_BROWSING_ID;
++
++      Services.cookieBanners.removeExecutedRecordForSite(aHost, isPrivate);
++    } catch (e) {
++      // Don't throw error if the cookie banner handling is disabled.
++      if (e.result != Cr.NS_ERROR_NOT_AVAILABLE) {
++        throw e;
++      }
++    }
++  },
++};
++
+ // A cleaner for cleaning fingerprinting protection states.
+ const FingerprintingProtectionStateCleaner = {
+   async _maybeClearSiteSpecificZoom(aSchemelessSite, aOriginAttributes = {}) {
+@@ -2307,6 +2461,16 @@ const FLAGS_MAP = [
+     cleaners: [IdentityCredentialStorageCleaner],
+   },
+ 
++  {
++    flag: Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXCEPTION,
++    cleaners: [CookieBannerExceptionCleaner],
++  },
++
++  {
++    flag: Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXECUTED_RECORD,
++    cleaners: [CookieBannerExecutedRecordCleaner],
++  },
++
+   {
+     flag: Ci.nsIClearDataService.CLEAR_FINGERPRINTING_PROTECTION_STATE,
+     cleaners: [FingerprintingProtectionStateCleaner],
+diff --git a/toolkit/components/cleardata/SiteDataTestUtils.sys.mjs b/toolkit/components/cleardata/SiteDataTestUtils.sys.mjs
+index a57d2d3f0..c54db0976 100644
+--- a/toolkit/components/cleardata/SiteDataTestUtils.sys.mjs
++++ b/toolkit/components/cleardata/SiteDataTestUtils.sys.mjs
+@@ -459,6 +459,8 @@ export var SiteDataTestUtils = {
+           Ci.nsIClearDataService.CLEAR_CLIENT_AUTH_REMEMBER_SERVICE |
+           Ci.nsIClearDataService.CLEAR_EME |
+           Ci.nsIClearDataService.CLEAR_STORAGE_ACCESS |
++          Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXCEPTION |
++          Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXECUTED_RECORD |
+           Ci.nsIClearDataService.CLEAR_FINGERPRINTING_PROTECTION_STATE |
+           Ci.nsIClearDataService.CLEAR_BOUNCE_TRACKING_PROTECTION_STATE,
+         resolve
+diff --git a/toolkit/components/cleardata/nsIClearDataService.idl b/toolkit/components/cleardata/nsIClearDataService.idl
+index aa2755f54..dc1dd4ca6 100644
+--- a/toolkit/components/cleardata/nsIClearDataService.idl
++++ b/toolkit/components/cleardata/nsIClearDataService.idl
+@@ -340,6 +340,16 @@ interface nsIClearDataService : nsISupports
+    */
+   const uint32_t CLEAR_CREDENTIAL_MANAGER_STATE = 1 << 25;
+ 
++  /**
++   * Clear the per-site exception for cookie banner handling.
++   */
++  const uint32_t CLEAR_COOKIE_BANNER_EXCEPTION = 1 << 26;
++
++  /**
++   * Clear the site executed record for cookie banner handling.
++   */
++  const uint32_t CLEAR_COOKIE_BANNER_EXECUTED_RECORD = 1 << 27;
++
+   /**
+    * Clear state associated with the fingerprinting protection.
+    */
+@@ -397,7 +407,8 @@ interface nsIClearDataService : nsISupports
+     CLEAR_PERMISSIONS | CLEAR_DOM_STORAGES | CLEAR_CONTENT_PREFERENCES |
+     CLEAR_DOM_PUSH_NOTIFICATIONS |
+     CLEAR_CLIENT_AUTH_REMEMBER_SERVICE | CLEAR_REPORTS | CLEAR_CERT_EXCEPTIONS |
+-    CLEAR_CREDENTIAL_MANAGER_STATE | CLEAR_FINGERPRINTING_PROTECTION_STATE |
++    CLEAR_CREDENTIAL_MANAGER_STATE | CLEAR_COOKIE_BANNER_EXCEPTION |
++    CLEAR_COOKIE_BANNER_EXECUTED_RECORD | CLEAR_FINGERPRINTING_PROTECTION_STATE |
+     CLEAR_BOUNCE_TRACKING_PROTECTION_STATE | CLEAR_MESSAGING_LAYER_SECURITY_STATE |
+     CLEAR_TLS_TOKEN_CACHE;
+ 
+@@ -411,7 +422,7 @@ interface nsIClearDataService : nsISupports
+    * This flag does not clear caches.
+    */
+   const uint32_t CLEAR_COOKIES_AND_SITE_DATA =
+-    CLEAR_COOKIES | CLEAR_DOM_STORAGES | CLEAR_HSTS |
++    CLEAR_COOKIES | CLEAR_COOKIE_BANNER_EXECUTED_RECORD | CLEAR_DOM_STORAGES | CLEAR_HSTS |
+     CLEAR_EME | CLEAR_AUTH_TOKENS | CLEAR_AUTH_CACHE | CLEAR_FINGERPRINTING_PROTECTION_STATE |
+     CLEAR_BOUNCE_TRACKING_PROTECTION_STATE | CLEAR_STORAGE_PERMISSIONS | CLEAR_MESSAGING_LAYER_SECURITY_STATE |
+     CLEAR_TLS_TOKEN_CACHE;
+diff --git a/toolkit/components/cleardata/tests/unit/test_cookie_banner_handling.js b/toolkit/components/cleardata/tests/unit/test_cookie_banner_handling.js
+new file mode 100644
+index 000000000..983027952
+--- /dev/null
++++ b/toolkit/components/cleardata/tests/unit/test_cookie_banner_handling.js
+@@ -0,0 +1,328 @@
++/* Any copyright is dedicated to the Public Domain.
++http://creativecommons.org/publicdomain/zero/1.0/ */
++
++"use strict";
++
++add_setup(_ => {
++  // Init cookieBannerService and pretend we opened a profile.
++  let cbs = Cc["@mozilla.org/cookie-banner-service;1"].getService(
++    Ci.nsIObserver
++  );
++  cbs.observe(null, "profile-after-change", null);
++});
++
++add_task(async function test_delete_exception() {
++  info("Enabling cookie banner service with MODE_REJECT");
++  Services.prefs.setIntPref(
++    "cookiebanners.service.mode",
++    Ci.nsICookieBannerService.MODE_REJECT
++  );
++
++  // Test nsIClearDataService.deleteDataFromHost
++  info("Adding an exception for example.com");
++  let uri = Services.io.newURI("https://example.com");
++
++  Services.cookieBanners.setDomainPref(
++    uri,
++    Ci.nsICookieBannerService.MODE_REJECT_OR_ACCEPT,
++    false
++  );
++
++  info("Verify that the exception is properly added");
++  Assert.equal(
++    Services.cookieBanners.getDomainPref(uri, false),
++    Ci.nsICookieBannerService.MODE_REJECT_OR_ACCEPT,
++    "The exception is properly set."
++  );
++
++  info("Trigger the deleteDataFromHost");
++  await new Promise(resolve => {
++    Services.clearData.deleteDataFromHost(
++      "example.com",
++      true /* user request */,
++      Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXCEPTION,
++      _ => {
++        resolve();
++      }
++    );
++  });
++
++  info("Verify that the exception is deleted");
++  Assert.equal(
++    Services.cookieBanners.getDomainPref(uri, false),
++    Ci.nsICookieBannerService.MODE_UNSET,
++    "The exception is properly cleared."
++  );
++
++  // Test nsIClearDataService.deleteDataFromSite
++  info("Adding an exception for example.com");
++  Services.cookieBanners.setDomainPref(
++    uri,
++    Ci.nsICookieBannerService.MODE_REJECT_OR_ACCEPT,
++    false
++  );
++
++  info("Verify that the exception is properly added");
++  Assert.equal(
++    Services.cookieBanners.getDomainPref(uri, false),
++    Ci.nsICookieBannerService.MODE_REJECT_OR_ACCEPT,
++    "The exception is properly set."
++  );
++
++  info("Trigger the deleteDataFromSite");
++  await new Promise(resolve => {
++    Services.clearData.deleteDataFromSite(
++      "example.com",
++      {},
++      true /* user request */,
++      Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXCEPTION,
++      _ => {
++        resolve();
++      }
++    );
++  });
++
++  info("Verify that the exception is deleted");
++  Assert.equal(
++    Services.cookieBanners.getDomainPref(uri, false),
++    Ci.nsICookieBannerService.MODE_UNSET,
++    "The exception is properly cleared."
++  );
++
++  // Test nsIClearDataService.deleteDataFromPrincipal
++  info("Adding an exception for example.com");
++  Services.cookieBanners.setDomainPref(
++    uri,
++    Ci.nsICookieBannerService.MODE_REJECT_OR_ACCEPT,
++    false
++  );
++
++  info("Verify that the exception is properly added");
++  Assert.equal(
++    Services.cookieBanners.getDomainPref(uri, false),
++    Ci.nsICookieBannerService.MODE_REJECT_OR_ACCEPT,
++    "The exception is properly set."
++  );
++
++  info("Trigger the deleteDataFromPrincipal");
++  let principal = Services.scriptSecurityManager.createContentPrincipal(
++    uri,
++    {}
++  );
++  await new Promise(resolve => {
++    Services.clearData.deleteDataFromPrincipal(
++      principal,
++      true /* user request */,
++      Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXCEPTION,
++      _ => {
++        resolve();
++      }
++    );
++  });
++
++  info("Verify that the exception is deleted");
++  Assert.equal(
++    Services.cookieBanners.getDomainPref(uri, false),
++    Ci.nsICookieBannerService.MODE_UNSET,
++    "The exception is properly cleared."
++  );
++
++  // Test nsIClearDataService.deleteData
++  info("Adding an exception for example.com");
++  Services.cookieBanners.setDomainPref(
++    uri,
++    Ci.nsICookieBannerService.MODE_REJECT_OR_ACCEPT,
++    false
++  );
++
++  info("Verify that the exception is properly added");
++  Assert.equal(
++    Services.cookieBanners.getDomainPref(uri, false),
++    Ci.nsICookieBannerService.MODE_REJECT_OR_ACCEPT,
++    "The exception is properly set."
++  );
++
++  info("Trigger the deleteData");
++  await new Promise(resolve => {
++    Services.clearData.deleteData(
++      Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXCEPTION,
++      _ => {
++        resolve();
++      }
++    );
++  });
++
++  info("Verify that the exception is deleted");
++  Assert.equal(
++    Services.cookieBanners.getDomainPref(uri, false),
++    Ci.nsICookieBannerService.MODE_UNSET,
++    "The exception is properly cleared."
++  );
++
++  Services.prefs.clearUserPref("cookiebanners.service.mode");
++});
++
++add_task(async function test_delete_executed_record() {
++  info("Enabling cookie banner service with MODE_REJECT");
++  Services.prefs.setIntPref(
++    "cookiebanners.service.mode",
++    Ci.nsICookieBannerService.MODE_REJECT
++  );
++  Services.prefs.setIntPref(
++    "cookiebanners.bannerClicking.maxTriesPerSiteAndSession",
++    1
++  );
++
++  // Test nsIClearDataService.deleteDataFromHost
++  info("Adding a record for example.com");
++  Services.cookieBanners.markSiteExecuted("example.com", true, false);
++
++  info("Verify that the record is properly added");
++  Assert.ok(
++    Services.cookieBanners.shouldStopBannerClickingForSite(
++      "example.com",
++      true,
++      false
++    ),
++    "The record is properly set."
++  );
++
++  info("Trigger the deleteDataFromHost");
++  await new Promise(resolve => {
++    Services.clearData.deleteDataFromHost(
++      "example.com",
++      true /* user request */,
++      Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXECUTED_RECORD,
++      _ => {
++        resolve();
++      }
++    );
++  });
++
++  info("Verify that the exception is deleted");
++  Assert.ok(
++    !Services.cookieBanners.shouldStopBannerClickingForSite(
++      "example.com",
++      true,
++      false
++    ),
++    "The record is properly cleared."
++  );
++
++  // Test nsIClearDataService.deleteDataFromSite
++  info("Adding a record for example.com");
++  Services.cookieBanners.markSiteExecuted("example.com", true, false);
++
++  info("Verify that the record is properly added");
++  Assert.ok(
++    Services.cookieBanners.shouldStopBannerClickingForSite(
++      "example.com",
++      true,
++      false
++    ),
++    "The record is properly set."
++  );
++
++  info("Trigger the deleteDataFromSite");
++  await new Promise(resolve => {
++    Services.clearData.deleteDataFromSite(
++      "example.com",
++      {},
++      true /* user request */,
++      Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXECUTED_RECORD,
++      _ => {
++        resolve();
++      }
++    );
++  });
++
++  info("Verify that the exception is deleted");
++  Assert.ok(
++    !Services.cookieBanners.shouldStopBannerClickingForSite(
++      "example.com",
++      true,
++      false
++    ),
++    "The record is properly cleared."
++  );
++
++  // Test nsIClearDataService.deleteDataFromPrincipal
++  info("Adding a record for example.com");
++  Services.cookieBanners.markSiteExecuted("example.com", true, false);
++
++  info("Verify that the record is properly added");
++  Assert.ok(
++    Services.cookieBanners.shouldStopBannerClickingForSite(
++      "example.com",
++      true,
++      false
++    ),
++    "The record is properly set."
++  );
++
++  info("Trigger the deleteDataFromPrincipal");
++  let uri = Services.io.newURI("https://example.com");
++  let principal = Services.scriptSecurityManager.createContentPrincipal(
++    uri,
++    {}
++  );
++  await new Promise(resolve => {
++    Services.clearData.deleteDataFromPrincipal(
++      principal,
++      true /* user request */,
++      Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXECUTED_RECORD,
++      _ => {
++        resolve();
++      }
++    );
++  });
++
++  info("Verify that the exception is deleted");
++  Assert.ok(
++    !Services.cookieBanners.shouldStopBannerClickingForSite(
++      "example.com",
++      true,
++      false
++    ),
++    "The record is properly cleared."
++  );
++
++  // Test nsIClearDataService.deleteData
++  info("Adding a record for example.com");
++  Services.cookieBanners.markSiteExecuted("example.com", true, false);
++
++  info("Verify that the record is properly added");
++  Assert.ok(
++    Services.cookieBanners.shouldStopBannerClickingForSite(
++      "example.com",
++      true,
++      false
++    ),
++    "The record is properly set."
++  );
++
++  info("Trigger the deleteData");
++  await new Promise(resolve => {
++    Services.clearData.deleteData(
++      Ci.nsIClearDataService.CLEAR_COOKIE_BANNER_EXECUTED_RECORD,
++      _ => {
++        resolve();
++      }
++    );
++  });
++
++  info("Verify that the exception is deleted");
++  Assert.ok(
++    !Services.cookieBanners.shouldStopBannerClickingForSite(
++      "example.com",
++      true,
++      false
++    ),
++    "The record is properly cleared."
++  );
++
++  Services.prefs.clearUserPref("cookiebanners.service.mode");
++  Services.prefs.clearUserPref(
++    "cookiebanners.bannerClicking.maxTriesPerSiteAndSession"
++  );
++});
+diff --git a/toolkit/components/cleardata/tests/unit/xpcshell.toml b/toolkit/components/cleardata/tests/unit/xpcshell.toml
+index fa574e428..07b112ab8 100644
+--- a/toolkit/components/cleardata/tests/unit/xpcshell.toml
++++ b/toolkit/components/cleardata/tests/unit/xpcshell.toml
+@@ -27,6 +27,8 @@ skip-if = [
+ ["test_content_preferences.js"]
+ requesttimeoutfactor = 4  # Slow on Linux condprof
+ 
++["test_cookie_banner_handling.js"]
++
+ ["test_cookies.js"]
+ 
+ ["test_downloads.js"]
+diff --git a/toolkit/components/clearsitedata/ClearSiteData.cpp b/toolkit/components/clearsitedata/ClearSiteData.cpp
+index b7027609b..2bd63b93e 100644
+--- a/toolkit/components/clearsitedata/ClearSiteData.cpp
++++ b/toolkit/components/clearsitedata/ClearSiteData.cpp
+@@ -217,12 +217,14 @@ void ClearSiteData::ClearDataFromChannel(nsIHttpChannel* aChannel) {
+   if (flags & eCookies) {
+     LogOpToConsole(aChannel, uri, eCookies);
+     cleanFlags |= nsIClearDataService::CLEAR_COOKIES |
++                  nsIClearDataService::CLEAR_COOKIE_BANNER_EXECUTED_RECORD |
+                   nsIClearDataService::CLEAR_FINGERPRINTING_PROTECTION_STATE;
+   }
+ 
+   if (flags & eStorage) {
+     LogOpToConsole(aChannel, uri, eStorage);
+     cleanFlags |= nsIClearDataService::CLEAR_DOM_STORAGES |
++                  nsIClearDataService::CLEAR_COOKIE_BANNER_EXECUTED_RECORD |
+                   nsIClearDataService::CLEAR_FINGERPRINTING_PROTECTION_STATE;
+   }
+ 
 diff --git a/toolkit/components/cookiebanners/CookieBannerChild.sys.mjs b/toolkit/components/cookiebanners/CookieBannerChild.sys.mjs
 new file mode 100644
 index 000000000..c81be54b9

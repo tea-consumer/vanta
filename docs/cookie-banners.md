@@ -41,7 +41,9 @@ costs time even when there is no banner. Vanta instead:
 - skips rules that have nothing to click in reject-only mode;
 - runs consent-platform rules only in the top page, not in every iframe
   (`cookiebanners.service.enableGlobalRules.subFrames = false`);
-- stops looking 10 s after DOMContentLoaded (Mozilla: 20 s), or 5 s after load;
+- stops looking 5 s after load (or 20 s after DOMContentLoaded if load never
+  comes), as Mozilla did; a shorter cut-off missed banners built at onload on
+  slow pages, and idle polling makes the full window cheap;
 - stops for a site after 3 tries per session (Mozilla's default).
 
 The service itself starts at idle priority after startup, as in Firefox.
@@ -97,6 +99,17 @@ Not covered: platforms that draw their banner inside a closed shadow DOM
 (Usercentrics, newer Axeptio) and ones whose reject button sits on a second
 screen. Hiding banners that can't be rejected is the ad blocker's job, not
 this feature's.
+
+## Testing
+
+Mozilla's tests for this component are restored with it:
+
+    ./mach test toolkit/components/cookiebanners --headless \
+      --setpref dom.security.https_only_mode=false
+
+The extra pref is needed for any mochitest on a Vanta build: the test
+harness serves pages over plain http, and Vanta's HTTPS-only default keeps
+the test window from ever opening.
 
 ## Turning it off
 

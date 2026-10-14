@@ -66,8 +66,6 @@ pref("cookiebanners.service.mode.privateBrowsing", 1);
 // in the top page: running them in every iframe costs more than it catches.
 pref("cookiebanners.service.enableGlobalRules", true);
 pref("cookiebanners.service.enableGlobalRules.subFrames", false);
-// Stop looking 10s after DOMContentLoaded instead of 20s (5s after load stays).
-pref("cookiebanners.bannerClicking.timeoutAfterDOMContentLoaded", 10000);
 
 /** ===== TELEMETRY / STUDIES / CRASH REPORTS OFF ======================= **/
 pref("datareporting.policy.dataSubmissionEnabled", false);
