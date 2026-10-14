@@ -173,6 +173,9 @@ pref("vanta.newtab.home", true);
 // results, drawn in Vanta's design. The "Vanta" engine is made the default
 // once on first run, so a choice made later in Settings sticks.
 pref("vanta.search.skin", true);
+// The address bar shows only your search words on a results page.
+pref("browser.urlbar.showSearchTerms.featureGate", true);
+pref("browser.urlbar.showSearchTerms.enabled", true);
 // The Vanta home is also the start page and the Home button: both open a
 // blank tab, which the window draws the home on.
 pref("browser.startup.page", 1);

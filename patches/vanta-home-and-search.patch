@@ -1,6 +1,6 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,1081 @@
+@@ -1258,3 +1258,1132 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
@@ -416,6 +416,7 @@
 +
 +  init() {
 +    this.setEngine();
++    this.showSearchTerms();
 +    if (Services.prefs.getBoolPref(this.SKIN_PREF, true)) {
 +      this.register("html.duckduckgo.com", this.RESULTS);
 +      this.register("duckduckgo.com", this.DDG);
@@ -434,6 +435,49 @@
 +    if (!sss.sheetRegistered(uri, sss.USER_SHEET)) {
 +      sss.loadAndRegisterSheet(uri, sss.USER_SHEET);
 +    }
++  },
++
++  // The address bar shows only the words you searched, as Firefox does for
++  // its built-in engines. Firefox only recognises those engines' pages, so
++  // the shared check also accepts Vanta's results page. The wrapper lives in
++  // its own sandbox so it outlives the window that installed it.
++  showSearchTerms() {
++    let { UrlbarSearchTermsPersistence: persistence } = ChromeUtils.importESModule(
++      "moz-src:///browser/components/urlbar/UrlbarSearchTermsPersistence.sys.mjs"
++    );
++    if (persistence.vantaWrapped) {
++      return;
++    }
++    let sandbox = Cu.Sandbox(Services.scriptSecurityManager.getSystemPrincipal(), {
++      wantGlobalProperties: ["URL"],
++    });
++    let wrap = Cu.evalInSandbox(
++      `(original => function (uri) {
++        let terms = original.call(this, uri);
++        if (terms) {
++          return terms;
++        }
++        try {
++          let url = URL.fromURI(uri);
++          let query = url.searchParams.get("q")?.trim();
++          if (
++            url.hostname == "html.duckduckgo.com" &&
++            url.pathname.startsWith("/html") &&
++            query &&
++            query.length <= 1000 &&
++            !/^https?:/.test(query)
++          ) {
++            return url.searchParams.get("q");
++          }
++        } catch (e) {}
++        return "";
++      })`,
++      sandbox,
++      null,
++      "chrome://browser/content/browser-init.js"
++    );
++    persistence.getSearchTerm = wrap(persistence.getSearchTerm);
++    persistence.vantaWrapped = true;
 +  },
 +
 +  async setEngine() {
@@ -596,11 +640,18 @@
 +    .nav-link input[type="submit"]:hover { color: #fff !important; }
 +
 +    @media (prefers-reduced-motion: no-preference) {
++      /* The horizon rises into place as the results arrive, like the new
++         tab's sunrise, then stays still. */
++      html::before { animation: vanta-horizon-rise 1800ms cubic-bezier(.16, 1, .3, 1) both; }
 +      .result { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
 +      .result:nth-child(2) { animation-delay: 40ms; }
 +      .result:nth-child(3) { animation-delay: 80ms; }
 +      .result:nth-child(4) { animation-delay: 120ms; }
 +      .result:nth-child(n+5) { animation-delay: 160ms; }
++    }
++    @keyframes vanta-horizon-rise {
++      from { transform: translateY(28vh); opacity: 0; }
++      40% { opacity: 1; }
 +    }
 +    @keyframes vanta-result-in {
 +      from { opacity: 0; transform: translateY(8px); }
