@@ -121,7 +121,7 @@ diff --git a/modules/libpref/init/StaticPrefList.yaml b/modules/libpref/init/Sta
 index 964f67c0..e68cade9 100644
 --- a/modules/libpref/init/StaticPrefList.yaml
 +++ b/modules/libpref/init/StaticPrefList.yaml
-@@ -8497,6 +8497,16 @@
+@@ -8497,6 +8497,21 @@
  #endif
    mirror: always
  
@@ -129,10 +129,15 @@ index 964f67c0..e68cade9 100644
 +# profiler is off. On Apple Silicon this small amount of GPU work per frame
 +# keeps the GPU from idling between frames, which otherwise makes trackpad
 +# scrolling stutter on screen even though frames are produced on time.
-+# 0 = off, 1 = downscale + readback, 2 = also JPEG-encode the result.
++# 0 = off, 1 = downscale + readback, 2 = also JPEG-encode it. On by default
++# on macOS only, where the stutter was seen.
 +- name: gfx.vanta.frame-readback
 +  type: RelaxedAtomicUint32
++#ifdef XP_MACOSX
++  value: 1
++#else
 +  value: 0
++#endif
 +  mirror: always
 +
  - name: gfx.webrender.compositor

@@ -103,11 +103,16 @@ for p in "$here"/patches/*.patch; do
 done
 
 # Experimental patches, only when asked for by name, e.g.
-#   VANTA_EXPERIMENTAL="frame-readback" scripts/build-macos-cross.sh ...
+#   VANTA_EXPERIMENTAL="<name>" scripts/build-macos-cross.sh ...
 # Each name matches patches/experimental/*<name>.patch; a .js file of the
 # same name holds the prefs that go with it.
 for name in ${VANTA_EXPERIMENTAL:-}; do
   p="$(ls "$here"/patches/experimental/*"$name".patch 2>/dev/null | head -1)"
+  # A patch that has since moved into patches/ is already applied above.
+  if [ -z "$p" ] && ls "$here"/patches/*"$name".patch >/dev/null 2>&1; then
+    echo "apply-vanta: $name is no longer experimental, already applied" >&2
+    continue
+  fi
   [ -n "$p" ] || { echo "apply-vanta: no experimental patch named $name" >&2; exit 1; }
   patch -p1 --forward < "$p"
   if [ -f "${p%.patch}.js" ]; then

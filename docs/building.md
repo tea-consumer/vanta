@@ -82,13 +82,12 @@ those need the full build above.
 `patches/experimental/` is not applied unless named in `VANTA_EXPERIMENTAL`
 when the tree is made, e.g.
 
-    VANTA_EXPERIMENTAL="frame-readback" scripts/build-macos-cross.sh instrumented
+    VANTA_EXPERIMENTAL="<name>" scripts/build-macos-cross.sh instrumented
 
 Each name picks `patches/experimental/*<name>.patch` plus its `.js` prefs
 file, and `.vanta-applied` records which were used. Use the same value for
 both stages of a build (the tree is applied once, so it carries over).
 
-**Right now the Mac's build has `frame-readback` in.** Until Fredrik
-confirms it fixes trackpad scrolling (then it moves into `patches/` and its
-pref into `prefs/vanta.js`), every build for the Mac must set
-`VANTA_EXPERIMENTAL="frame-readback"`, or scrolling goes back to how it was.
+None are experimental right now. `frame-readback` (the trackpad scroll fix)
+moved into `patches/` once Fredrik confirmed it on 2026-10-14, so every build
+has it. A leftover `VANTA_EXPERIMENTAL="frame-readback"` is skipped with a note.
