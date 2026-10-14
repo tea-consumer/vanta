@@ -199,39 +199,65 @@ sidebar-main,
 
 /* ----- Sidebar expanded on hover: float it over the page ------------------ */
 
-/* The open panel is the frame itself, not a card laid on the page: it is
-   clear, so whatever paints the frame (Vanta's black, or the gradient
-   Firefox 158 paints behind the toolbar and rail) shows under the tabs
-   exactly as it does in the rail. The page card steps aside instead: it is
-   clipped back to the panel's edge with its own rounded corners, which
-   also gives the concave corners where panel meets toolbar. The page never
-   moves or reflows; only the clip edge does, in step with Firefox's slide
-   (same 400ms ease-in-out). Firefox keeps the launcher floating for the
-   whole collapse ([sidebar-ongoing-animations]), so the panel stays clear
-   until the slide ends. The clip starts 30px outside the card so it never
-   cuts the card's rim or shadow. */
-:root[sidebar-expand-on-hover] {
-  #sidebar-container:is([sidebar-launcher-expanded], [sidebar-ongoing-animations]) {
-    background: transparent !important;
-    background-image: none !important;
-    border-radius: 0 !important;
-    border-inline: none !important;
-    box-shadow: none !important;
-    clip-path: inset(0 -48px 0 0) !important;
+/* The open panel is the frame itself, not a card laid on the page. It
+   paints the frame (Vanta's black, or the gradient Firefox 158 paints
+   behind the toolbar and rail, sized to the window so it lines up), so the
+   surface rides Firefox's compositor slide together with the tab names
+   instead of trailing them. Firefox keeps the launcher floating for the
+   whole collapse ([sidebar-ongoing-animations]), so the surface stays until
+   the slide ends; only the shadow follows the expanded state. */
+:root[sidebar-expand-on-hover] #sidebar-container:is([sidebar-launcher-expanded], [sidebar-ongoing-animations]) {
+  /* Not background-attachment: fixed, which Firefox's slide transform turns
+   * into scroll. The panel's bottom is the window's bottom. */
+  --vanta-frame-paint: var(--toolbox-background-image, none) 0 100% / 100vw 100vh no-repeat, var(--vanta-frame);
+  background: var(--vanta-frame-paint) !important;
+  /* No convex corners of its own. It ends level with the page card's
+   * bottom, and two concave fillets give the page its rounded corners
+   * against the panel, the same shape the page has against the rail. */
+  border-radius: 0 !important;
+  border-inline: none !important;
+  clip-path: inset(0 -48px var(--vanta-gap) 0) !important;
+  /* Firefox clips the launcher's overflow; let the fillets past its edge. */
+  overflow-clip-margin: var(--vanta-radius) !important;
+
+  &::before,
+  &::after {
+    content: "" !important;
+    position: absolute !important;
+    inset-inline-start: 100% !important;
+    width: var(--vanta-radius) !important;
+    height: var(--vanta-radius) !important;
+    pointer-events: none !important;
+    background: var(--vanta-frame-paint) !important;
   }
 
-  #tabbrowser-tabpanels {
-    clip-path: inset(-30px round var(--vanta-radius)) !important;
+  /* Starts at the toolbar edge so it also covers the card's 1px rim above
+   * the page; the circle stays centred on the page's corner. */
+  &::before {
+    inset-block-start: 0 !important;
+    height: calc(var(--vanta-radius) + 2px) !important;
+    background-position: calc(-1 * var(--sidebar-expanded-launcher-width, 240px)) 0, 0 0 !important;
+    mask: radial-gradient(circle at 100% 100%, transparent calc(var(--vanta-radius) - 0.5px), black var(--vanta-radius)) !important;
   }
 
-  #tabbrowser-tabbox[sidebar-launcher-expanded][sidebar-launcher-hovered] #tabbrowser-tabpanels {
-    clip-path: inset(-30px -30px -30px calc(var(--sidebar-expanded-launcher-width, 240px) - var(--sidebar-launcher-collapsed-width, 50px)) round var(--vanta-radius)) !important;
+  &::after {
+    inset-block-end: var(--vanta-gap) !important;
+    background-position: calc(-1 * var(--sidebar-expanded-launcher-width, 240px)) calc(100% + var(--vanta-gap)), 0 0 !important;
+    mask: radial-gradient(circle at 100% 0%, transparent calc(var(--vanta-radius) - 0.5px), black var(--vanta-radius)) !important;
   }
+}
 
-  @media (prefers-reduced-motion: no-preference) {
-    #tabbrowser-tabpanels {
-      transition: clip-path 400ms ease-in-out !important;
-    }
+:root[sidebar-expand-on-hover] #sidebar-container {
+  box-shadow: 0 0 0 1px transparent, 12px 0 32px -8px transparent !important;
+}
+
+:root[sidebar-expand-on-hover] #sidebar-container[sidebar-launcher-expanded] {
+  box-shadow: 0 0 0 1px var(--vanta-card-edge), 12px 0 32px -8px var(--vanta-card-shadow) !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[sidebar-expand-on-hover] #sidebar-container {
+    transition: box-shadow 400ms ease !important;
   }
 }
 
