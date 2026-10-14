@@ -96,9 +96,14 @@
   background: var(--vanta-frame) !important;
 }
 
-/* macOS: Firefox paints the toolbox with the native titlebar material (a
-   gray vibrancy layer on #navigator-toolbox::after), which covers the frame.
-   Vanta's frame is its own color, so drop the material. */
+/* macOS: Firefox gives the window (:root) and the toolbox
+   (#navigator-toolbox::after) native window materials. A native appearance
+   paints instead of the CSS background, so the frame came out as macOS's
+   blue-gray vibrancy rather than Vanta's black. Drop both materials. */
+:root:not([lwtheme]) {
+  appearance: none !important;
+}
+
 :root:not([lwtheme]) #navigator-toolbox::after {
   appearance: none !important;
   background: none !important;
@@ -209,14 +214,15 @@ sidebar-main,
 
 /* The frame is black with a faint tint of the page's own colour, sampled
    from the top of the page (patches/page-tint.patch). It keeps the page's
-   hue at a low strength and stays near black, so a white or gray page leaves
-   the frame black and a red one makes it a deep red-black. It replaces the gradient
+   hue at a low strength and is only as light as the page is colorful, so a
+   white or gray page leaves the frame pure black and a red one makes it a
+   deep red-black. It replaces the gradient
    Firefox paints behind the toolbar, and fades when you switch tabs. */
 @media -moz-pref("vanta.toolbar.pageTint") {
   :root:not([lwtheme])[vanta-page-tint] {
     --vanta-frame: light-dark(
       oklch(from var(--vanta-page-tint) 0.94 min(calc(c * 0.3), 0.03) h),
-      oklch(from var(--vanta-page-tint) calc(0.05 + min(c, 0.1) * 1.2) min(calc(c * 0.6), 0.06) h)
+      oklch(from var(--vanta-page-tint) calc(min(c, 0.1) * 1.3) min(calc(c * 0.6), 0.06) h)
     ) !important;
     --toolbox-background-image: none !important;
   }
