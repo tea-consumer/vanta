@@ -11,6 +11,9 @@ Vanta: make cookie banner handling reject-only friendly and cheaper per page.
     so they can add consent-platform rules and override stale site rules.
     scripts/apply-vanta.sh copies cookiebanners/vanta-rules.json into place.
 
+  - CookieBannerDomainPrefService: use components::AsyncShutdown::Service();
+    services::GetAsyncShutdownService() no longer exists in Firefox 157+.
+
 Applies on top of cookiebanners-1.
 
 diff --git a/toolkit/components/cookiebanners/CookieBannerChild.sys.mjs b/toolkit/components/cookiebanners/CookieBannerChild.sys.mjs
@@ -150,6 +153,28 @@ index c81be54b9..367285163 100644
        let matchingRules = this.#clickRules.filter(rule => {
          let { presence, skipPresenceVisibilityCheck } = rule;
  
+diff --git a/toolkit/components/cookiebanners/CookieBannerDomainPrefService.cpp b/toolkit/components/cookiebanners/CookieBannerDomainPrefService.cpp
+index ca9085e40..f069da2cb 100644
+--- a/toolkit/components/cookiebanners/CookieBannerDomainPrefService.cpp
++++ b/toolkit/components/cookiebanners/CookieBannerDomainPrefService.cpp
+@@ -5,6 +5,7 @@
+ #include "CookieBannerDomainPrefService.h"
+ 
+ #include "mozilla/ClearOnShutdown.h"
++#include "mozilla/Components.h"
+ #include "mozilla/DebugOnly.h"
+ #include "mozilla/Logging.h"
+ #include "mozilla/RefPtr.h"
+@@ -38,7 +39,8 @@ namespace {
+ // A helper function to get the profile-before-change shutdown barrier.
+ 
+ nsCOMPtr<nsIAsyncShutdownClient> GetShutdownBarrier() {
+-  nsCOMPtr<nsIAsyncShutdownService> svc = services::GetAsyncShutdownService();
++  // Vanta: services::GetAsyncShutdownService() was removed after Firefox 154.
++  nsCOMPtr<nsIAsyncShutdownService> svc = components::AsyncShutdown::Service();
+   NS_ENSURE_TRUE(svc, nullptr);
+ 
+   nsCOMPtr<nsIAsyncShutdownClient> barrier;
 diff --git a/toolkit/components/cookiebanners/CookieBannerListService.sys.mjs b/toolkit/components/cookiebanners/CookieBannerListService.sys.mjs
 index 52afe915a..6bcbeee5f 100644
 --- a/toolkit/components/cookiebanners/CookieBannerListService.sys.mjs
