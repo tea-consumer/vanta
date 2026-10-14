@@ -95,6 +95,31 @@ the sandbox and the precompiled path, plus site matching (subdomains,
 `example.*`), exceptions, alias exceptions, `#@#+js()` and the shield's
 per-site switch.
 
+## Interface
+
+- **Toolbar button**, right of the address bar: the eclipse mark with the
+  number of requests blocked on the current page as a badge. The icon is an
+  open circle when Blackout is off for the site. The count comes from the
+  page's content blocking log (the one the shield reads), read only for the
+  selected tab and at most four times a second while a page is blocking.
+- **Panel**: the count, a switch for the site and the total blocked so far
+  (Firefox's own tracking statistics). The switch is the shield's per-site
+  switch, so turning Blackout off for a site turns ETP off there too, as the
+  shield always has; the page reloads. The eclipse in the panel shows the
+  state: covered when blocking, uncovered when off, with the moon moving
+  between the two (no motion with reduced motion on).
+- **about:blackout** (from "Lists and settings"): Blackout on or off, the
+  known lists grouped as Ads, Privacy, Security, Annoyances and Fixes with
+  a switch, size and last change for each, any list by its address,
+  "Update now", the page settings (element hiding, scriptlets, thorough
+  hiding) and the sites Blackout is off for. Optional lists include
+  uBlock Origin's cookie notice list, which hides notices that cannot be
+  rejected; rejecting them is the cookie-banner setting's job.
+
+Both use Vanta's palette and work without the interface patch too, with
+Firefox's own panel colors. `blackout/test/ui/run.py <firefox>` checks them
+in a real Firefox.
+
 ## Default lists
 
 The defaults are uBlock Origin's own default lists, so the two can be compared
@@ -226,7 +251,8 @@ ETP Strict and its Disconnect lists keep running alongside Blackout.
   `content_classifier_engine/src/blackout.rs` translates uBlock Origin's list
   syntax, builds and caches the engine, writes element-hiding style sheets
   and the scriptlet table; `browser/components/blackout/` holds the list
-  updater, the page actors and the scriptlet library.
+  updater, the page actors, the scriptlet library, the toolbar button
+  (`BlackoutUI.sys.mjs`) and about:blackout (`content/`).
   The actor registration sets `safeForUntrustedWebProcess`: without it
   Firefox 157 keeps the actor out of web content processes, and element
   hiding silently did nothing.
@@ -247,8 +273,6 @@ ETP Strict and its Disconnect lists keep running alongside Blackout.
   working.
 - The uBlock-only options listed above, and procedural element hiding
   (`:has-text()`, `:upward()` and the like).
-- A Blackout panel or blocked-count badge. The shield already shows what was
-  blocked; a Vanta-styled view can follow.
 
 ## Checking a build
 

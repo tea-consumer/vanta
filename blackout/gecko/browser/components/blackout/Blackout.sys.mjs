@@ -17,10 +17,16 @@
  *  - registers the Blackout window actors, which hide the page elements the
  *    lists name and run the lists' scriptlets in pages;
  *  - shares the scriptlet table the engine build writes
- *    (<profile>/blackout/scriptlets.json) with the content processes.
+ *    (<profile>/blackout/scriptlets.json) with the content processes;
+ *  - adds the toolbar button (BlackoutUI.sys.mjs) and keeps the list status
+ *    that about:blackout shows.
  */
 
 const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  BlackoutUI: "moz-src:///browser/components/blackout/BlackoutUI.sys.mjs",
+});
 
 ChromeUtils.defineLazyGetter(lazy, "log", () =>
   console.createInstance({
@@ -37,6 +43,8 @@ const TIMER_ID = "vanta-blackout-lists";
 const FEATURE = "blackout";
 const ENGINES_UPDATED = "content-classifier-engines-updated";
 const SCRIPTLETS_URL = "resource:///actors/BlackoutScriptlets.js";
+// Sent after each list update run, for about:blackout.
+const LISTS_UPDATED = "vanta-blackout-lists-updated";
 
 // Keys in Services.ppmm.sharedData; BlackoutChild reads them. The host
 // index is split by the hosts' first character, SHARED_HOSTS + "a" and so on.
@@ -48,6 +56,106 @@ const SHARED_SOURCE = "Blackout:ScriptletSource";
 // scriptlets that are only safe from a trusted source (trusted-*), as in
 // uBlock Origin. The engine glue tells them apart by the .trusted.txt name.
 const TRUSTED_LIST_HOSTS = ["ublockorigin.github.io", "ublockorigin.pages.dev"];
+
+/**
+ * The lists about:blackout offers. The ones in the default vanta.blackout.lists
+ * are uBlock Origin's default set; the others are well-known optional lists.
+ * Any other "id=url" entry in the pref shows up as a custom list.
+ */
+export const KNOWN_LISTS = [
+  {
+    id: "ublock-filters",
+    group: "Ads",
+    name: "uBlock filters",
+    description: "uBlock Origin's own ad rules, with fixes for EasyList",
+    url: "https://ublockorigin.github.io/uAssets/filters/filters.min.txt",
+  },
+  {
+    id: "easylist",
+    group: "Ads",
+    name: "EasyList",
+    description: "The main international ad list",
+    url: "https://easylist.to/easylist/easylist.txt",
+  },
+  {
+    id: "adguard-base",
+    group: "Ads",
+    name: "AdGuard Base",
+    description: "AdGuard's ad rules, without the EasyList overlap",
+    url: "https://filters.adtidy.org/extension/ublock/filters/2_without_easylist.txt",
+  },
+  {
+    id: "ublock-privacy",
+    group: "Privacy",
+    name: "uBlock privacy",
+    description: "Trackers and tracking parameters",
+    url: "https://ublockorigin.github.io/uAssets/filters/privacy.min.txt",
+  },
+  {
+    id: "easyprivacy",
+    group: "Privacy",
+    name: "EasyPrivacy",
+    description: "Trackers and analytics",
+    url: "https://easylist.to/easylist/easyprivacy.txt",
+  },
+  {
+    id: "peter-lowe",
+    group: "Privacy",
+    name: "Peter Lowe's list",
+    description: "Ad and tracking servers",
+    url: "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=adblockplus&showintro=0&mimetype=plaintext",
+  },
+  {
+    id: "ublock-badware",
+    group: "Security",
+    name: "uBlock badware risks",
+    description: "Scam, fake download and malware sites",
+    url: "https://ublockorigin.github.io/uAssets/filters/badware.min.txt",
+  },
+  {
+    id: "urlhaus",
+    group: "Security",
+    name: "Online Malicious URL Blocklist",
+    description: "Malware sites from URLhaus",
+    url: "https://malware-filter.gitlab.io/malware-filter/urlhaus-filter-ag-online.txt",
+  },
+  {
+    id: "ublock-cookies",
+    group: "Annoyances",
+    name: "uBlock cookie notices",
+    description:
+      "Hides cookie notices that cannot be rejected (rejecting is Vanta's cookie setting)",
+    url: "https://ublockorigin.github.io/uAssets/filters/annoyances-cookies.txt",
+  },
+  {
+    id: "ublock-annoyances",
+    group: "Annoyances",
+    name: "uBlock annoyances",
+    description: "Newsletter pop-ups, app banners and other clutter",
+    url: "https://ublockorigin.github.io/uAssets/filters/annoyances-others.txt",
+  },
+  {
+    id: "fanboy-social",
+    group: "Annoyances",
+    name: "Fanboy's social widgets",
+    description: "Share buttons and social media embeds",
+    url: "https://easylist.to/easylist/fanboy-social.txt",
+  },
+  {
+    id: "ublock-quick-fixes",
+    group: "Fixes",
+    name: "uBlock quick fixes",
+    description: "Same-day fixes for sites that break or detect blocking",
+    url: "https://ublockorigin.github.io/uAssets/filters/quick-fixes.min.txt",
+  },
+  {
+    id: "ublock-unbreak",
+    group: "Fixes",
+    name: "uBlock unbreak",
+    description: "Exceptions that keep sites working",
+    url: "https://ublockorigin.github.io/uAssets/filters/unbreak.min.txt",
+  },
+];
 
 // No real filter list comes near this; anything bigger is not one.
 const MAX_LIST_LENGTH = 32 * 1024 * 1024;
@@ -96,6 +204,13 @@ function configuredLists() {
   return lists;
 }
 
+function writeLists(lists) {
+  Services.prefs.setStringPref(
+    PREF_LISTS,
+    lists.map(({ id, url }) => `${id}=${url}`).join(" ")
+  );
+}
+
 function classifier() {
   try {
     return Cc["@mozilla.org/content-classifier-service;1"].getService(
@@ -117,6 +232,7 @@ function looksLikeFilterList(text) {
 
 export const Blackout = {
   _updating: null,
+  _updateAgain: false,
   _publishedKey: null,
   _scriptletSource: null,
 
@@ -163,6 +279,7 @@ export const Blackout = {
     classifier();
     // The table from the last run is good until that load says otherwise.
     this.publishScriptlets();
+    lazy.BlackoutUI.init();
     // The first run has no lists yet: fetch them now rather than at idle.
     IOUtils.exists(listsDir()).then(exists => {
       if (!exists) {
@@ -289,14 +406,118 @@ export const Blackout = {
    * calls share one run.
    */
   update() {
-    if (!this._updating) {
-      this._updating = this._update()
-        .catch(e => lazy.log.error("List update failed", e))
-        .finally(() => {
-          this._updating = null;
-        });
+    if (this._updating) {
+      // The lists may have changed since this run read them.
+      this._updateAgain = true;
+      return this._updating;
     }
+    this._updating = this._update()
+      .catch(e => lazy.log.error("List update failed", e))
+      .finally(() => {
+        this._updating = null;
+        Services.obs.notifyObservers(null, LISTS_UPDATED);
+        if (this._updateAgain) {
+          this._updateAgain = false;
+          this.update();
+        }
+      });
     return this._updating;
+  },
+
+  get updating() {
+    return !!this._updating;
+  },
+
+  /**
+   * Every known list and every configured one, with what the updater knows
+   * about it: [{id, url, name, description, group, enabled, custom,
+   * checked, updated, error, size}], times in ms since the epoch.
+   */
+  async listStatus() {
+    let state = {};
+    try {
+      state = await IOUtils.readJSON(statePath());
+    } catch (e) {
+      // Nothing fetched yet.
+    }
+    const configured = configuredLists();
+    const rows = KNOWN_LISTS.map(list => ({ ...list, custom: false }));
+    for (const { id, url } of configured) {
+      if (!rows.some(row => row.id == id)) {
+        rows.push({ id, url, name: id, group: "Custom", custom: true });
+      }
+    }
+    for (const row of rows) {
+      const entry = configured.find(list => list.id == row.id);
+      row.enabled = !!entry;
+      row.url = entry?.url ?? row.url;
+      const status = state[row.id]?.url == row.url ? state[row.id] : {};
+      row.checked = status.checked ?? null;
+      row.updated = status.updated ?? null;
+      row.error = status.error ?? null;
+      row.size = null;
+      if (row.enabled) {
+        try {
+          const file = PathUtils.join(listsDir(), listFileName(row));
+          row.size = (await IOUtils.stat(file)).size;
+        } catch (e) {
+          // Not downloaded yet.
+        }
+      }
+    }
+    return rows;
+  },
+
+  /** Turns a known or custom list on or off. */
+  setListEnabled(id, enabled) {
+    const lists = configuredLists().filter(list => list.id != id);
+    if (enabled) {
+      const known = KNOWN_LISTS.find(list => list.id == id);
+      if (!known) {
+        return;
+      }
+      lists.push({ id, url: known.url });
+    }
+    writeLists(lists);
+  },
+
+  /**
+   * Adds a list by its address and returns its id, or throws if the address
+   * is not an https:// URL.
+   */
+  addCustomList(url) {
+    const parsed = URL.parse(url.trim());
+    if (parsed?.protocol != "https:") {
+      throw new Error("Lists are fetched over https:// only");
+    }
+    const lists = configuredLists();
+    const existing = lists.find(list => list.url == parsed.href);
+    if (existing) {
+      return existing.id;
+    }
+    const base =
+      parsed.hostname
+        .replace(/^www\./, "")
+        .split(".")[0]
+        .replace(/[^a-z0-9-]/g, "-")
+        .slice(0, 24) || "list";
+    let id = `custom-${base}`;
+    for (
+      let n = 2;
+      lists.some(list => list.id == id) ||
+      KNOWN_LISTS.some(list => list.id == id);
+      n++
+    ) {
+      id = `custom-${base}-${n}`;
+    }
+    lists.push({ id, url: parsed.href });
+    writeLists(lists);
+    return id;
+  },
+
+  /** Removes a custom list. */
+  removeList(id) {
+    writeLists(configuredLists().filter(list => list.id != id));
   },
 
   async _update() {
@@ -330,25 +551,31 @@ export const Blackout = {
         headers["If-Modified-Since"] = previous.lastModified;
       }
 
+      // What about:blackout shows: the last check, the last change, and
+      // why the last check failed, if it did.
+      const failed = error => {
+        lazy.log.warn(`Could not fetch ${id}: ${error}`);
+        state[id] = { ...(previous ?? { url }), checked: Date.now(), error };
+      };
+
       let response;
       try {
         response = await fetch(url, { headers, credentials: "omit" });
       } catch (e) {
-        lazy.log.warn(`Could not fetch ${id}`, e);
+        failed("No connection");
         continue;
       }
       if (response.status == 304) {
+        state[id] = { ...previous, checked: Date.now(), error: null };
         continue;
       }
       if (!response.ok) {
-        lazy.log.warn(`Could not fetch ${id}: HTTP ${response.status}`);
+        failed(`HTTP ${response.status}`);
         continue;
       }
       const text = await response.text();
       if (text.length > MAX_LIST_LENGTH || !looksLikeFilterList(text)) {
-        lazy.log.warn(
-          `${id} does not look like a filter list; keeping the old copy`
-        );
+        failed("Not a filter list");
         continue;
       }
 
@@ -357,6 +584,9 @@ export const Blackout = {
         url,
         etag: response.headers.get("ETag"),
         lastModified: response.headers.get("Last-Modified"),
+        checked: Date.now(),
+        updated: Date.now(),
+        error: null,
       };
       changed = true;
       lazy.log.debug(`Updated ${id}`);

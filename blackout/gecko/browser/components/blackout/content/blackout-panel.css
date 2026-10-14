@@ -1,0 +1,199 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* Blackout's toolbar button and panel. Colors come from Vanta's interface
+ * (chrome/vanta.css) when it is there, and from Firefox's panel colors
+ * otherwise. The only motion is the moon crossing the disk when the site
+ * switch flips: one transform on one element. */
+
+.vanta-blackout-button {
+  list-style-image: url("chrome://browser/content/blackout/blackout-icon.svg");
+
+  &[blackout-off] {
+    list-style-image: url("chrome://browser/content/blackout/blackout-icon-off.svg");
+  }
+
+  .toolbarbutton-badge {
+    background-color: var(
+      --vanta-accent,
+      var(--color-accent-primary)
+    ) !important;
+    color: var(--vanta-on-accent, var(--button-text-color-primary)) !important;
+    box-shadow: none !important;
+    font-weight: 600 !important;
+  }
+}
+
+#vanta-blackout-panel {
+  --vb-text: var(--vanta-text, var(--panel-color));
+  --vb-muted: var(--vanta-text-muted, var(--text-color-deemphasized));
+  --vb-sun: var(--vanta-accent, var(--panel-color));
+  --vb-face: var(--panel-background);
+  --vb-hover: var(--vanta-hover, var(--button-background-color-hover));
+  --vb-line: var(--vanta-card-edge, var(--panel-separator-color));
+  --vb-radius: var(--vanta-radius, 8px);
+}
+
+#vanta-blackout-panel .vb-body {
+  width: 18rem;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--vb-text);
+  font: menu;
+}
+
+#vanta-blackout-panel .vb-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  h2 {
+    margin: 0;
+    font-size: 1.15em;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+}
+
+#vanta-blackout-panel :is(.vb-status, .vb-caption, .vb-total) {
+  margin: 0;
+  color: var(--vb-muted);
+}
+
+#vanta-blackout-panel .vb-status {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 13rem;
+}
+
+/* The disk with the moon over it. On: the moon covers it, leaving a lit
+ * crescent at the upper left, the logo's shape. Off: the moon has moved off
+ * to the lower right and the disk is lit. */
+#vanta-blackout-panel .vb-eclipse {
+  flex: none;
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--vb-sun);
+  overflow: hidden;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 3px -1px -1px 3px;
+    border-radius: 50%;
+    background: var(--vb-face);
+    transition: transform 360ms cubic-bezier(0.3, 0, 0.2, 1);
+  }
+
+  &[off]::after {
+    transform: translate(115%, 115%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      transition: none;
+    }
+  }
+}
+
+#vanta-blackout-panel .vb-tally {
+  padding: 12px 14px;
+  border: 1px solid var(--vb-line);
+  border-radius: var(--vb-radius);
+
+  .vb-count {
+    margin: 0;
+    font-size: 2.2em;
+    font-weight: 600;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+#vanta-blackout-panel .vb-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* A switch drawn as a small eclipse track: the knob is the moon. */
+#vanta-blackout-panel .vb-switch {
+  appearance: none;
+  flex: none;
+  position: relative;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--vb-line);
+  border-radius: 10px;
+  background: var(--vb-hover);
+  cursor: pointer;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--vb-muted);
+    transition: transform 200ms cubic-bezier(0.3, 0, 0.2, 1);
+  }
+
+  &[aria-checked="true"] {
+    background: var(--vb-sun);
+    border-color: transparent;
+
+    &::after {
+      background: var(--vb-face);
+      transform: translateX(14px);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--vb-sun);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      transition: none;
+    }
+  }
+}
+
+#vanta-blackout-panel .vb-settings {
+  appearance: none;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--vb-line);
+  border-radius: var(--vb-radius);
+  background: transparent;
+  color: var(--vb-text);
+  font: inherit;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--vb-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--vb-sun);
+    outline-offset: 2px;
+  }
+}

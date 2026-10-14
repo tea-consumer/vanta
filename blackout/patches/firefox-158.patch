@@ -18,6 +18,32 @@ index d3b32a0..fe93284 100644
  category browser-idle-startup resource://gre/modules/psm/RemoteSecuritySettings.sys.mjs RemoteSecuritySettings.init
  category browser-idle-startup moz-src:///browser/components/tabbrowser/TabUnloader.sys.mjs TabUnloader.init
  category browser-idle-startup moz-src:///browser/components/genai/GenAI.sys.mjs GenAI.init
+diff --git a/browser/components/about/AboutRedirector.cpp b/browser/components/about/AboutRedirector.cpp
+index cea04ed..c594a2d 100644
+--- a/browser/components/about/AboutRedirector.cpp
++++ b/browser/components/about/AboutRedirector.cpp
+@@ -57,6 +57,9 @@ static const RedirEntry kRedirMap[] = {
+          nsIAboutModule::URI_CAN_LOAD_IN_PRIVILEGEDABOUT_PROCESS |
+          nsIAboutModule::URI_MUST_LOAD_IN_CHILD | nsIAboutModule::ALLOW_SCRIPT |
+          nsIAboutModule::HIDE_FROM_ABOUTABOUT},
++    // Vanta Blackout: its lists and settings.
++    {"blackout", "chrome://browser/content/blackout/blackout.html",
++     nsIAboutModule::ALLOW_SCRIPT | nsIAboutModule::IS_SECURE_CHROME_UI},
+     {"blocked", "chrome://browser/content/blockedSite.xhtml",
+      nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
+          nsIAboutModule::URI_CAN_LOAD_IN_CHILD | nsIAboutModule::ALLOW_SCRIPT |
+diff --git a/browser/components/about/components.conf b/browser/components/about/components.conf
+index f76be11..f3156d0 100644
+--- a/browser/components/about/components.conf
++++ b/browser/components/about/components.conf
+@@ -5,6 +5,7 @@
+ pages = [
+     'aichatcontent',
+     'asrouter',
++    'blackout',
+     'blocked',
+     'certerror',
+     'downloads',
 diff --git a/browser/components/moz.build b/browser/components/moz.build
 index 8a1611d..28e0671 100644
 --- a/browser/components/moz.build
