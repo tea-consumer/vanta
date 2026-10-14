@@ -2,9 +2,10 @@
 
 Every speed and RAM lever checked against the Firefox 157.0.1 source
 (`FIREFOX_157_0_1_RELEASE`), ranked by expected gain. "Applied" means it is in
-this repo. Nothing here has been benchmarked yet; gains are estimates from
-Mozilla's own numbers and how the code works, to be checked with
-Speedometer 3, JetStream 2 and `about:memory` once there is a build.
+this repo. Gains are estimates from Mozilla's own numbers and how the code
+works; the build as a whole has been measured (Speedometer 3, JetStream 3), the
+levers one by one have not. Use JetStream 3 or 2.2+: JetStream 2.0/2.1 score
+sub-millisecond subtests as "Infinity".
 
 ## Applied
 
@@ -24,8 +25,6 @@ Speedometer 3, JetStream 2 and `about:memory` once there is a build.
 
 Cleanups found on the way: `-O3` is already Firefox's default on macOS and for
 PGO builds on Linux, so `--enable-optimize=-O3` was a no-op and is gone.
-`dom.ipc.processPrelaunch.fission.number` is already 1 by default, so that line
-is gone too.
 
 ## Already in place before this pass
 
