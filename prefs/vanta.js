@@ -163,6 +163,8 @@ pref("ui.systemUsesDarkTheme", 1);
 pref("vanta.accent", "mono");
 // Toolbar as see-through black glass over the page, like Safari.
 pref("vanta.toolbar.seeThrough", false);
+// Frame (toolbar, rail, border) black with a faint tint of the page colour.
+pref("vanta.toolbar.pageTint", true);
 // Vertical tabs in a compact sidebar that expands while hovered, with the
 // address bar in one slim row on top.
 pref("sidebar.revamp", true);
