@@ -27,6 +27,8 @@ the files in this repo.
 - `patches/`: our own small patches: default split view shortcuts, and the
   split view tab picker on Vanta's flat background instead of a purple
   gradient.
+- `patches/cookiebanners-*`: bring back Firefox's cookie banner handling,
+  set to reject automatically (see `docs/cookie-banners.md`).
 - Build flags: cross-language PGO and LTO, CPU-specific tuning, PHC off.
   Every lever and why is in [`docs/performance.md`](docs/performance.md).
 

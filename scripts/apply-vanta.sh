@@ -91,4 +91,8 @@ for p in "$here"/patches/*.patch; do
   patch -p1 --forward < "$p"
 done
 
+# Vanta's own cookie banner rules (packaged by patches/cookiebanners-2).
+cp "$here"/cookiebanners/vanta-rules.json "$here"/cookiebanners/vanta-site-rules.json \
+  toolkit/components/cookiebanners/
+
 git -C "$here" rev-parse HEAD > .vanta-applied 2>/dev/null || echo unknown > .vanta-applied
