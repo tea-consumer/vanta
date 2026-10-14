@@ -1,7 +1,8 @@
 Vanta: make cookie banner handling reject-only friendly and cheaper per page.
 
   - CookieBannerChild: drop the MutationObserver (attributes + subtree on the
-    whole body) and poll instead, each check in an idle slot.
+    whole body) and poll instead, each check in an idle slot, plus one
+    immediate check on "load", since banners are often built in onload.
   - CookieBannerChild: test all presence selectors with one querySelector, so
     a page without a banner costs one DOM lookup per check.
   - CookieBannerParent: don't send rules that have nothing to click in the
@@ -19,10 +20,30 @@ Vanta: make cookie banner handling reject-only friendly and cheaper per page.
 Applies on top of cookiebanners-1.
 
 diff --git a/toolkit/components/cookiebanners/CookieBannerChild.sys.mjs b/toolkit/components/cookiebanners/CookieBannerChild.sys.mjs
-index c81be54b9..367285163 100644
+index c81be54b9..8439f9623 100644
 --- a/toolkit/components/cookiebanners/CookieBannerChild.sys.mjs
 +++ b/toolkit/components/cookiebanners/CookieBannerChild.sys.mjs
-@@ -426,77 +426,58 @@ export class CookieBannerChild extends JSWindowActorChild {
+@@ -77,6 +77,8 @@ export class CookieBannerChild extends JSWindowActorChild {
+   #timeoutSignalController = new AbortController();
+   #timeoutTimerID;
+   #hasActiveObserver = false;
++  // Vanta: runs the active poll's check right away; null when not polling.
++  #checkNow = null;
+   // Indicates whether the page "load" event occurred.
+   #didLoad = false;
+ 
+@@ -293,6 +295,10 @@ export class CookieBannerChild extends JSWindowActorChild {
+ 
+     // On load reset the timer for cleanup.
+     this.#startOrResetCleanupTimer();
++
++    // Vanta: banners are often built in onload. Check now rather than on the
++    // next poll tick, which could fall after a short after-load window.
++    this.#checkNow?.();
+   }
+ 
+   /**
+@@ -426,79 +432,67 @@ export class CookieBannerChild extends JSWindowActorChild {
        }
  
        let win = this.contentWindow;
@@ -102,6 +123,12 @@ index c81be54b9..367285163 100644
 +        });
 +      };
        pollIntervalId = lazy.setInterval(intervalFn, lazy.pollingInterval);
++      this.#checkNow = () => {
++        if (idleCallbackId != null) {
++          win.cancelIdleCallback(idleCallbackId);
++        }
++        runCheck();
++      };
  
        let cleanUp = () => {
          lazy.logConsole.debug("#promiseObserve cleanup", {
@@ -127,8 +154,11 @@ index c81be54b9..367285163 100644
 +        }
  
          this.#hasActiveObserver = false;
++        this.#checkNow = null;
          this.#abortController.signal.removeEventListener(
-@@ -533,10 +514,26 @@ export class CookieBannerChild extends JSWindowActorChild {
+           "abort",
+           abortFunction
+@@ -533,10 +527,26 @@ export class CookieBannerChild extends JSWindowActorChild {
      }
      lazy.logConsole.debug("Starting to detect the banner");
  
