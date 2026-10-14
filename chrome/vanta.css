@@ -205,7 +205,7 @@ sidebar-main,
    surface rides Firefox's compositor slide together with the tab names
    instead of trailing them. Firefox keeps the launcher floating for the
    whole collapse ([sidebar-ongoing-animations]), so the surface stays until
-   the slide ends; only the shadow follows the expanded state. */
+   the slide ends. No shadow: the frame casts none onto the page. */
 :root[sidebar-expand-on-hover] #sidebar-container:is([sidebar-launcher-expanded], [sidebar-ongoing-animations]) {
   /* Not background-attachment: fixed, which Firefox's slide transform turns
    * into scroll. The panel's bottom is the window's bottom. */
@@ -216,9 +216,20 @@ sidebar-main,
    * against the panel, the same shape the page has against the rail. */
   border-radius: 0 !important;
   border-inline: none !important;
-  clip-path: inset(0 -48px var(--vanta-gap) 0) !important;
-  /* Firefox clips the launcher's overflow; let the fillets past its edge. */
+  /* Firefox clips the launcher's overflow; let the fillets past its edge,
+   * and only them: the clip reaches past the edge just in the two fillet
+   * bands, so tab names mid-slide stop exactly at the panel's edge. */
   overflow-clip-margin: var(--vanta-radius) !important;
+  clip-path: polygon(
+    0 0,
+    calc(100% + var(--vanta-radius)) 0,
+    calc(100% + var(--vanta-radius)) calc(var(--vanta-radius) + 2px),
+    100% calc(var(--vanta-radius) + 2px),
+    100% calc(100% - var(--vanta-gap) - var(--vanta-radius)),
+    calc(100% + var(--vanta-radius)) calc(100% - var(--vanta-gap) - var(--vanta-radius)),
+    calc(100% + var(--vanta-radius)) calc(100% - var(--vanta-gap)),
+    0 calc(100% - var(--vanta-gap))
+  ) !important;
 
   &::before,
   &::after {
@@ -244,20 +255,6 @@ sidebar-main,
     inset-block-end: var(--vanta-gap) !important;
     background-position: calc(-1 * var(--sidebar-expanded-launcher-width, 240px)) calc(100% + var(--vanta-gap)), 0 0 !important;
     mask: radial-gradient(circle at 100% 0%, transparent calc(var(--vanta-radius) - 0.5px), black var(--vanta-radius)) !important;
-  }
-}
-
-:root[sidebar-expand-on-hover] #sidebar-container {
-  box-shadow: 0 0 0 1px transparent, 12px 0 32px -8px transparent !important;
-}
-
-:root[sidebar-expand-on-hover] #sidebar-container[sidebar-launcher-expanded] {
-  box-shadow: 0 0 0 1px var(--vanta-card-edge), 12px 0 32px -8px var(--vanta-card-shadow) !important;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  :root[sidebar-expand-on-hover] #sidebar-container {
-    transition: box-shadow 400ms ease !important;
   }
 }
 
