@@ -165,9 +165,8 @@ sidebar-main,
 
 /* The address bar blends into the window; it gets a field on hover and a
    raised card when focused. Firefox 158 turned #urlbar-background into the
-   .urlbar-background class, so both are matched; its [focused] attribute
-   can lag behind real focus, so :focus-within counts too. */
-#urlbar:not([focused], :focus-within):hover {
+   .urlbar-background class, so both are matched. */
+#urlbar:not([focused]):hover {
   --toolbar-field-background-color: var(--vanta-field) !important;
 }
 
@@ -179,7 +178,7 @@ sidebar-main,
 /* Focused and open, the bar is a dark card lit along its top edge, like the
    rim of the eclipse: a border that fades from light to nothing. Painted
    once, nothing animates. */
-#urlbar:is([focused], [open], :focus-within) > :is(#urlbar-background, .urlbar-background) {
+#urlbar:is([focused], [open]) > :is(#urlbar-background, .urlbar-background) {
   border: 1px solid transparent !important;
   outline: none !important;
   background:
