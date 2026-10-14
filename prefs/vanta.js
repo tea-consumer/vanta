@@ -8,6 +8,9 @@
 /** ===== MEMORY ================================================ **/
 // Fewer shared content processes: each costs ~30-80 MB. default=8
 pref("dom.ipc.processCount", 4);
+// Keep one spare content process warm instead of three (~20 MB each).
+// default=3 on desktop
+pref("dom.ipc.processPrelaunch.fission.number", 1);
 // With site isolation most pages run in per-site processes, and Firefox
 // allows up to 4 per site. One per site (what Firefox uses on Android) saves
 // a process for every extra tab of the same site. default=4
@@ -50,9 +53,7 @@ pref("nglayout.initialpaint.delay_in_oopif", 0);
 // already uses: momentum that eases out instead of stopping abruptly, closer
 // to Safari for mouse wheel and keyboard scrolling. default=false on release
 pref("general.smoothScroll.msdPhysics.enabled", true);
-pref("gfx.content.skia-font-cache-size", 20);
 pref("content.notify.interval", 100000);
-pref("gfx.canvas.accelerated.cache-size", 512);
 pref("image.mem.decode_bytes_at_a_time", 32768);
 pref("media.cache_readahead_limit", 3600);
 pref("media.cache_resume_threshold", 1800);
