@@ -164,18 +164,46 @@ sidebar-main,
 }
 
 /* The address bar blends into the window; it gets a field on hover and a
-   raised card when focused. */
+   raised card when focused. Firefox 158 turned #urlbar-background into the
+   .urlbar-background class, so both are matched. */
 #urlbar:not([focused]):hover {
   --toolbar-field-background-color: var(--vanta-field) !important;
 }
 
-#urlbar-background {
+#urlbar > :is(#urlbar-background, .urlbar-background) {
   border-radius: 10px !important;
   transition: background-color 120ms ease !important;
 }
 
-#urlbar[focused] #urlbar-background {
-  box-shadow: 0 0 0 1px var(--vanta-card-edge), 0 8px 28px -6px var(--vanta-card-shadow) !important;
+/* Focused and open, the bar is a dark card lit along its top edge, like the
+   rim of the eclipse: a border that fades from light to nothing. Painted
+   once, nothing animates. */
+#urlbar:is([focused], [open]) > :is(#urlbar-background, .urlbar-background) {
+  border: 1px solid transparent !important;
+  outline: none !important;
+  background:
+    linear-gradient(var(--toolbar-field-background-color-focus), var(--toolbar-field-background-color-focus)) padding-box,
+    linear-gradient(to bottom, light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.22)), var(--vanta-card-edge) 45%) border-box !important;
+  box-shadow: 0 10px 32px -8px var(--vanta-card-shadow) !important;
+}
+
+#urlbar[open] > :is(#urlbar-background, .urlbar-background) {
+  border-radius: var(--vanta-radius) !important;
+}
+
+/* Results: Vanta's colors instead of Firefox's blue and violet. The
+   selected row is a soft wash of the accent with a lit edge on the left. */
+:root:not([lwtheme]) #urlbar {
+  --urlbarview-background-color-hover: var(--vanta-hover) !important;
+  --urlbarview-background-color-selected: color-mix(in srgb, var(--vanta-accent) 13%, transparent) !important;
+  --urlbarview-text-color-selected: var(--vanta-text) !important;
+  --urlbarview-text-color-secondary: var(--vanta-text-muted) !important;
+  --urlbarview-text-color-action: var(--vanta-text-muted) !important;
+  --urlbarview-separator-color: var(--vanta-card-edge) !important;
+}
+
+#urlbar .urlbarView-row[selected] {
+  box-shadow: inset 2px 0 0 var(--vanta-accent) !important;
 }
 
 /* Page actions (bookmark star, reader view) only while hovering the bar. */
@@ -741,4 +769,31 @@ sidebar-main,
 #urlbar-input::selection {
   background-color: var(--vanta-accent) !important;
   color: var(--vanta-on-accent) !important;
+}
+
+/* ----- Site info panel --------------------------------------------------- */
+
+/* Firefox heads the panel with its shield mascot on a tinted card. Vanta
+   keeps the words and draws the card in its own surface. */
+#trustpanel-popup {
+  --trustpanel-background: var(--vanta-raised) !important;
+}
+
+#trustpanel-graphic-image,
+#trustpanel-graphic-image-legacy {
+  display: none !important;
+}
+
+#trustpanel-graphic-section {
+  background: var(--vanta-raised) !important;
+  border-color: var(--vanta-card-edge) !important;
+}
+
+/* ----- Private windows ----------------------------------------------------- */
+
+/* Private windows wear Vanta's colors (browser.theme.dark-private-windows is
+   off). Firefox still paints a violet backdrop behind private pages while
+   they load; make it the frame. */
+:root:not([lwtheme])[privatebrowsingmode="temporary"] {
+  --tabpanel-background-color: var(--vanta-frame) !important;
 }

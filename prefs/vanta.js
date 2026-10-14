@@ -197,3 +197,9 @@ pref("browser.newtabpage.activity-stream.hideLogo", true);
 pref("browser.newtabpage.activity-stream.logowordmark.alwaysVisible", false);
 pref("browser.newtabpage.activity-stream.showWeather", false);
 pref("browser.newtabpage.activity-stream.feeds.section.highlights", false);
+
+// Feel like Vanta, not Firefox: private windows keep Vanta's own colors
+// instead of Firefox's purple private theme, and the address bar drops
+// the "Firefox Suggest" heading.
+pref("browser.theme.dark-private-windows", false);
+pref("browser.urlbar.groupLabels.enabled", false);

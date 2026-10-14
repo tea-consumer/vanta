@@ -1,0 +1,36 @@
+--- a/browser/components/preferences/main.js
++++ b/browser/components/preferences/main.js
+@@ -465,10 +465,6 @@
+     id: "isDefaultPane",
+     l10nId: "is-default-browser-2",
+     control: "moz-promo",
+-    controlAttrs: {
+-      imagesrc: "chrome://global/skin/illustrations/kit-happy.svg",
+-      imagedisplay: "cover",
+-    },
+   };
+ 
+   const isNotDefaultPane = {
+@@ -487,10 +483,6 @@
+         },
+       },
+     ],
+-    controlAttrs: {
+-      imagesrc: "chrome://global/skin/illustrations/kit-concerned.svg",
+-      imagedisplay: "cover",
+-    },
+   };
+ 
+   const items = includeIsDefaultPane
+--- a/browser/themes/shared/preferences/preferences.css
++++ b/browser/themes/shared/preferences/preferences.css
+@@ -1630,3 +1630,9 @@
+     grid-template-columns: 1fr;
+   }
+ }
++
++/* Vanta: no Firefox Labs. Vanta turns off the studies and remote experiments
++   Labs runs on, so the pane would only ever be empty. */
++#category-experimental {
++  display: none !important;
++}
