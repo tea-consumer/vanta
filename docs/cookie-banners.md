@@ -85,6 +85,14 @@ Banners in a consent platform's iframe become rules for that iframe's
 domain, so one rule can cover every site using that platform. Identical
 rules are merged into one rule with many domains.
 
+The October 2026 run over the top 10,000 sites, from Norway, produced 152
+rules covering 278 domains that Mozilla's list doesn't handle. Of the
+other sites, 1,130 were already handled by a consent-platform rule, 4,474
+showed no banner, 1,184 had a banner with no reject button, 273 drew it in
+a closed shadow DOM, and 2,372 didn't load in the crawler (mostly CDN and
+API hosts, or sites that block headless browsers), so those were not
+tested.
+
 Site rules cost nothing on other sites: Vanta looks the domain up in a hash
 table and only then runs the rule.
 

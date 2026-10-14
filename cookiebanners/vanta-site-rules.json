@@ -1,3 +1,1652 @@
 {
- "data": []
+ "data": [
+  {
+   "id": "vanta-site-3hentai.net",
+   "domains": [
+    "3hentai.net"
+   ],
+   "click": {
+    "presence": "div.js-cookie-content-first-page",
+    "optOut": "div.js-cookie-content-first-page button.btn.btn-block.btn-sm"
+   }
+  },
+  {
+   "id": "vanta-site-ably.com",
+   "domains": [
+    "ably.com",
+    "acast.com",
+    "aircanada.com",
+    "arcticwolf.com",
+    "arkoselabs.com",
+    "arlo.com",
+    "avid.com",
+    "bandsintown.com",
+    "barracuda.com",
+    "bartleby.com",
+    "bitnami.com",
+    "bms.com",
+    "broadcom.com",
+    "cvent.com",
+    "dazn.com",
+    "deere.com",
+    "electrodepot.fr",
+    "hostpapa.com",
+    "hpdaas.com",
+    "hpsmart.com",
+    "imvu.com",
+    "king.com",
+    "nexxen.com",
+    "pwc.com",
+    "qt.io",
+    "rainbird.com",
+    "riskified.com",
+    "southwest.com",
+    "stockx.com",
+    "sumup.com",
+    "thinkific.com",
+    "ticketmaster.com",
+    "unrulymedia.com",
+    "verkada.com",
+    "vivastreet.co.uk",
+    "watchguard.com",
+    "westernunion.com",
+    "wordstream.com",
+    "wowhead.com"
+   ],
+   "click": {
+    "presence": "#onetrust-banner-sdk",
+    "optOut": "#onetrust-banner-sdk #onetrust-reject-all-handler"
+   }
+  },
+  {
+   "id": "vanta-site-abplive.com",
+   "domains": [
+    "abplive.com"
+   ],
+   "click": {
+    "presence": "#ccpContainer",
+    "optOut": "#ccpContainer #rejectButton"
+   }
+  },
+  {
+   "id": "vanta-site-adroll.com",
+   "domains": [
+    "adroll.com",
+    "unh.edu"
+   ],
+   "click": {
+    "presence": "#adroll_consent_banner",
+    "optOut": "#adroll_consent_banner #adroll_consent_reject"
+   }
+  },
+  {
+   "id": "vanta-site-agora.io",
+   "domains": [
+    "agora.io",
+    "everpuredata.com",
+    "higgsfield.ai"
+   ],
+   "click": {
+    "presence": "div.cc-window",
+    "optOut": "div.cc-window a.cc-btn.cc-dismiss"
+   }
+  },
+  {
+   "id": "vanta-site-airbridge.io",
+   "domains": [
+    "airbridge.io"
+   ],
+   "click": {
+    "presence": "div[data-testid=\"cookie-banner\"]",
+    "optOut": "div[data-testid=\"cookie-banner\"] button[data-testid=\"cookie-reject-all\"]"
+   }
+  },
+  {
+   "id": "vanta-site-amazon.co.uk",
+   "domains": [
+    "amazon.co.uk"
+   ],
+   "click": {
+    "presence": "div[data-testid=\"critical-notification\"]",
+    "optOut": "div[data-testid=\"critical-notification\"] button[data-testid=\"critical-notification-v2-button-1\"]"
+   }
+  },
+  {
+   "id": "vanta-site-amazon.de",
+   "domains": [
+    "amazon.de",
+    "amazon.es",
+    "amazon.ie"
+   ],
+   "click": {
+    "presence": "#cos-banner",
+    "optOut": "#cos-banner #sp-cc-rejectall-link"
+   }
+  },
+  {
+   "id": "vanta-site-ameli.fr",
+   "domains": [
+    "ameli.fr",
+    "senat.fr",
+    "service-public.gouv.fr"
+   ],
+   "click": {
+    "presence": "div.orejime-Notice",
+    "optOut": "div.orejime-Notice button.orejime-Button.orejime-Button--decline"
+   }
+  },
+  {
+   "id": "vanta-site-anthropic.com",
+   "domains": [
+    "anthropic.com"
+   ],
+   "click": {
+    "presence": "#consent-container",
+    "optOut": "#consent-container #reject-btn"
+   }
+  },
+  {
+   "id": "vanta-site-arabsex1.com",
+   "domains": [
+    "arabsex1.com",
+    "google.com.nf",
+    "landwrac.com",
+    "themoviebox.xyz"
+   ],
+   "click": {
+    "presence": "div.dbsFrd",
+    "optOut": "div.dbsFrd #W0wltc"
+   }
+  },
+  {
+   "id": "vanta-site-arsys.net",
+   "domains": [
+    "arsys.net"
+   ],
+   "click": {
+    "presence": "#arsysCookieAcceptance",
+    "optOut": "#arsysCookieAcceptance #rejectCookies"
+   }
+  },
+  {
+   "id": "vanta-site-asu.edu",
+   "domains": [
+    "asu.edu",
+    "bp.com"
+   ],
+   "click": {
+    "presence": "div.cassie-pre-banner.cassie-bottom",
+    "optOut": "div.cassie-pre-banner.cassie-bottom #cassie_reject_all_pre_banner"
+   }
+  },
+  {
+   "id": "vanta-site-atom.com",
+   "domains": [
+    "atom.com",
+    "blacknight.com",
+    "futbol24.com",
+    "infolinks.com",
+    "judge.me",
+    "rb.gy",
+    "rebrandly.com",
+    "termly.io",
+    "uservoice.com",
+    "venturebeat.com",
+    "verisoul.ai"
+   ],
+   "click": {
+    "presence": "div.termly-styles-root-b0aebb",
+    "optOut": "div.termly-styles-root-b0aebb button[data-tracking=\"cookieDeclined\"]"
+   }
+  },
+  {
+   "id": "vanta-site-auchan.fr",
+   "domains": [
+    "auchan.fr",
+    "brightcove.com",
+    "marvel.com",
+    "mywellness.com"
+   ],
+   "click": {
+    "presence": "div.ot-sdk-container",
+    "optOut": "div.ot-sdk-container button.onetrust-close-btn-handler"
+   }
+  },
+  {
+   "id": "vanta-site-authorize.net",
+   "domains": [
+    "authorize.net",
+    "visa.no"
+   ],
+   "click": {
+    "presence": "#CookieReportsBanner",
+    "optOut": "#CookieReportsBanner a.wscrOk2"
+   }
+  },
+  {
+   "id": "vanta-site-backlinko.com",
+   "domains": [
+    "backlinko.com",
+    "gaijin.net",
+    "gaijinent.com",
+    "jetbrains.com",
+    "victronenergy.com",
+    "warthunder.com"
+   ],
+   "click": {
+    "presence": "#ch2-dialog",
+    "optOut": "#ch2-dialog button.ch2-btn.ch2-deny-all-btn"
+   }
+  },
+  {
+   "id": "vanta-site-banahosting.com",
+   "domains": [
+    "banahosting.com"
+   ],
+   "click": {
+    "presence": "#cookieConsent",
+    "optOut": "#cookieConsent #ccDecline"
+   }
+  },
+  {
+   "id": "vanta-site-band.us",
+   "domains": [
+    "band.us"
+   ],
+   "click": {
+    "presence": "div.bcm_bandCookieModuleWrap",
+    "optOut": "div.bcm_bandCookieModuleWrap button.bcm_btnCookieOff"
+   }
+  },
+  {
+   "id": "vanta-site-bandcamp.com",
+   "domains": [
+    "bandcamp.com"
+   ],
+   "click": {
+    "presence": "div.g-dialog",
+    "optOut": "div.g-dialog button.g-button.outline"
+   }
+  },
+  {
+   "id": "vanta-site-basf.com",
+   "domains": [
+    "basf.com",
+    "se.com"
+   ],
+   "click": {
+    "presence": "#onetrust-pc-sdk",
+    "optOut": "#onetrust-pc-sdk button.ot-pc-refuse-all-handler"
+   }
+  },
+  {
+   "id": "vanta-site-bet365.bet.ar",
+   "domains": [
+    "bet365.bet.ar",
+    "bet365.com"
+   ],
+   "click": {
+    "presence": "div.rcc-f",
+    "optOut": "div.rcc-f button.rcc-3"
+   }
+  },
+  {
+   "id": "vanta-site-bethesda.net",
+   "domains": [
+    "bethesda.net",
+    "bitwarden.com",
+    "blackberry.com",
+    "chron.com",
+    "dallasnews.com",
+    "flexport.com",
+    "samsara.com",
+    "sfchronicle.com",
+    "sfgate.com",
+    "sydney.edu.au",
+    "tailscale.com",
+    "ts.net",
+    "videoamp.com",
+    "zimperium.com"
+   ],
+   "click": {
+    "presence": "#ketch-consent-banner",
+    "optOut": "#ketch-consent-banner #ketch-banner-button-tertiary"
+   }
+  },
+  {
+   "id": "vanta-site-bidster.net",
+   "domains": [
+    "bidster.net"
+   ],
+   "click": {
+    "presence": "#cc-banner",
+    "optOut": "#cc-banner #cc-decline"
+   }
+  },
+  {
+   "id": "vanta-site-bigcommerce.com",
+   "domains": [
+    "bigcommerce.com"
+   ],
+   "click": {
+    "presence": "#consent-banner",
+    "optOut": "#consent-banner button[data-testid=\"consent-banner-reject\"]"
+   }
+  },
+  {
+   "id": "vanta-site-bitget.com",
+   "domains": [
+    "bitget.com"
+   ],
+   "click": {
+    "presence": "div[data-testid=\"micro-cookie-dialog\"]",
+    "optOut": "div[data-testid=\"micro-cookie-dialog\"] button[data-testid=\"micro-cookie-decline\"]"
+   }
+  },
+  {
+   "id": "vanta-site-bling.com.br",
+   "domains": [
+    "bling.com.br",
+    "olist.com",
+    "wildlifestudios.com"
+   ],
+   "click": {
+    "presence": "#cookie-banner",
+    "optOut": "#cookie-banner #adopt-reject-all-button"
+   }
+  },
+  {
+   "id": "vanta-site-blinkforhome.com",
+   "domains": [
+    "blinkforhome.com"
+   ],
+   "click": {
+    "presence": "section.gdpr-cookie-banner",
+    "optOut": "section.gdpr-cookie-banner button.decline"
+   }
+  },
+  {
+   "id": "vanta-site-blueconic.com",
+   "domains": [
+    "blueconic.com"
+   ],
+   "click": {
+    "presence": "div.bcpNotificationBar",
+    "optOut": "div.bcpNotificationBar button.bcRefuseConsent"
+   }
+  },
+  {
+   "id": "vanta-site-bluedart.com",
+   "domains": [
+    "bluedart.com",
+    "prefeitura.sp.gov.br"
+   ],
+   "click": {
+    "presence": "div.cookies-banner",
+    "optOut": "div.cookies-banner #_com_liferay_cookies_banner_web_portlet_CookiesBannerPortlet_declineAllButton"
+   }
+  },
+  {
+   "id": "vanta-site-bolt.eu",
+   "domains": [
+    "bolt.eu"
+   ],
+   "click": {
+    "presence": "#cb-modal",
+    "optOut": "#cb-modal #cb-reject-btn"
+   }
+  },
+  {
+   "id": "vanta-site-braintreegateway.com",
+   "domains": [
+    "braintreegateway.com",
+    "venmo.com"
+   ],
+   "click": {
+    "presence": "#ccpaCookieBanner",
+    "optOut": "#ccpaCookieBanner #bannerDeclineButton"
+   }
+  },
+  {
+   "id": "vanta-site-britishmuseum.org",
+   "domains": [
+    "britishmuseum.org"
+   ],
+   "click": {
+    "presence": "div.ckb-modal",
+    "optOut": "div.ckb-modal #CybotCookiebotDialogBodyLevelButtonLevelOptinDeclineAll"
+   }
+  },
+  {
+   "id": "vanta-site-bulbagarden.net",
+   "domains": [
+    "bulbagarden.net"
+   ],
+   "click": {
+    "presence": "div.u-bottomFixer",
+    "optOut": "div.u-bottomFixer a.button.button--link"
+   }
+  },
+  {
+   "id": "vanta-site-cbs.com",
+   "domains": [
+    "cbs.com",
+    "cbssports.com",
+    "grindr.com",
+    "iterable.com",
+    "mtb.com",
+    "newsweek.com",
+    "pbs.org",
+    "pluto.tv",
+    "rumble.com",
+    "salesloft.com"
+   ],
+   "click": {
+    "presence": "#ketch-consent-banner",
+    "optOut": "#ketch-consent-banner #ketch-banner-button-secondary"
+   }
+  },
+  {
+   "id": "vanta-site-cic.fr",
+   "domains": [
+    "cic.fr"
+   ],
+   "click": {
+    "presence": "#cookieModal",
+    "optOut": "#cookieModal a.ei_lb_btnskip"
+   }
+  },
+  {
+   "id": "vanta-site-clasohlson.com",
+   "domains": [
+    "clasohlson.com"
+   ],
+   "click": {
+    "presence": "#js-cookie-notification",
+    "optOut": "#js-cookie-notification button.js-reject-cookie"
+   }
+  },
+  {
+   "id": "vanta-site-claude.ai",
+   "domains": [
+    "claude.ai"
+   ],
+   "click": {
+    "presence": "div.fixed.right-2",
+    "optOut": "div.fixed.right-2 button[data-testid=\"consent-reject\"]"
+   }
+  },
+  {
+   "id": "vanta-site-claude.com",
+   "domains": [
+    "claude.com"
+   ],
+   "click": {
+    "presence": "#consent-container",
+    "optOut": "#consent-container button[data-testid=\"consent-reject\"]"
+   }
+  },
+  {
+   "id": "vanta-site-clave.gob.es",
+   "domains": [
+    "clave.gob.es"
+   ],
+   "click": {
+    "presence": "section.dnt-cookies",
+    "optOut": "section.dnt-cookies button.dnt-cmp-btn.dnt-btn.dnt-btn-secondary"
+   }
+  },
+  {
+   "id": "vanta-site-clerk.com",
+   "domains": [
+    "clerk.com"
+   ],
+   "click": {
+    "presence": "div.font-inter",
+    "optOut": "div.font-inter button.data-\\[focus-visible\\]\\:outline-focus.-ml-4"
+   }
+  },
+  {
+   "id": "vanta-site-clubready.club",
+   "domains": [
+    "clubready.club"
+   ],
+   "click": {
+    "presence": "div.termly-styles-consent-banner-fa199d",
+    "optOut": "div.termly-styles-consent-banner-fa199d button[data-tracking=\"cookieDeclined\"]"
+   }
+  },
+  {
+   "id": "vanta-site-coe.int",
+   "domains": [
+    "coe.int"
+   ],
+   "click": {
+    "presence": "#ppms_cm_popup_main_id",
+    "optOut": "#ppms_cm_popup_main_id #ppms_cm_disagree"
+   }
+  },
+  {
+   "id": "vanta-site-comparethemarket.com",
+   "domains": [
+    "comparethemarket.com"
+   ],
+   "click": {
+    "presence": "#consent-preferences",
+    "optOut": "#consent-preferences #cmgr-reject-all-cookies"
+   }
+  },
+  {
+   "id": "vanta-site-contentsquare.com",
+   "domains": [
+    "contentsquare.com",
+    "tim.it"
+   ],
+   "click": {
+    "presence": "#onetrust-banner-sdk",
+    "optOut": "#onetrust-banner-sdk button.onetrust-close-btn-handler"
+   }
+  },
+  {
+   "id": "vanta-site-core.ac.uk",
+   "domains": [
+    "core.ac.uk"
+   ],
+   "click": {
+    "presence": "#cookies-popup",
+    "optOut": "#cookies-popup #essential_cookies_allowed"
+   }
+  },
+  {
+   "id": "vanta-site-costco.ca",
+   "domains": [
+    "costco.ca",
+    "costco.com"
+   ],
+   "click": {
+    "presence": "div[data-testid=\"popupContent\"]",
+    "optOut": "div[data-testid=\"popupContent\"] button.MuiButtonBase-root.MuiButton-root.MuiButton-tertiary"
+   }
+  },
+  {
+   "id": "vanta-site-csic.es",
+   "domains": [
+    "csic.es",
+    "gatech.edu",
+    "temple.edu",
+    "ugr.es"
+   ],
+   "click": {
+    "presence": "#sliding-popup",
+    "optOut": "#sliding-popup button.decline-button"
+   }
+  },
+  {
+   "id": "vanta-site-customer.io",
+   "domains": [
+    "customer.io"
+   ],
+   "click": {
+    "presence": "#cookiebanner",
+    "optOut": "#cookiebanner a.c-button.c-button-reject"
+   }
+  },
+  {
+   "id": "vanta-site-cwi.nl",
+   "domains": [
+    "cwi.nl"
+   ],
+   "click": {
+    "presence": "div.popup",
+    "optOut": "div.popup button.cookie-reject-button"
+   }
+  },
+  {
+   "id": "vanta-site-d2l.com",
+   "domains": [
+    "d2l.com",
+    "doofinder.com",
+    "mym.fans"
+   ],
+   "click": {
+    "presence": "div[data-testid=\"box\"]",
+    "optOut": "div[data-testid=\"box\"] button[data-testid=\"actionButton-reject\"]"
+   }
+  },
+  {
+   "id": "vanta-site-denic.de",
+   "domains": [
+    "denic.de"
+   ],
+   "click": {
+    "presence": "div.sg-cookie-optin-box-button",
+    "optOut": "div.sg-cookie-optin-box-button button.sg-cookie-optin-box-button-accept-essential"
+   }
+  },
+  {
+   "id": "vanta-site-digialm.com",
+   "domains": [
+    "digialm.com"
+   ],
+   "click": {
+    "presence": "div.cookie-sceneOne",
+    "optOut": "div.cookie-sceneOne button.cookie-declineBtn"
+   }
+  },
+  {
+   "id": "vanta-site-dizy.com",
+   "domains": [
+    "dizy.com",
+    "ilfattoquotidiano.it"
+   ],
+   "click": {
+    "presence": "div[data-role=\"first_layer\"]",
+    "optOut": "div[data-role=\"first_layer\"] button[data-role=\"b_decline\"]"
+   }
+  },
+  {
+   "id": "vanta-site-dndbeyond.com",
+   "domains": [
+    "dndbeyond.com"
+   ],
+   "click": {
+    "presence": "#ketch-banner-buttons-container-compact",
+    "optOut": "#ketch-banner-buttons-container-compact #ketch-banner-button-tertiary"
+   }
+  },
+  {
+   "id": "vanta-site-ehow.com",
+   "domains": [
+    "ehow.com",
+    "linkvertise.com",
+    "minecraftskins.com",
+    "mydramalist.com",
+    "sonobi.com",
+    "thesaurus.com",
+    "underdogmedia.com",
+    "whatismyipaddress.com"
+   ],
+   "click": {
+    "presence": "#qc-cmp2-ui",
+    "optOut": "#qc-cmp2-ui #disagree-btn"
+   }
+  },
+  {
+   "id": "vanta-site-elsevier.com",
+   "domains": [
+    "elsevier.com"
+   ],
+   "click": {
+    "presence": "div.undefined",
+    "optOut": "div.undefined button[data-testid=\"reject-all-cookies-button\"]"
+   }
+  },
+  {
+   "id": "vanta-site-estadiodeportivo.com",
+   "domains": [
+    "estadiodeportivo.com"
+   ],
+   "click": {
+    "presence": "#gdpr",
+    "optOut": "#gdpr #btn-gdpr-reject"
+   }
+  },
+  {
+   "id": "vanta-site-expo.dev",
+   "domains": [
+    "expo.dev"
+   ],
+   "click": {
+    "presence": "div[data-testid=\"cookie-banner-root\"]",
+    "optOut": "div[data-testid=\"cookie-banner-root\"] button[data-testid=\"cookie-banner-reject-button\"]"
+   }
+  },
+  {
+   "id": "vanta-site-fca.org.uk",
+   "domains": [
+    "fca.org.uk"
+   ],
+   "click": {
+    "presence": "#cookiepopup",
+    "optOut": "#cookiepopup button.button.button--inverse.dont-agree"
+   }
+  },
+  {
+   "id": "vanta-site-frameo.com",
+   "domains": [
+    "frameo.com"
+   ],
+   "click": {
+    "presence": "#termsfeed-com---nb",
+    "optOut": "#termsfeed-com---nb button.cc-nb-reject"
+   }
+  },
+  {
+   "id": "vanta-site-freeprivacypolicy.com",
+   "domains": [
+    "freeprivacypolicy.com",
+    "termsfeed.com"
+   ],
+   "click": {
+    "presence": "div.termsfeed-pc1-notice-banner-layout",
+    "optOut": "div.termsfeed-pc1-notice-banner-layout #termsfeed_privacy_consent_banner_button_reject_all"
+   }
+  },
+  {
+   "id": "vanta-site-gamcare.org.uk",
+   "domains": [
+    "gamcare.org.uk"
+   ],
+   "click": {
+    "presence": "div.wcc-consent-container",
+    "optOut": "div.wcc-consent-container button.wcc-btn.wcc-btn-reject"
+   }
+  },
+  {
+   "id": "vanta-site-glance.com",
+   "domains": [
+    "glance.com"
+   ],
+   "click": {
+    "presence": "div.styles__CookieConsentWrapper-sc-1c91cux-0",
+    "optOut": "div.styles__CookieConsentWrapper-sc-1c91cux-0 button.styles__CookieDeclineButton-sc-1c91cux-4"
+   }
+  },
+  {
+   "id": "vanta-site-hextom.com",
+   "domains": [
+    "hextom.com"
+   ],
+   "click": {
+    "presence": "#cookie-consent",
+    "optOut": "#cookie-consent button.cookie-consent-btn.cookie-consent-decline"
+   }
+  },
+  {
+   "id": "vanta-site-hqporner.com",
+   "domains": [
+    "hqporner.com"
+   ],
+   "click": {
+    "presence": "#cookie-banner",
+    "optOut": "#cookie-banner #accept-essential"
+   }
+  },
+  {
+   "id": "vanta-site-hrw.org",
+   "domains": [
+    "hrw.org"
+   ],
+   "click": {
+    "presence": "#hrw-cookie-dialog",
+    "optOut": "#hrw-cookie-dialog #hrw-cookie-dialog__decline"
+   }
+  },
+  {
+   "id": "vanta-site-hsbc.com",
+   "domains": [
+    "hsbc.com"
+   ],
+   "click": {
+    "presence": "div.privacy_prompt_buttonGroup",
+    "optOut": "div.privacy_prompt_buttonGroup #teal-decline-consent"
+   }
+  },
+  {
+   "id": "vanta-site-ico.org.uk",
+   "domains": [
+    "ico.org.uk",
+    "nice.org.uk",
+    "onthemarket.com"
+   ],
+   "click": {
+    "presence": "#ccc-module",
+    "optOut": "#ccc-module #ccc-reject-settings"
+   }
+  },
+  {
+   "id": "vanta-site-ihk.de",
+   "domains": [
+    "ihk.de",
+    "webgo.de"
+   ],
+   "click": {
+    "presence": "#ccm-widget",
+    "optOut": "#ccm-widget button.button.ccm--decline-cookies"
+   }
+  },
+  {
+   "id": "vanta-site-inleed.se",
+   "domains": [
+    "inleed.se"
+   ],
+   "click": {
+    "presence": "div.w-full.fixed.sm\\:bottom-10",
+    "optOut": "div.w-full.fixed.sm\\:bottom-10 button.relative"
+   }
+  },
+  {
+   "id": "vanta-site-innovid.com",
+   "domains": [
+    "innovid.com",
+    "onaudience.com"
+   ],
+   "click": {
+    "presence": "#ccc-notify",
+    "optOut": "#ccc-notify #ccc-notify-reject"
+   }
+  },
+  {
+   "id": "vanta-site-insiderone.com",
+   "domains": [
+    "insiderone.com"
+   ],
+   "click": {
+    "presence": "#cookie-law-info-bar",
+    "optOut": "#cookie-law-info-bar #wt-cli-accept-btn"
+   }
+  },
+  {
+   "id": "vanta-site-instructure.com",
+   "domains": [
+    "instructure.com",
+    "iru.com",
+    "linode.com",
+    "pandasecurity.com"
+   ],
+   "click": {
+    "presence": "div.ot-sdk-container",
+    "optOut": "div.ot-sdk-container #onetrust-reject-all-handler"
+   }
+  },
+  {
+   "id": "vanta-site-interserver.net",
+   "domains": [
+    "interserver.net"
+   ],
+   "click": {
+    "presence": "#cc-banner",
+    "optOut": "#cc-banner #cc-reject"
+   }
+  },
+  {
+   "id": "vanta-site-ionos.de",
+   "domains": [
+    "ionos.de"
+   ],
+   "click": {
+    "presence": "p.privacy-consent--text",
+    "optOut": "p.privacy-consent--text #confirmSelection"
+   }
+  },
+  {
+   "id": "vanta-site-jampp.com",
+   "domains": [
+    "jampp.com"
+   ],
+   "click": {
+    "presence": "div.fs-cc-banner_component",
+    "optOut": "div.fs-cc-banner_component a.fs-cc-banner_button.fs-cc-button-alt"
+   }
+  },
+  {
+   "id": "vanta-site-jane.app",
+   "domains": [
+    "jane.app",
+    "redo.com"
+   ],
+   "click": {
+    "presence": "#ez-cookie-notification",
+    "optOut": "#ez-cookie-notification #ez-cookie-notification__decline"
+   }
+  },
+  {
+   "id": "vanta-site-jito.wtf",
+   "domains": [
+    "jito.wtf"
+   ],
+   "click": {
+    "presence": "#headlessui-dialog-_r_0_",
+    "optOut": "#headlessui-dialog-_r_0_ button.mr-2"
+   }
+  },
+  {
+   "id": "vanta-site-joinhoney.com",
+   "domains": [
+    "joinhoney.com",
+    "paypal.com"
+   ],
+   "click": {
+    "presence": "#gdprCookieBanner",
+    "optOut": "#gdprCookieBanner #bannerDeclineButton"
+   }
+  },
+  {
+   "id": "vanta-site-juegosonce.es",
+   "domains": [
+    "juegosonce.es"
+   ],
+   "click": {
+    "presence": "div.polcookies",
+    "optOut": "div.polcookies #reject"
+   }
+  },
+  {
+   "id": "vanta-site-justgiving.com",
+   "domains": [
+    "justgiving.com"
+   ],
+   "click": {
+    "presence": "#cookiebanner-popup",
+    "optOut": "#cookiebanner-popup #accept-essential-Cookies"
+   }
+  },
+  {
+   "id": "vanta-site-keenetic.com",
+   "domains": [
+    "keenetic.com"
+   ],
+   "click": {
+    "presence": "div.cookiecontrol-alert-box-wrapper",
+    "optOut": "div.cookiecontrol-alert-box-wrapper button.gmbh-reject-all"
+   }
+  },
+  {
+   "id": "vanta-site-kfintech.com",
+   "domains": [
+    "kfintech.com"
+   ],
+   "click": {
+    "presence": "#cookie-banner",
+    "optOut": "#cookie-banner #reject-non-essential"
+   }
+  },
+  {
+   "id": "vanta-site-kit.com",
+   "domains": [
+    "kit.com"
+   ],
+   "click": {
+    "presence": "div.cookie-banner",
+    "optOut": "div.cookie-banner #rcc-decline-button"
+   }
+  },
+  {
+   "id": "vanta-site-ku.dk",
+   "domains": [
+    "ku.dk",
+    "piwik.pro"
+   ],
+   "click": {
+    "presence": "#coi-banner-wrapper",
+    "optOut": "#coi-banner-wrapper #declineButton"
+   }
+  },
+  {
+   "id": "vanta-site-lastampa.it",
+   "domains": [
+    "lastampa.it"
+   ],
+   "click": {
+    "presence": "div.iubenda-cs-rationale",
+    "optOut": "div.iubenda-cs-rationale button.iubenda-cs-close-btn"
+   }
+  },
+  {
+   "id": "vanta-site-lift.win",
+   "domains": [
+    "lift.win"
+   ],
+   "click": {
+    "presence": "div.CookieConsent",
+    "optOut": "div.CookieConsent #rcc-decline-button"
+   }
+  },
+  {
+   "id": "vanta-site-linewize.com",
+   "domains": [
+    "linewize.com"
+   ],
+   "click": {
+    "presence": "#cookieConsentBanner",
+    "optOut": "#cookieConsentBanner #btn-reject-all-banner"
+   }
+  },
+  {
+   "id": "vanta-site-lycos.com",
+   "domains": [
+    "lycos.com"
+   ],
+   "click": {
+    "presence": "div.lycos-consent-banner",
+    "optOut": "div.lycos-consent-banner #lycos-consent-eu-decline"
+   }
+  },
+  {
+   "id": "vanta-site-mailerlite.com",
+   "domains": [
+    "mailerlite.com"
+   ],
+   "click": {
+    "presence": "#CookieBannerNotice",
+    "optOut": "#CookieBannerNotice #CybotCookiebotDialogBodyLevelButtonLevelOptinDeclineAll"
+   }
+  },
+  {
+   "id": "vanta-site-me-qr.com",
+   "domains": [
+    "me-qr.com"
+   ],
+   "click": {
+    "presence": "#modal-cookies",
+    "optOut": "#modal-cookies button.reject-all"
+   }
+  },
+  {
+   "id": "vanta-site-met.no",
+   "domains": [
+    "met.no"
+   ],
+   "click": {
+    "presence": "#cookie-panel-banner",
+    "optOut": "#cookie-panel-banner #cookie-panel-banner-reject-button"
+   }
+  },
+  {
+   "id": "vanta-site-miniclip.com",
+   "domains": [
+    "miniclip.com"
+   ],
+   "click": {
+    "presence": "div.mc-cookiebar",
+    "optOut": "div.mc-cookiebar button.mc-button.mc-btn-save.btn-decline"
+   }
+  },
+  {
+   "id": "vanta-site-missouri.edu",
+   "domains": [
+    "missouri.edu"
+   ],
+   "click": {
+    "presence": "div.cc-window",
+    "optOut": "div.cc-window a.cc-btn"
+   }
+  },
+  {
+   "id": "vanta-site-mtn.ng",
+   "domains": [
+    "mtn.ng"
+   ],
+   "click": {
+    "presence": "#wpca-box",
+    "optOut": "#wpca-box button.wpca-btn-decline"
+   }
+  },
+  {
+   "id": "vanta-site-mtv.com",
+   "domains": [
+    "mtv.com",
+    "paramount.tech"
+   ],
+   "click": {
+    "presence": "#ketch-banner-buttons-container-compact",
+    "optOut": "#ketch-banner-buttons-container-compact #ketch-banner-button-secondary"
+   }
+  },
+  {
+   "id": "vanta-site-mysterium.network",
+   "domains": [
+    "mysterium.network"
+   ],
+   "click": {
+    "presence": "div.consent-banner-root",
+    "optOut": "div.consent-banner-root button.N24JKK"
+   }
+  },
+  {
+   "id": "vanta-site-nextcloud.com",
+   "domains": [
+    "nextcloud.com"
+   ],
+   "click": {
+    "presence": "#cookie_banner",
+    "optOut": "#cookie_banner #save_settings"
+   }
+  },
+  {
+   "id": "vanta-site-nexverse.ai",
+   "domains": [
+    "nexverse.ai"
+   ],
+   "click": {
+    "presence": "div.--framer-cookie-banner-container",
+    "optOut": "div.--framer-cookie-banner-container #__framer-cookie-component-button-reject"
+   }
+  },
+  {
+   "id": "vanta-site-nordpass.com",
+   "domains": [
+    "nordpass.com",
+    "nordvpn.com"
+   ],
+   "click": {
+    "presence": "div[data-testid=\"consent-widget-view\"]",
+    "optOut": "div[data-testid=\"consent-widget-view\"] #widget-button-reject"
+   }
+  },
+  {
+   "id": "vanta-site-obilet.com",
+   "domains": [
+    "obilet.com"
+   ],
+   "click": {
+    "presence": "div.cookies-policy",
+    "optOut": "div.cookies-policy a.cancel"
+   }
+  },
+  {
+   "id": "vanta-site-one.com",
+   "domains": [
+    "one.com"
+   ],
+   "click": {
+    "presence": "#c-container",
+    "optOut": "#c-container button.gv-button.gv-button-secondary"
+   }
+  },
+  {
+   "id": "vanta-site-onepeloton.com",
+   "domains": [
+    "onepeloton.com",
+    "wufoo.com"
+   ],
+   "click": {
+    "presence": "#fides-banner-container",
+    "optOut": "#fides-banner-container #fides-reject-all-button"
+   }
+  },
+  {
+   "id": "vanta-site-onlyfans.com",
+   "domains": [
+    "onlyfans.com"
+   ],
+   "click": {
+    "presence": "div.b-cookies-informer__nav",
+    "optOut": "div.b-cookies-informer__nav button.g-btn.m-flat"
+   }
+  },
+  {
+   "id": "vanta-site-optable.co",
+   "domains": [
+    "optable.co"
+   ],
+   "click": {
+    "presence": "div.cc-banner",
+    "optOut": "div.cc-banner a.button.is--secondary"
+   }
+  },
+  {
+   "id": "vanta-site-ourworldindata.org",
+   "domains": [
+    "ourworldindata.org"
+   ],
+   "click": {
+    "presence": "div.cookie-notice",
+    "optOut": "div.cookie-notice button.owid-btn.owid-btn--outline-dark-blue"
+   }
+  },
+  {
+   "id": "vanta-site-overleaf.com",
+   "domains": [
+    "overleaf.com"
+   ],
+   "click": {
+    "presence": "section.cookie-banner",
+    "optOut": "section.cookie-banner button.btn.btn-link"
+   }
+  },
+  {
+   "id": "vanta-site-overwolf.com",
+   "domains": [
+    "overwolf.com"
+   ],
+   "click": {
+    "presence": "#silktide-banner",
+    "optOut": "#silktide-banner button.reject-all"
+   }
+  },
+  {
+   "id": "vanta-site-piensasolutions.com",
+   "domains": [
+    "piensasolutions.com"
+   ],
+   "click": {
+    "presence": "#piensaCookieAcceptance",
+    "optOut": "#piensaCookieAcceptance #rejectCookies"
+   }
+  },
+  {
+   "id": "vanta-site-pixlr.com",
+   "domains": [
+    "pixlr.com"
+   ],
+   "click": {
+    "presence": "div.cookie-consent",
+    "optOut": "div.cookie-consent button.cookie-consent-reject"
+   }
+  },
+  {
+   "id": "vanta-site-planethoster.com",
+   "domains": [
+    "planethoster.com"
+   ],
+   "click": {
+    "presence": "#cookies-banner",
+    "optOut": "#cookies-banner #reject-cookies-button"
+   }
+  },
+  {
+   "id": "vanta-site-playdigo.com",
+   "domains": [
+    "playdigo.com"
+   ],
+   "click": {
+    "presence": "div.consent-card",
+    "optOut": "div.consent-card button.consent-button.consent-button--reject"
+   }
+  },
+  {
+   "id": "vanta-site-playvids.com",
+   "domains": [
+    "playvids.com"
+   ],
+   "click": {
+    "presence": "#ag-cookiebar",
+    "optOut": "#ag-cookiebar button.ag-cookiebar__btn.ag-cookiebar__btn--essential"
+   }
+  },
+  {
+   "id": "vanta-site-pornhub.com",
+   "domains": [
+    "pornhub.com"
+   ],
+   "click": {
+    "presence": "#cookieBannerWrapper",
+    "optOut": "#cookieBannerWrapper button.cbSecondaryCTA"
+   }
+  },
+  {
+   "id": "vanta-site-pump.fun",
+   "domains": [
+    "pump.fun"
+   ],
+   "click": {
+    "presence": "div[data-testid=\"cookie-consent-modal\"]",
+    "optOut": "div[data-testid=\"cookie-consent-modal\"] button[data-testid=\"reject-all-button\"]"
+   }
+  },
+  {
+   "id": "vanta-site-raspberrypi.com",
+   "domains": [
+    "raspberrypi.com"
+   ],
+   "click": {
+    "presence": "div.__rptl-cookiebanner-buttons",
+    "optOut": "div.__rptl-cookiebanner-buttons #__rptl-cookiebanner-reject"
+   }
+  },
+  {
+   "id": "vanta-site-remove.bg",
+   "domains": [
+    "remove.bg"
+   ],
+   "click": {
+    "presence": "#wrapper",
+    "optOut": "#wrapper button.btn.mr-2"
+   }
+  },
+  {
+   "id": "vanta-site-ring.com",
+   "domains": [
+    "ring.com"
+   ],
+   "click": {
+    "presence": "div.consent-banner",
+    "optOut": "div.consent-banner button.consent--reject"
+   }
+  },
+  {
+   "id": "vanta-site-rs-online.com",
+   "domains": [
+    "rs-online.com"
+   ],
+   "click": {
+    "presence": "div.ensBannerContainer",
+    "optOut": "div.ensBannerContainer #rejectAll"
+   }
+  },
+  {
+   "id": "vanta-site-shop.com",
+   "domains": [
+    "shop.com"
+   ],
+   "click": {
+    "presence": "#dux-privacy",
+    "optOut": "#dux-privacy button.button.reject"
+   }
+  },
+  {
+   "id": "vanta-site-soax.com",
+   "domains": [
+    "soax.com"
+   ],
+   "click": {
+    "presence": "#ketch-consent-banner",
+    "optOut": "#ketch-consent-banner #ketch-banner-button-primary"
+   }
+  },
+  {
+   "id": "vanta-site-softpedia.com",
+   "domains": [
+    "softpedia.com",
+    "timesofisrael.com"
+   ],
+   "click": {
+    "presence": "#qc-cmp2-ui",
+    "optOut": "#qc-cmp2-ui button.qc-cmp2-close-icon"
+   }
+  },
+  {
+   "id": "vanta-site-sportradar.com",
+   "domains": [
+    "sportradar.com"
+   ],
+   "click": {
+    "presence": "div.tru_cookie-dialog_d",
+    "optOut": "div.tru_cookie-dialog_d #tru_deselect_btn"
+   }
+  },
+  {
+   "id": "vanta-site-studocu.com",
+   "domains": [
+    "studocu.com"
+   ],
+   "click": {
+    "presence": "#onetrust-button-group-parent",
+    "optOut": "#onetrust-button-group-parent #onetrust-reject-all-handler"
+   }
+  },
+  {
+   "id": "vanta-site-surfshark.com",
+   "domains": [
+    "surfshark.com"
+   ],
+   "click": {
+    "presence": "div[data-test=\"cookie-consent-modal\"]",
+    "optOut": "div[data-test=\"cookie-consent-modal\"] button[data-test=\"cookie-consent-decline-all\"]"
+   }
+  },
+  {
+   "id": "vanta-site-talkie-ai.com",
+   "domains": [
+    "talkie-ai.com"
+   ],
+   "click": {
+    "presence": "div.CookieConsent_banner__f_zHl",
+    "optOut": "div.CookieConsent_banner__f_zHl button.CookieConsent_rejectBtn__JiJTF"
+   }
+  },
+  {
+   "id": "vanta-site-topuniversities.com",
+   "domains": [
+    "topuniversities.com"
+   ],
+   "click": {
+    "presence": "div.eu-cookie-compliance-banner",
+    "optOut": "div.eu-cookie-compliance-banner button.eu-cookie-compliance-default-button.eu-cookie-compliance-reject-button"
+   }
+  },
+  {
+   "id": "vanta-site-tradplusad.com",
+   "domains": [
+    "tradplusad.com"
+   ],
+   "click": {
+    "presence": "div.CookieAcknowldegementContainer",
+    "optOut": "div.CookieAcknowldegementContainer button.flex-grow.button.light"
+   }
+  },
+  {
+   "id": "vanta-site-truecaller.com",
+   "domains": [
+    "truecaller.com"
+   ],
+   "click": {
+    "presence": "#consent-dialog",
+    "optOut": "#consent-dialog #btn-accept-necessary",
+    "runContext": "child"
+   }
+  },
+  {
+   "id": "vanta-site-ucr.edu",
+   "domains": [
+    "ucr.edu"
+   ],
+   "click": {
+    "presence": "div.eu-cookie-compliance-banner",
+    "optOut": "div.eu-cookie-compliance-banner button.decline-button"
+   }
+  },
+  {
+   "id": "vanta-site-ugent.be",
+   "domains": [
+    "ugent.be"
+   ],
+   "click": {
+    "presence": "#ppms_cm_popup_overlay",
+    "optOut": "#ppms_cm_popup_overlay #ppms_cm_reject-all"
+   }
+  },
+  {
+   "id": "vanta-site-uib.no",
+   "domains": [
+    "uib.no"
+   ],
+   "click": {
+    "presence": "div.cm-modal",
+    "optOut": "div.cm-modal button.cm-btn.cm-btn-decline"
+   }
+  },
+  {
+   "id": "vanta-site-uio.no",
+   "domains": [
+    "uio.no"
+   ],
+   "click": {
+    "presence": "div.consent",
+    "optOut": "div.consent button.consent-decline-all"
+   }
+  },
+  {
+   "id": "vanta-site-umbc.edu",
+   "domains": [
+    "umbc.edu"
+   ],
+   "click": {
+    "presence": "#umbc-cookie-banner",
+    "optOut": "#umbc-cookie-banner button[data-action=\"reject\"]"
+   }
+  },
+  {
+   "id": "vanta-site-uni-bremen.de",
+   "domains": [
+    "uni-bremen.de"
+   ],
+   "click": {
+    "presence": "div.sg-cookie-optin-box",
+    "optOut": "div.sg-cookie-optin-box button.sg-cookie-optin-banner-button-accept-essential"
+   }
+  },
+  {
+   "id": "vanta-site-unisa.ac.za",
+   "domains": [
+    "unisa.ac.za"
+   ],
+   "click": {
+    "presence": "div.z-3",
+    "optOut": "div.z-3 #acceptEssentialCookies"
+   }
+  },
+  {
+   "id": "vanta-site-united-domains.de",
+   "domains": [
+    "united-domains.de"
+   ],
+   "click": {
+    "presence": "dialog.gen-layer",
+    "optOut": "dialog.gen-layer button.reject"
+   }
+  },
+  {
+   "id": "vanta-site-uva.nl",
+   "domains": [
+    "uva.nl"
+   ],
+   "click": {
+    "presence": "#cookieConsent",
+    "optOut": "#cookieConsent #cookieNoAccept"
+   }
+  },
+  {
+   "id": "vanta-site-vestiairecollective.com",
+   "domains": [
+    "vestiairecollective.com"
+   ],
+   "click": {
+    "presence": "#popin_tc_privacy",
+    "optOut": "#popin_tc_privacy #popin_tc_privacy_button_3"
+   }
+  },
+  {
+   "id": "vanta-site-vivo.com",
+   "domains": [
+    "vivo.com"
+   ],
+   "click": {
+    "presence": "#vcm-v-banner-sdk",
+    "optOut": "#vcm-v-banner-sdk #vcm-v-group-reject"
+   }
+  },
+  {
+   "id": "vanta-site-volkswagen-group.com",
+   "domains": [
+    "volkswagen-group.com"
+   ],
+   "click": {
+    "presence": "up-modal-box.up-focus-hidden",
+    "optOut": "up-modal-box.up-focus-hidden button.btn.btn-secondary"
+   }
+  },
+  {
+   "id": "vanta-site-wbs.legal",
+   "domains": [
+    "wbs.legal"
+   ],
+   "click": {
+    "presence": "#uc-banner-centered",
+    "optOut": "#uc-banner-centered #uc-btn-deny-banner"
+   }
+  },
+  {
+   "id": "vanta-site-wcd.gov.in",
+   "domains": [
+    "wcd.gov.in"
+   ],
+   "click": {
+    "presence": "div.cookie-banner",
+    "optOut": "div.cookie-banner button.btn.btn-outline-primary"
+   }
+  },
+  {
+   "id": "vanta-site-wise.com",
+   "domains": [
+    "wise.com"
+   ],
+   "click": {
+    "presence": "div.twcc",
+    "optOut": "div.twcc #twcc__decline-button"
+   }
+  },
+  {
+   "id": "vanta-site-wordfence.com",
+   "domains": [
+    "wordfence.com"
+   ],
+   "click": {
+    "presence": "div.wf-cookie-consent",
+    "optOut": "div.wf-cookie-consent button.wf-cookie-button.wf-cookie-reject"
+   }
+  },
+  {
+   "id": "vanta-site-worldoftanks.eu",
+   "domains": [
+    "worldoftanks.eu"
+   ],
+   "click": {
+    "presence": "#onetrust-banner-sdk",
+    "optOut": "#onetrust-banner-sdk #onetrust-reject-all-handler",
+    "runContext": "child"
+   }
+  },
+  {
+   "id": "vanta-site-wpastra.com",
+   "domains": [
+    "wpastra.com"
+   ],
+   "click": {
+    "presence": "div.surecookie-public-banner",
+    "optOut": "div.surecookie-public-banner button.surecookie-accept-btn"
+   }
+  },
+  {
+   "id": "vanta-site-www.gov.pl",
+   "domains": [
+    "www.gov.pl"
+   ],
+   "click": {
+    "presence": "#cb2-banner",
+    "optOut": "#cb2-banner #cb2-reject"
+   }
+  },
+  {
+   "id": "vanta-site-xdate.ch",
+   "domains": [
+    "xdate.ch"
+   ],
+   "click": {
+    "presence": "div.cookie-banner",
+    "optOut": "div.cookie-banner button.btn.btn-sm.btn-outline-light"
+   }
+  },
+  {
+   "id": "vanta-site-zdfheute.de",
+   "domains": [
+    "zdfheute.de"
+   ],
+   "click": {
+    "presence": "div.mudmvl9",
+    "optOut": "div.mudmvl9 button[data-testid=\"cmp-revoke-all\"]"
+   }
+  },
+  {
+   "id": "vanta-site-zone-turf.fr",
+   "domains": [
+    "zone-turf.fr"
+   ],
+   "click": {
+    "presence": "div[data-testid=\"notice\"]",
+    "optOut": "div[data-testid=\"notice\"] span.didomi-continue-without-agreeing"
+   }
+  }
+ ]
 }
