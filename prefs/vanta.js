@@ -137,7 +137,7 @@ pref("browser.newtabpage.activity-stream.showSponsoredCheckboxes", false);
 pref("browser.newtabpage.activity-stream.default.sites", "");
 pref("browser.urlbar.quicksuggest.enabled", false);
 pref("browser.urlbar.trending.featureGate", false);
-pref("browser.search.suggest.enabled", false);
+pref("browser.search.suggest.enabled", true);
 pref("extensions.getAddons.showPane", false);
 pref("extensions.htmlaboutaddons.recommendations.enabled", false);
 pref("browser.discovery.enabled", false);
@@ -165,8 +165,8 @@ pref("vanta.accent", "mono");
 pref("vanta.toolbar.seeThrough", false);
 // Frame (toolbar, rail, border) black with a faint tint of the page colour.
 pref("vanta.toolbar.pageTint", true);
-// The new tab: one plain search bar over a sunlit planet horizon, with a
-// sunrise as it opens. Drawn by the window on a blank page, so a new tab
+// The new tab: your search set large like a page heading, under the date and
+// tonight's moon, over a sunlit planet horizon with a sunrise as it opens. Drawn by the window on a blank page, so a new tab
 // costs no extra process.
 pref("vanta.newtab.home", true);
 // The address bar answers as you type (maths, units, time in a city),

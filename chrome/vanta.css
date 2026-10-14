@@ -947,12 +947,12 @@ sidebar-main,
   #vanta-home {
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
+    align-items: flex-start !important;
     position: absolute !important;
     inset: 0 !important;
     z-index: 10 !important;
     overflow: hidden !important;
-    padding-top: 18vh !important;
+    padding: 24vh 12vw 0 !important;
     color: var(--vanta-text) !important;
     font: 13px/1.4 system-ui, -apple-system, sans-serif !important;
   }
@@ -1012,61 +1012,102 @@ sidebar-main,
   opacity: calc(var(--sun-size) * 1);
 }
 
-/* The search bar: plain, not a pill. A dark body lit from the upper left,
-   its rim catching the light and its lower-right edge falling into shadow,
-   with a small eclipse as the search mark. Focus brightens the rim. */
+/* The search, set like a page heading: large type lit from above, under a
+   small line with the date and tonight's moon. Nothing is drawn around it. */
 .vanta-home-search {
   position: relative;
-  width: min(620px, 100% - 64px);
-  margin-top: 14vh;
-  border-radius: 14px;
-  background: linear-gradient(155deg, #1b1b20, #0b0b0d 55%, #050506);
-  box-shadow:
-    inset 1.5px 1.5px 0 rgba(255,255,255,.3),
-    inset -1px -1px 0 rgba(0,0,0,.6),
-    0 18px 40px -18px #000;
-  &::before {
-    content: "";
-    position: absolute;
-    left: 20px;
-    top: 19px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #000;
-    box-shadow: inset 1.5px 1.5px 0 rgba(255,255,255,.75), -1px -1px 4px -1px rgba(255,255,255,.25);
-  }
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    box-shadow: inset 2px 2px 0 rgba(255,255,255,.6);
-    opacity: 0;
-    transition: opacity 220ms ease;
-  }
-  &:focus-within::after { opacity: 1; }
+  width: 100%;
 }
-/* Firefox styles chrome inputs as boxes; this one is only text on the bar. */
+.vanta-home-date {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px 2px;
+  font: 600 12px/14px system-ui, -apple-system, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.5);
+}
+/* The moon as it is tonight: lit from the sun's side, the rest in shadow. */
+.vanta-home-moon {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #cfd3dc 70%);
+  box-shadow: inset var(--moon-shadow, 0) 0 0 1px #000, 0 0 0 1px rgba(255,255,255,.12);
+}
+/* Firefox styles chrome inputs as boxes; this one is only the words. */
 .vanta-home-input {
   appearance: none !important;
   display: block !important;
   box-sizing: border-box !important;
   width: 100% !important;
-  height: 56px !important;
   margin: 0 !important;
-  padding: 0 20px 0 52px !important;
+  padding: 0 !important;
   border: none !important;
-  border-radius: inherit !important;
+  border-radius: 0 !important;
   outline: none !important;
-  background: transparent !important;
   box-shadow: none !important;
-  font: 450 17px/56px system-ui, -apple-system, sans-serif !important;
-  letter-spacing: .01em !important;
-  color: var(--vanta-text) !important;
-  caret-color: auto !important;
-  &::placeholder { color: rgba(255,255,255,.34) !important; opacity: 1 !important; }
+  font: 650 68px/1.08 "Inter Display", "Helvetica Neue", system-ui, -apple-system, sans-serif !important;
+  letter-spacing: -.035em !important;
+  /* Large light text on black: grayscale smoothing keeps its edges clean. */
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: geometricPrecision !important;
+  color: transparent !important;
+  background: linear-gradient(165deg, #fff 30%, #8d8f99) !important;
+  background-clip: text !important;
+  caret-color: #fff !important;
+  &:placeholder-shown { background: none !important; }
+  &::placeholder { color: rgba(255,255,255,.17) !important; opacity: 1 !important; }
+}
+
+/* Suggestions, set under your words in the same type, smaller: searches
+   first, then pages you have visited. No box and no rows of plates; the
+   chosen one is lit, the rest wait in shadow. */
+.vanta-home-suggestions {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  & > li {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    width: fit-content;
+    max-width: 100%;
+    padding: 3px 0;
+    font: 500 26px/1.25 "Inter Display", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+    letter-spacing: -.02em;
+    -moz-osx-font-smoothing: grayscale;
+    color: rgba(255,255,255,.58);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: default;
+    transition: color 120ms ease, transform 200ms cubic-bezier(.2, 1.4, .4, 1);
+  }
+  & > li:hover { color: rgba(255,255,255,.85); }
+  & > li[selected] {
+    color: #fff;
+    transform: translateX(6px);
+  }
+  /* The part you typed stays dim, so the suggested words stand out. */
+  & .vanta-home-typed { color: rgba(255,255,255,.3); }
+  & > li[selected] .vanta-home-typed { color: rgba(255,255,255,.55); }
+  /* Pages: a step quieter, with the site's icon and name. */
+  & > .vanta-home-page {
+    align-items: center;
+    font-size: 17px;
+    font-weight: 450;
+    letter-spacing: 0;
+    padding-block: 5px;
+    & > img { width: 16px; height: 16px; border-radius: 3px; flex: none; -moz-context-properties: fill; fill: currentColor; }
+    & > span:not(.vanta-home-host) { overflow: hidden; text-overflow: ellipsis; }
+  }
+  & > .vanta-home-term + .vanta-home-page { margin-top: 12px; }
+  & .vanta-home-host { font-size: 14px; color: rgba(255,255,255,.35); }
 }
 
 /* Sunrise. */

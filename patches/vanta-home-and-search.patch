@@ -1,6 +1,6 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,506 @@
+@@ -1258,3 +1258,703 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
@@ -403,8 +403,10 @@
 +delayedStartupPromise.then(() => VantaSearch.init());
 +
 +// Vanta: the new tab. A blank page the window draws on (no extra content
-+// process), seamless with the frame: one plain search bar over a planet's
-+// horizon, lit by the sun for the time of day. Opening a tab is a sunrise,
++// process), seamless with the frame: your search set large like a page
++// heading, under the date and tonight's moon, over a planet's horizon lit by
++// the sun for the time of day. As you type, suggestions are set under your
++// words in the same type: searches first, then pages from your history. Opening a tab is a sunrise,
 +// played once; afterwards nothing moves. Off with vanta.newtab.home.
 +var VantaHome = {
 +  PREF: "vanta.newtab.home",
@@ -425,12 +427,27 @@
 +    this.input.placeholder = "Search or enter address";
 +    this.input.setAttribute("aria-label", this.input.placeholder);
 +    this.input.addEventListener("keydown", this);
++    this.input.addEventListener("input", this);
++    this.list = el("ol", "vanta-home-suggestions");
++    this.list.addEventListener("click", this);
++    this.list.addEventListener("mousedown", e => e.preventDefault());
 +    this.root = el(
 +      "div",
 +      "",
 +      // The sun first, so the planet hides its lower half.
 +      el("div", "vanta-home-sky", el("div", "vanta-home-sun"), el("div", "vanta-home-planet")),
-+      el("div", "vanta-home-search", this.input)
++      el(
++        "div",
++        "vanta-home-search",
++        el(
++          "div",
++          "vanta-home-date",
++          (this.moon = el("span", "vanta-home-moon")),
++          (this.date = el("span", ""))
++        ),
++        this.input,
++        this.list
++      )
 +    );
 +    this.root.id = "vanta-home";
 +    document.getElementById("tabbrowser-tabbox").append(this.root);
@@ -469,6 +486,7 @@
 +      this.root.getBoundingClientRect();
 +      this.root.setAttribute("dawn", "");
 +      this.input.value = "";
++      this.suggest();
 +    }
 +    // A new tab focuses the address bar; the search bar here takes it.
 +    setTimeout(() => {
@@ -482,28 +500,207 @@
 +    });
 +  },
 +
-+  // Night, dawn, day or dusk, from the clock.
++  // Night, dawn, day or dusk, from the clock; the date; the moon's phase.
 +  sky() {
 +    let now = new Date();
++    this.date.textContent = now.toLocaleDateString(undefined, {
++      weekday: "long",
++      day: "numeric",
++      month: "long",
++    });
++    // Days into the lunar month, from a known new moon (6 Jan 2000, 18:14
++    // UTC). Waxing is lit from the right, waning from the left.
++    let phase = ((now - Date.UTC(2000, 0, 6, 18, 14)) / 864e5 / 29.530588) % 1;
++    let lit = 1 - Math.abs(1 - 2 * phase);
++    this.moon.style.setProperty(
++      "--moon-shadow",
++      `${(phase < 0.5 ? -1 : 1) * Math.round(14 * (1 - lit))}px`
++    );
 +    let h = now.getHours() + now.getMinutes() / 60;
 +    this.root.dataset.sky =
 +      h < 6 || h >= 20 ? "night" : h < 9 ? "dawn" : h < 17 ? "day" : "dusk";
 +  },
 +
 +  handleEvent(event) {
-+    if (event.type == "TabSelect") {
-+      this.update();
-+      return;
++    switch (event.type) {
++      case "TabSelect":
++        this.update();
++        break;
++      case "input":
++        clearTimeout(this.typing);
++        this.typing = setTimeout(() => this.suggest(), 60);
++        break;
++      case "click": {
++        let row = event.target.closest("li");
++        if (row) {
++          this.go(this.rows[[...this.list.children].indexOf(row)], event);
++        }
++        break;
++      }
++      case "keydown":
++        this.onKey(event);
++        break;
 +    }
-+    // Enter goes where the address bar would: a site, or your search engine.
-+    if (event.key == "Enter" && this.input.value.trim()) {
++  },
++
++  onKey(event) {
++    let count = this.list.children.length;
++    if ((event.key == "ArrowDown" || event.key == "ArrowUp") && count) {
 +      event.preventDefault();
-+      gURLBar.value = this.input.value.trim();
-+      gURLBar.valueIsTyped = true;
-+      gURLBar.handleNavigation({ event });
++      let step = event.key == "ArrowDown" ? 1 : -1;
++      // -1 is the words as typed.
++      this.selected = ((this.selected ?? -1) + step + count + 2) % (count + 1) - 1;
++      this.select();
++    } else if (event.key == "Enter" && this.input.value.trim()) {
++      event.preventDefault();
++      this.go(this.rows?.[this.selected ?? -1], event);
 +    } else if (event.key == "Escape") {
 +      this.input.value = "";
++      this.suggest();
 +    }
++  },
++
++  // Enter goes where the address bar would: a site, or your search engine.
++  go(row, event) {
++    if (row?.url) {
++      openTrustedLinkIn(row.url, "current");
++      return;
++    }
++    gURLBar.value = row?.text ?? this.input.value.trim();
++    gURLBar.valueIsTyped = true;
++    gURLBar.handleNavigation({ event });
++  },
++
++  select() {
++    [...this.list.children].forEach((li, i) =>
++      li.toggleAttribute("selected", i == this.selected)
++    );
++    let row = this.rows[this.selected];
++    this.input.value = row?.text ?? this.typed;
++  },
++
++  async suggest() {
++    let typed = this.input.value;
++    let query = typed.trim();
++    this.typed = typed;
++    this.selected = -1;
++    if (!query) {
++      this.rows = [];
++      this.list.replaceChildren();
++      return;
++    }
++    let [searches, pages] = await Promise.all([
++      this.searchSuggestions(query),
++      this.historyMatches(query).catch(() => []),
++    ]);
++    if (this.input.value != typed) {
++      return;
++    }
++    this.rows = [
++      ...searches.slice(0, 4).map(text => ({ text })),
++      ...pages.slice(0, 3),
++    ];
++    this.list.replaceChildren(
++      ...this.rows.map(row => {
++        let li = this.el("li", { class: row.url ? "vanta-home-page" : "vanta-home-term" });
++        if (row.url) {
++          let icon = this.el("img", { src: "page-icon:" + row.url, alt: "" });
++          icon.addEventListener("error", () => icon.remove(), { once: true });
++          li.append(
++            icon,
++            this.el("span", {}, row.title || row.host),
++            this.el("span", { class: "vanta-home-host" }, row.host)
++          );
++        } else {
++          // The words you typed stay dim; what the suggestion adds is lit.
++          let rest = row.text.toLowerCase().startsWith(query.toLowerCase())
++            ? row.text.slice(query.length)
++            : null;
++          li.append(
++            rest === null
++              ? row.text
++              : this.el(
++                  "span",
++                  {},
++                  this.el("span", { class: "vanta-home-typed" }, row.text.slice(0, query.length)),
++                  rest
++                )
++          );
++        }
++        return li;
++      })
++    );
++  },
++
++  async searchSuggestions(query) {
++    try {
++      let { SearchService } = ChromeUtils.importESModule(
++        "moz-src:///toolkit/components/search/SearchService.sys.mjs"
++      );
++      let { SearchSuggestionController } = ChromeUtils.importESModule(
++        "moz-src:///toolkit/components/search/SearchSuggestionController.sys.mjs"
++      );
++      this.controller ??= new SearchSuggestionController();
++      let result = await this.controller.fetch({
++        searchString: query,
++        inPrivateBrowsing: PrivateBrowsingUtils.isWindowPrivate(window),
++        engine: await SearchService.getDefault(),
++        maxLocalResults: 2,
++        maxRemoteResults: 6,
++      });
++      let seen = new Set([query.toLowerCase()]);
++      return [...(result?.local || []), ...(result?.remote || [])]
++        .map(entry => entry.value)
++        .filter(text => text && !seen.has(text.toLowerCase()) && seen.add(text.toLowerCase()));
++    } catch (e) {
++      return [];
++    }
++  },
++
++  // Pages you have visited whose address or title contains the words.
++  async historyMatches(query) {
++    if (PrivateBrowsingUtils.isWindowPrivate(window)) {
++      return [];
++    }
++    let db = await PlacesUtils.promiseDBConnection();
++    let like = "%" + query.replace(/[%_/]/g, "/$&") + "%";
++    let rows = await db.executeCached(
++      `SELECT url, title FROM moz_places
++       WHERE hidden = 0 AND frecency <> 0
++         AND (url LIKE :pattern ESCAPE '/' OR title LIKE :pattern ESCAPE '/')
++       ORDER BY frecency DESC LIMIT 6`,
++      { pattern: like }
++    );
++    let hosts = new Set();
++    let pages = [];
++    for (let row of rows) {
++      let url = row.getResultByName("url");
++      let host;
++      try {
++        host = new URL(url).hostname.replace(/^www\./, "");
++      } catch (e) {
++        continue;
++      }
++      // One page per site keeps the list short and varied.
++      if (!hosts.has(host) && /^https?:/.test(url)) {
++        hosts.add(host);
++        pages.push({ url, host, title: row.getResultByName("title") });
++      }
++    }
++    return pages;
++  },
++
++  el(tag, props = {}, ...children) {
++    let node = document.createElementNS(this.HTML, tag);
++    for (let [key, value] of Object.entries(props)) {
++      if (key == "class") {
++        node.className = value;
++      } else {
++        node.setAttribute(key, value);
++      }
++    }
++    node.append(...children);
++    return node;
 +  },
 +};
 +delayedStartupPromise.then(() => VantaHome.init());
