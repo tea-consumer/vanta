@@ -9,8 +9,8 @@
 # stay in <work-dir>/DerivedData, so removing the work dir removes everything.
 set -euo pipefail
 
-DEST=${1:-"$HOME/vanta-ios"}
-OUT=${2:-"$DEST/screenshots"}
+DEST=${1:-"$HOME/vanta-ios/firefox-ios"}
+OUT=${2:-"$(dirname "$DEST")/screenshots"}
 DEVICE_NAME=${VANTA_SIM_DEVICE:-"Vanta iPhone"}
 JOBS=${VANTA_JOBS:-3}
 DERIVED="$DEST/DerivedData"

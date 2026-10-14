@@ -3,14 +3,14 @@
 # Vanta's patches and icon, and run the parts of Mozilla's bootstrap the build
 # needs (Nimbus code generator, user scripts). macOS only.
 #
-#   scripts/ios/prepare.sh [work-dir]     default: ~/vanta-ios
+#   scripts/ios/prepare.sh [work-dir]     default: ~/vanta-ios/firefox-ios
 #
 # The work dir is a plain checkout of firefox-ios that this script owns: every
 # run resets it to the pinned tag before patching, so nothing piles up.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-DEST=${1:-"$HOME/vanta-ios"}
+DEST=${1:-"$HOME/vanta-ios/firefox-ios"}
 TAG=$(cat "$ROOT/ios/FIREFOX_IOS_VERSION")
 
 if [ ! -d "$DEST/.git" ]; then

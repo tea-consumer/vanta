@@ -21,8 +21,8 @@ The icon is `branding/src/ios.svg` rendered to `ios/branding/AppIcon.png`
 ## Build (Mac, iOS Simulator)
 
 ```sh
-scripts/ios/prepare.sh            # ~/vanta-ios: firefox-ios at the pinned tag + Vanta
-scripts/ios/build-sim.sh          # builds, installs in one simulator, takes screenshots
+scripts/ios/prepare.sh     # ~/vanta-ios/firefox-ios: the pinned tag + Vanta
+scripts/ios/build-sim.sh   # builds, installs in one simulator, screenshots in ~/vanta-ios/screenshots
 ```
 
 `prepare.sh` resets its work dir to the pinned tag every run. `build-sim.sh`
