@@ -10,6 +10,8 @@ the files in this repo.
   faster tab unloading, telemetry and AI features off).
 - `scripts/apply-vanta.sh`: renames Firefox's own unofficial branding to
   Vanta and appends our prefs to `browser/app/profile/firefox.js`.
+- Blackout, a built-in ad and tracker blocker on Firefox's own content
+  classifier (`docs/blackout.md`, `scripts/apply-blackout.sh`).
 - `patches/`: our own small patches (none yet).
 - Build flags: PGO, cross-language LTO, `-O3`, CPU-specific tuning.
 

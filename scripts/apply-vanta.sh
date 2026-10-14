@@ -24,6 +24,9 @@ if ! grep -q 'Vanta browser: default prefs' browser/app/profile/firefox.js; then
   { echo; cat "$here/prefs/vanta.js"; } >> browser/app/profile/firefox.js
 fi
 
+# Blackout, the built-in ad and tracker blocker.
+bash "$here/scripts/apply-blackout.sh" "$PWD"
+
 # Our own patches, if any.
 for p in "$here"/patches/*.patch; do
   [ -e "$p" ] || continue
