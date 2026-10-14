@@ -165,6 +165,14 @@ pref("vanta.accent", "mono");
 pref("vanta.toolbar.seeThrough", false);
 // Frame (toolbar, rail, border) black with a faint tint of the page colour.
 pref("vanta.toolbar.pageTint", true);
+// No toolbar row: the address bar is a command bar that floats over the page
+// (Cmd+L, new tab), and a new tab is Vanta's own blank page with your most
+// visited sites. False brings back the top row.
+pref("vanta.layout.commandBar", true);
+// The command bar has no "Press tab to search with" row, and doesn't drop
+// a list of sites when focused empty (the new tab shows them instead).
+pref("browser.urlbar.suggest.engines", false);
+pref("browser.urlbar.suggest.topsites", false);
 // Vertical tabs in a compact sidebar that expands while hovered, with the
 // address bar in one slim row on top.
 pref("sidebar.revamp", true);
