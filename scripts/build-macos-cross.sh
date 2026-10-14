@@ -72,7 +72,7 @@ case "$stage" in
     sed -n 's/^BuildID=//p' obj-vanta/dist/vanta/Vanta.app/Contents/Resources/application.ini > "$work/.final-buildid"
     # ...and checks against the commit the tree was made from that nothing
     # compiled has changed since.
-    cp "$src/.vanta-applied" "$work/.final-commit"
+    head -1 "$src/.vanta-applied" > "$work/.final-commit"
     ;;
   *) echo "unknown stage: $stage" >&2; exit 1 ;;
 esac

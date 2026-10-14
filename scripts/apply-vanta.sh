@@ -11,7 +11,7 @@ cd "$src"
 # changes, start from a fresh tree (or use scripts/repack-ui.sh for the
 # interface and prefs).
 if [ -f .vanta-applied ]; then
-  echo "apply-vanta: already applied to $src (from $(cat .vanta-applied))" >&2
+  echo "apply-vanta: already applied to $src (from $(head -1 .vanta-applied))" >&2
   exit 0
 fi
 
@@ -102,8 +102,25 @@ for p in "$here"/patches/*.patch; do
   patch -p1 --forward < "$p"
 done
 
+# Experimental patches, only when asked for by name, e.g.
+#   VANTA_EXPERIMENTAL="frame-readback" scripts/build-macos-cross.sh ...
+# Each name matches patches/experimental/*<name>.patch; a .js file of the
+# same name holds the prefs that go with it.
+for name in ${VANTA_EXPERIMENTAL:-}; do
+  p="$(ls "$here"/patches/experimental/*"$name".patch 2>/dev/null | head -1)"
+  [ -n "$p" ] || { echo "apply-vanta: no experimental patch named $name" >&2; exit 1; }
+  patch -p1 --forward < "$p"
+  if [ -f "${p%.patch}.js" ]; then
+    { echo; cat "${p%.patch}.js"; } >> browser/app/profile/firefox.js
+  fi
+done
+
 # Vanta's own cookie banner rules (packaged by patches/cookiebanners-2).
 cp "$here"/cookiebanners/vanta-rules.json "$here"/cookiebanners/vanta-site-rules.json \
   toolkit/components/cookiebanners/
 
-git -C "$here" rev-parse HEAD > .vanta-applied 2>/dev/null || echo unknown > .vanta-applied
+# Line 1: the commit applied. Line 2: experimental patches, if any.
+{
+  git -C "$here" rev-parse HEAD 2>/dev/null || echo unknown
+  [ -z "${VANTA_EXPERIMENTAL:-}" ] || echo "experimental: $VANTA_EXPERIMENTAL"
+} > .vanta-applied

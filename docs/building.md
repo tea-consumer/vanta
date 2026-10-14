@@ -21,7 +21,7 @@ pull requests.
 | `scripts/build-macos-cross.sh instrumented` | Linux | instrumented macOS build -> `$VANTA_WORK/out/vanta-instrumented.dmg` |
 | `scripts/run-profile-macos.sh <dmg>` | Mac | PGO training run on Mozilla's pages (incl. Speedometer 3) -> `work/vanta-profile.tar` |
 | `scripts/build-macos-cross.sh final <tar>` | Linux | PGO + cross-language LTO build -> `obj-vanta/dist/vanta-*.dmg` |
-| `scripts/repack-ui.sh [refs]` | Linux | rebuilds only the front end (chrome CSS, prefs) into the last final build; refuses when anything compiled changed |
+| `scripts/repack-ui.sh [refs]` | Linux | rebuilds only the front end (chrome CSS, prefs, front-end-only patches) into the last final build; refuses when anything compiled changed |
 | `scripts/update-mac-ui.sh [refs] \| --undo` | Mac | runs `repack-ui.sh` over ssh, swaps the two `omni.ja` files into the app, re-signs ad hoc, clears the startup cache |
 | `scripts/build-macos.sh` | Mac | the whole build natively, fallback only |
 | `nix build .#vanta` | NixOS | Linux build of Vanta through nixpkgs' Firefox |
@@ -61,8 +61,10 @@ No build. Merge the change to `main`, then on the Mac (Vanta closed):
     scripts/update-mac-ui.sh origin/main
 
 To try a pull request before merging it: `scripts/update-mac-ui.sh origin/pr/<n>`.
-If the change touches anything compiled, `repack-ui.sh` stops and lists the
-files: those need the full build above.
+Patches in `patches/` that only touch CSS, JS, Fluent or markup count as
+front end too: `repack-ui.sh` takes out the old version and applies the new
+one. If the change touches anything compiled, it stops and lists the files:
+those need the full build above.
 
 ## Bumping Firefox
 
@@ -75,5 +77,16 @@ files: those need the full build above.
 
 ## Experimental patches
 
-`patches/experimental/` is not applied. Copy a patch into `patches/` on a
-branch to build with it.
+`patches/experimental/` is not applied unless named in `VANTA_EXPERIMENTAL`
+when the tree is made, e.g.
+
+    VANTA_EXPERIMENTAL="frame-readback" scripts/build-macos-cross.sh instrumented
+
+Each name picks `patches/experimental/*<name>.patch` plus its `.js` prefs
+file, and `.vanta-applied` records which were used. Use the same value for
+both stages of a build (the tree is applied once, so it carries over).
+
+**Right now the Mac's build has `frame-readback` in.** Until Fredrik
+confirms it fixes trackpad scrolling (then it moves into `patches/` and its
+pref into `prefs/vanta.js`), every build for the Mac must set
+`VANTA_EXPERIMENTAL="frame-readback"`, or scrolling goes back to how it was.

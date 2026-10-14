@@ -8,9 +8,9 @@
 #   e.g. scripts/repack-ui.sh origin/main      (what's merged)
 #        scripts/repack-ui.sh origin/pr/7      (try a PR before merging it)
 #
-# Refuses, and says so, when anything besides chrome/ and prefs/ (and docs,
-# tests, tools) changed since the commit the installed build was made from:
-# those need scripts/build-macos-cross.sh instead.
+# Refuses, and says so, when anything besides chrome/, prefs/ and
+# front-end-only patches (CSS, JS, Fluent, markup) changed since the commit
+# the installed build was made from: those need scripts/build-macos-cross.sh.
 # Output: $VANTA_WORK/out/ui/{omni.ja,browser-omni.ja,SHA256SUMS}
 set -euo pipefail
 # Over ssh on NixOS the build tools aren't on PATH; rerun inside a nix shell
@@ -41,13 +41,42 @@ built="$before"
 if [ -f "$work/.final-commit" ] && git cat-file -e "$(cat "$work/.final-commit")^{commit}" 2>/dev/null; then
   built="$(cat "$work/.final-commit")"
 fi
+# A patch is front-end only when every file it touches is packaged into
+# omni.ja as is (no C++, Rust, build files or static prefs).
+frontend_patch() {
+  [ -z "$(git show "$1" | sed -n 's|^+++ b/||p' |
+    grep -vE '\.(css|mjs|js|ftl|xhtml|html|svg|json)$' || true)" ]
+}
+changed_patches="$(git diff --name-only "$built" HEAD -- 'patches/*.patch' | grep -v '^patches/.*/' || true)"
 other="$(git diff --name-only "$built" HEAD |
-  grep -vE '^(chrome/|prefs/vanta\.js$|docs/|README|\.claude/|\.github/|tools/|blackout/(test|bench)/)' || true)"
+  grep -vE '^(chrome/|prefs/vanta\.js$|docs/|README|\.claude/|\.github/|tools/|blackout/(test|bench)/|patches/experimental/|branding/src/|\.gitignore$|flake\.nix$)' |
+  grep -vE '^scripts/(build-macos|build-macos-cross|run-profile-macos|repack-ui|update-mac-ui|fetch-firefox|preview-ui)\.sh$|^scripts/make-branding\.py$' |
+  grep -vE '^patches/[^/]*\.patch$' || true)"
+for p in $changed_patches; do
+  { [ -z "$(git ls-tree "$built" "$p")" ] || frontend_patch "$built:$p"; } &&
+  { [ -z "$(git ls-tree HEAD "$p")" ] || frontend_patch "HEAD:$p"; } ||
+    other="$other${other:+
+}$p"
+done
 if [ -n "$other" ]; then
   git reset -q --hard "$before"
   printf 'needs a full rebuild, these changed:\n%s\n' "$other" >&2
   exit 2
 fi
+
+# Front-end patches: take out the old version, put in the new one.
+for p in $changed_patches; do
+  if [ -n "$(git ls-tree "$built" "$p")" ]; then
+    git show "$built:$p" > "$work/.old.patch"
+    if (cd "$src" && patch -p1 -R -s -f --dry-run < "$work/.old.patch" >/dev/null 2>&1); then
+      (cd "$src" && patch -p1 -R -s < "$work/.old.patch")
+    fi
+  fi
+  if [ -f "$here/$p" ] && ! (cd "$src" && patch -p1 -R -s -f --dry-run < "$here/$p" >/dev/null 2>&1); then
+    (cd "$src" && patch -p1 --forward < "$here/$p")
+  fi
+done
+rm -f "$work/.old.patch"
 
 # Interface CSS: regenerated whole, the same way apply-vanta.sh builds it.
 cat "$here/chrome/vanta.css" "$here/chrome/split-view.css" > "$src/browser/themes/shared/vanta.css"
