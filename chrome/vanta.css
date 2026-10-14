@@ -96,6 +96,14 @@
   background: var(--vanta-frame) !important;
 }
 
+/* macOS: Firefox paints the toolbox with the native titlebar material (a
+   gray vibrancy layer on #navigator-toolbox::after), which covers the frame.
+   Vanta's frame is its own color, so drop the material. */
+:root:not([lwtheme]) #navigator-toolbox::after {
+  appearance: none !important;
+  background: none !important;
+}
+
 #navigator-toolbox,
 #nav-bar,
 #browser,
