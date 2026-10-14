@@ -46,6 +46,10 @@ pref("browser.places.interactions.enabled", false);
 // Paint as soon as there is something to show. default=5 ms
 pref("nglayout.initialpaint.delay", 0);
 pref("nglayout.initialpaint.delay_in_oopif", 0);
+// Smooth scrolling with the spring-based "MSD" physics Firefox Nightly
+// already uses: momentum that eases out instead of stopping abruptly, closer
+// to Safari for mouse wheel and keyboard scrolling. default=false on release
+pref("general.smoothScroll.msdPhysics.enabled", true);
 pref("gfx.content.skia-font-cache-size", 20);
 pref("content.notify.interval", 100000);
 pref("gfx.canvas.accelerated.cache-size", 512);
