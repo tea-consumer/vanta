@@ -743,213 +743,226 @@ sidebar-main,
   color: var(--vanta-on-accent) !important;
 }
 
-/* ----- Command bar layout (vanta.layout.commandBar) ---------------------- */
+/* ----- Address bar results ------------------------------------------------ */
 
-/* No toolbar row: the page fills the window beside the rail, and the
-   address bar is a command bar that floats over the page when summoned
-   (Cmd+L, Cmd+T, a new tab). VantaShape in browser-init.js sets
-   [vanta-command-bar] from the pref and [vanta-void] on a new tab. */
-:root[vanta-command-bar] {
-  --vr: 50px;
-  --vanta-cmd-w: min(660px, 66vw);
+/* One column of light under the bar. Rows are not plates: the chosen row is
+   lit from the upper left, the rest stay dim. Firefox's engine chip and the
+   "Press tab to search with" row are gone. */
+#urlbar {
+  --urlbarview-background-color-selected: transparent !important;
+  --urlbarview-text-color-selected: var(--vanta-text) !important;
+}
+#urlbar .searchmode-switcher { display: none !important; }
+.urlbarView-row,
+.urlbarView-row[selected],
+.urlbarView-row[row-selectable]:hover { background: none !important; }
+.urlbarView-row { color: var(--vanta-text-muted) !important; }
+.urlbarView-row-inner { border-radius: 10px !important; }
+.urlbarView-row[selected] > .urlbarView-row-inner {
+  background: linear-gradient(100deg, rgba(255,255,255,.075), rgba(255,255,255,0) 70%) !important;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.22) !important;
+  color: var(--vanta-text) !important;
+}
+.urlbarView-row[row-selectable]:hover:not([selected]) > .urlbarView-row-inner {
+  background: rgba(255,255,255,.03) !important;
+}
+.urlbarView-action, .urlbarView-url { color: var(--vanta-text-muted) !important; }
+.urlbarView-row[type="dynamic"]:has(.urlbarView-press-tab-label) { display: none !important; }
 
-  #navigator-toolbox {
-    position: fixed !important;
-    top: 0 !important; left: 0 !important;
-    width: var(--vr) !important;
-    z-index: 5 !important;
-    background: transparent !important;
-  }
-  #nav-bar, #nav-bar-customization-target {
-    flex-direction: column !important;
-    align-items: center !important;
-    width: var(--vr) !important;
-    padding: 8px 0 0 !important;
-    gap: 0 !important;
-    background: transparent !important;
-  }
-  #nav-bar .toolbarbutton-1 { margin: 0 !important; }
-  #vertical-spacer { display: none !important; }
-  #downloads-button, #unified-extensions-button, #PanelUI-button {
-    position: fixed !important; left: 0 !important; width: var(--vr) !important;
-    display: flex !important; justify-content: center !important;
-  }
-  #PanelUI-button { bottom: 10px !important; }
-  #unified-extensions-button { bottom: 46px !important; }
-  #downloads-button { bottom: 82px !important; }
-  sidebar-main { padding-top: 100px !important; }
-  /* A video or game in fullscreen gets the whole screen. */
-  &[inDOMFullscreen] :is(#navigator-toolbox, #downloads-button, #unified-extensions-button, #PanelUI-button) { display: none !important; }
-  &:not([inDOMFullscreen]) #tabbrowser-tabbox { margin-block-start: var(--vanta-gap) !important; }
+/* Answers (time in a city, maths, units): the answer itself, large, then a
+   quiet line of context. */
+.vanta-answer, .urlbarView-row[dynamicType="calculator"] .urlbarView-no-wrap,
+.urlbarView-row[dynamicType="unitConversion"] .urlbarView-no-wrap {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 12px !important;
+  padding-block: 6px !important;
+}
+.vanta-answer-title,
+.urlbarView-row:is([dynamicType="calculator"], [dynamicType="unitConversion"]) strong {
+  font-size: 20px !important;
+  font-weight: 500 !important;
+  color: var(--vanta-text) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.vanta-answer-detail { color: var(--vanta-text-muted) !important; }
+.urlbarView-dynamic-calculator-tail150 { display: none !important; }
 
-  /* ----- The command bar ---------------------------------------------------- */
-  #urlbar-container {
-    position: fixed !important;
-    top: 17vh !important;
-    left: calc(50vw + var(--vr) / 2 - var(--vanta-cmd-w) / 2) !important;
-    width: var(--vanta-cmd-w) !important;
-    max-width: none !important;
-    z-index: 20 !important;
-    margin: 0 !important;
-  }
+/* ----- New tab (vanta.newtab.home) ---------------------------------------- */
 
-  #urlbar {
-    --urlbar-height: 54px !important;
-    --urlbar-container-height: 54px !important;
-    font-size: 17px !important;
-    --urlbarview-background-color-selected: transparent !important;
-    --urlbarview-text-color-selected: #fff !important;
+/* A new tab is a blank page the window draws on (VantaHome in
+   browser-init.js). It is the frame itself: true black, no card edge, so
+   the address bar, the rail and the page read as one surface. Panels are
+   not plates; they are dark, lit along their upper-left rim. */
+#vanta-home { display: none; }
+:root[vanta-home] {
+  #tabbrowser-tabbox { position: relative !important; }
+  #tabbrowser-tabbox::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: var(--vanta-frame) !important;
+    z-index: 9 !important;
   }
-  /* Darkness with a rim of light from the upper left: the eclipse's own
-     lighting, on the bar itself. */
-  #urlbar > .urlbar-background,
-  #urlbar[open] > .urlbar-background,
-  #urlbar:focus-within > .urlbar-background {
-    border: 1px solid transparent !important;
-    border-radius: 18px !important;
-    background:
-      linear-gradient(#0b0b0d, #0b0b0d) padding-box,
-      linear-gradient(140deg, rgba(255,255,255,.42), rgba(255,255,255,.08) 28%, rgba(255,255,255,.035) 60%, rgba(255,255,255,.07)) border-box !important;
-    box-shadow: 0 40px 120px -20px #000, 0 0 0 100vmax rgba(0,0,0,.0) !important;
+  .browserStack, #tabbrowser-tabpanels, #tabbrowser-tabbox {
+    box-shadow: none !important;
     outline: none !important;
   }
-  .urlbar-input-container { padding-inline: 22px 18px !important; }
-  #urlbar-input { font-size: 19px !important; letter-spacing: .005em !important; color: #f2f2f4 !important; }
-  #urlbar-input::placeholder { color: rgba(255,255,255,.32) !important; opacity: 1 !important; }
-  /* Firefox's furniture goes: engine chip, shield, padlock, page actions,
-     go arrow. The bar is only text. */
-  #urlbar .searchmode-switcher,
-  #urlbar #identity-box,
-  #urlbar #tracking-protection-icon-container,
-  #urlbar #trust-icon-container,
-  #urlbar #page-action-buttons,
-  #urlbar .urlbar-go-button,
-  #urlbar #remote-control-box { display: none !important; }
 
-  /* Results: one column of light. Rows are not plates; the chosen row is
-     lit (brighter text, a rim on its upper-left edge), the rest stay dim. */
-  .urlbarView { margin-inline: 0 !important; width: 100% !important; padding-inline: 8px !important; }
-  .urlbarView-body-inner { border-top: 1px solid rgba(255,255,255,.06) !important; }
-  .urlbarView-results { padding-block: 8px 10px !important; }
-  .urlbarView-row {
-    border-radius: 12px !important;
-    padding-block: 0 !important;
-    min-height: 46px !important;
-    margin-inline: 0 !important;
-    color: rgba(255,255,255,.62) !important;
-  }
-  .urlbarView-row-inner { padding-inline: 14px !important; min-height: 46px !important; border-radius: 12px !important; }
-  .urlbarView-row[selected] > .urlbarView-row-inner,
-  .urlbarView-row:hover > .urlbarView-row-inner {
-    background: linear-gradient(100deg, rgba(255,255,255,.075), rgba(255,255,255,0) 70%) !important;
-    box-shadow: inset 1px 1px 0 rgba(255,255,255,.22) !important;
-    color: #fff !important;
-  }
-  .urlbarView-row:hover:not([selected]) > .urlbarView-row-inner { background: rgba(255,255,255,.03) !important; box-shadow: none !important; }
-  .urlbarView-title { font-size: 15px !important; font-weight: 450 !important; }
-  .urlbarView-favicon { width: 18px !important; height: 18px !important; margin-inline-end: 14px !important; fill: rgba(255,255,255,.55) !important; }
-  .urlbarView-row[selected] .urlbarView-favicon { fill: #fff !important; }
-  .urlbarView-title-separator::before { content: "" !important; }
-  .urlbarView-title-separator { margin-inline: 10px !important; }
-  .urlbarView-action, .urlbarView-url {
-    color: rgba(255,255,255,.34) !important; font-size: 13px !important;
-  }
-  .urlbarView-row[selected] :is(.urlbarView-action, .urlbarView-url) { color: rgba(255,255,255,.55) !important; }
-  .urlbarView-row[type="dynamic"]:has(.urlbarView-press-tab-label) { display: none !important; }
-  .urlbarView-row[type="tip"], .urlbarView-row[label]::before { display: none !important; }
-  .urlbarView-row-buttons { display: none !important; }
-  /* Switch-to-tab: a lit word, not Firefox's pill. */
-  .urlbarView-action { background: none !important; border: none !important; padding: 0 !important; }
-  .urlbarView-switchToTab-accessory, .urlbarView-tab-group-container { display: none !important; }
-
-  /* While the bar is out, the page falls into shadow behind it. */
-  #tabbrowser-tabbox::after {
-    content: "" !important; position: absolute !important; inset: 0 !important;
-    background: rgba(0,0,0,.62) !important; opacity: 0 !important;
-    pointer-events: none !important; z-index: 10 !important;
-    border-radius: inherit !important;
-    transition: opacity 180ms ease !important;
-  }
-  #tabbrowser-tabbox { position: relative !important; }
-  &:has(#urlbar-container:focus-within, #urlbar[open]):not([vanta-void]) #tabbrowser-tabbox::after { opacity: 1 !important; }
-
-  /* ----- The rail ----------------------------------------------------------- */
-  #back-button, #forward-button, #stop-reload-button, #reload-button, #stop-button { --toolbarbutton-inner-padding: 9px !important; }
-  /* ----- Vanta's own toolbar ------------------------------------------------ */
-  /* Vanta's glyphs: thin strokes, round ends. They are masks (data: images
-     can't take the toolbar's context colour), painted in the icon colour. */
-  #back-button > .toolbarbutton-icon {
-    list-style-image: none !important;
-    background-color: var(--toolbarbutton-icon-fill) !important;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 3.5 5.5 8l4.5 4.5'/%3E%3C/svg%3E") center / 16px 16px no-repeat !important;
-  }
-  #forward-button > .toolbarbutton-icon {
-    list-style-image: none !important;
-    background-color: var(--toolbarbutton-icon-fill) !important;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 3.5 10.5 8 6 12.5'/%3E%3C/svg%3E") center / 16px 16px no-repeat !important;
-  }
-  #reload-button > .toolbarbutton-icon {
-    list-style-image: none !important;
-    background-color: var(--toolbarbutton-icon-fill) !important;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.34 4.02A5.2 5.2 0 1 1 5.80 3.29'/%3E%3Ccircle cx='11.34' cy='4.02' r='1.7' fill='black' stroke='none'/%3E%3C/svg%3E") center / 16px 16px no-repeat !important;
-  }
-  #stop-button > .toolbarbutton-icon {
-    list-style-image: none !important;
-    background-color: var(--toolbarbutton-icon-fill) !important;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 4.5l7 7M11.5 4.5l-7 7'/%3E%3C/svg%3E") center / 16px 16px no-repeat !important;
-  }
-  #unified-extensions-button > .toolbarbutton-icon {
-    list-style-image: none !important;
-    background-color: var(--toolbarbutton-icon-fill) !important;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='5' cy='5' r='1.9'/%3E%3Ccircle cx='11' cy='5' r='1.9'/%3E%3Ccircle cx='5' cy='11' r='1.9'/%3E%3Ccircle cx='11' cy='11' r='1.9' fill='black'/%3E%3C/svg%3E") center / 16px 16px no-repeat !important;
-  }
-
-  .urlbarView-body-outer, .urlbarView-body-inner, .urlbarView { background: transparent !important; }
-  .urlbarView-background { background: #0b0b0d !important; border-radius: 0 0 18px 18px !important; }
-  .urlbarView-row, .urlbarView-row[selected], .urlbarView-row:hover { background: none !important; }
-  &:not([vanta-void]) #urlbar-container:not(:focus-within) { opacity: 0 !important; pointer-events: none !important; }
-
-  /* The new tab: the command bar is the page. */
-  &[vanta-void] #urlbar-container {
-    opacity: 1 !important; pointer-events: auto !important;
-    top: 34vh !important;
-  }
-  &[vanta-void] #urlbar:not([open]) > .urlbar-background { box-shadow: 0 30px 90px -30px rgba(255,255,255,.06) !important; }
-  .urlbarView-row[label] { margin-block-start: 0 !important; }
-  .urlbarView-type-icon { display: none !important; }
-
-  /* The new tab's sites, under the command bar: dark orbs lit from the upper
-     left, the favicon inside. */
-  #vanta-void-sites { display: none; }
-  &[vanta-void] #vanta-void-sites {
+  #vanta-home {
     display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 44px !important;
     position: absolute !important;
-    top: calc(34vh + 96px) !important;
-    inset-inline: 0 !important;
-    justify-content: center !important;
-    gap: 26px !important;
-    z-index: 15 !important;
-    font: 12px system-ui, -apple-system, sans-serif !important;
-  }
-  &[vanta-void] #tabbrowser-tabbox::before {
-    /* The blank page under it, made black. */
-    content: "" !important; position: absolute !important; inset: 0 !important;
-    background: #000 !important; z-index: 9 !important; border-radius: inherit !important;
-  }
-  #vanta-void-sites a {
-    display: flex; flex-direction: column; align-items: center; gap: 9px;
-    text-decoration: none !important; color: rgba(255,255,255,.38) !important;
-    transition: color 150ms ease;
-    &:hover { color: rgba(255,255,255,.85) !important; }
-  }
-  .vanta-void-orb {
-    width: 48px; height: 48px; border-radius: 50%;
-    display: grid; place-items: center;
-    background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.13), rgba(255,255,255,.02) 64%);
-    box-shadow: inset 1px 1px 0 rgba(255,255,255,.14);
-    transition: background 150ms ease;
-    a:hover > & { background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.22), rgba(255,255,255,.03) 64%); }
-    & > img { width: 22px; height: 22px; border-radius: 5px; opacity: .82; }
-    a:hover > & > img { opacity: 1; }
+    inset: 0 !important;
+    z-index: 10 !important;
+    padding: 16vh 32px 32px !important;
+    overflow: auto !important;
+    color: var(--vanta-text) !important;
+    font: 13px/1.4 system-ui, -apple-system, sans-serif !important;
   }
 }
+
+.vanta-home-sites {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 26px;
+}
+
+.vanta-home-site {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  width: 64px;
+  text-decoration: none !important;
+  color: var(--vanta-text-muted) !important;
+  font-size: 12px;
+  transition: color 150ms ease;
+
+  &:hover, &:focus-visible { color: var(--vanta-text) !important; }
+  & > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+/* Each site is a dark body lit from the upper left. An open site is lit
+   fully: its rim carries the accent, like the eclipse on the current tab. */
+.vanta-home-orb {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.12), rgba(255,255,255,.015) 66%);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.13);
+  transition: background 150ms ease, box-shadow 150ms ease;
+
+  & > img { width: 22px; height: 22px; border-radius: 5px; }
+  .vanta-home-site:hover > & {
+    background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.2), rgba(255,255,255,.03) 66%);
+  }
+  .vanta-home-site[data-open="true"] > & {
+    box-shadow: inset 1.5px 1.5px 0 var(--vanta-accent), 0 0 18px -6px var(--vanta-accent);
+  }
+}
+
+.vanta-home-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  align-items: start;
+  width: min(880px, 100%);
+}
+
+.vanta-home-panel {
+  padding: 18px 18px 14px;
+  border-radius: 16px;
+  background: linear-gradient(150deg, rgba(255,255,255,.05), rgba(255,255,255,.012) 45%);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.09);
+  min-width: 0;
+
+  & h2 {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--vanta-text-muted);
+  }
+  & ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  & ul + ul { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.05); }
+}
+
+.vanta-home-total { letter-spacing: .02em; text-transform: none; font-weight: 400; }
+
+.vanta-home-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 9px;
+
+  &:hover { background: rgba(255,255,255,.04); }
+}
+
+.vanta-home-row-main {
+  all: unset;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  cursor: default;
+
+  & > img { width: 16px; height: 16px; flex: none; }
+  &:focus-visible { outline: 1px solid var(--vanta-accent); outline-offset: -1px; border-radius: 9px; }
+}
+
+.vanta-home-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--vanta-text);
+}
+
+.vanta-home-amount {
+  min-width: 52px;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  color: var(--vanta-text-muted);
+}
+
+/* The share of memory: a short track that fills with light, the heaviest
+   tab full. */
+.vanta-home-bar {
+  flex: none;
+  width: 44px;
+  height: 3px;
+  border-radius: 2px;
+  background:
+    linear-gradient(90deg, var(--vanta-accent) calc(var(--share) * 100%), transparent 0),
+    rgba(255,255,255,.07);
+  opacity: .8;
+}
+
+.vanta-home-unload, .vanta-home-link {
+  all: unset;
+  font-size: 12px;
+  color: var(--vanta-text-muted);
+  padding: 4px 8px;
+  border-radius: 7px;
+  cursor: default;
+
+  &:hover { color: var(--vanta-text); background: rgba(255,255,255,.06); }
+  &:focus-visible { outline: 1px solid var(--vanta-accent); }
+}
+.vanta-home-unload { display: none; margin-inline-end: 4px; }
+.vanta-home-row:hover > .vanta-home-unload { display: block; }
+.vanta-home-row:hover > .vanta-home-row-main > :is(.vanta-home-amount, .vanta-home-bar) { display: none; }
+.vanta-home-link { display: inline-block; margin-top: 8px; }

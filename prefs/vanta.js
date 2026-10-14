@@ -165,14 +165,18 @@ pref("vanta.accent", "mono");
 pref("vanta.toolbar.seeThrough", false);
 // Frame (toolbar, rail, border) black with a faint tint of the page colour.
 pref("vanta.toolbar.pageTint", true);
-// No toolbar row: the address bar is a command bar that floats over the page
-// (Cmd+L, new tab), and a new tab is Vanta's own blank page with your most
-// visited sites. False brings back the top row.
-pref("vanta.layout.commandBar", true);
-// The command bar has no "Press tab to search with" row, and doesn't drop
-// a list of sites when focused empty (the new tab shows them instead).
+// The new tab: your sites (open ones lit), memory per tab with one-click
+// unload, and recently closed tabs and downloads. Drawn by the window on a
+// blank page, so a new tab costs no extra process.
+pref("vanta.newtab.home", true);
+// The address bar answers as you type (maths, units, time in a city),
+// searches a site by name ("yr oslo"), and opens a result in split view
+// with Shift+Enter.
+pref("vanta.search.answers", true);
+pref("browser.urlbar.suggest.calculator", true);
+pref("browser.urlbar.unitConversion.enabled", true);
+// No "Press tab to search with" row under the bar.
 pref("browser.urlbar.suggest.engines", false);
-pref("browser.urlbar.suggest.topsites", false);
 // Vertical tabs in a compact sidebar that expands while hovered, with the
 // address bar in one slim row on top.
 pref("sidebar.revamp", true);
