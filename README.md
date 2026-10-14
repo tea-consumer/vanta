@@ -29,6 +29,8 @@ the files in this repo.
   gradient.
 - `patches/cookiebanners-*`: bring back Firefox's cookie banner handling,
   set to reject automatically (see `docs/cookie-banners.md`).
+- Blackout, a built-in ad and tracker blocker on Firefox's own content
+  classifier (`docs/blackout.md`, `scripts/apply-blackout.sh`).
 - Build flags: cross-language PGO and LTO, CPU-specific tuning, PHC off.
   Every lever and why is in [`docs/performance.md`](docs/performance.md).
 

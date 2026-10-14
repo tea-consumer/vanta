@@ -81,6 +81,9 @@ insert("browser/base/content/browser.xhtml", "chrome://browser/skin/vanta.css",
        before=True)
 EOF
 
+# Blackout, the built-in ad and tracker blocker.
+bash "$here/scripts/apply-blackout.sh" "$PWD"
+
 # Our own patches, if any.
 for p in "$here"/patches/*.patch; do
   [ -e "$p" ] || continue
