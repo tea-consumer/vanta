@@ -165,9 +165,9 @@ pref("vanta.accent", "mono");
 pref("vanta.toolbar.seeThrough", false);
 // Frame (toolbar, rail, border) black with a faint tint of the page colour.
 pref("vanta.toolbar.pageTint", true);
-// The new tab: your sites (open ones lit), memory per tab with one-click
-// unload, and recently closed tabs and downloads. Drawn by the window on a
-// blank page, so a new tab costs no extra process.
+// The new tab: one plain search bar over a sunlit planet horizon, with a
+// sunrise as it opens. Drawn by the window on a blank page, so a new tab
+// costs no extra process.
 pref("vanta.newtab.home", true);
 // The address bar answers as you type (maths, units, time in a city),
 // searches a site by name ("yr oslo"), and opens a result in split view

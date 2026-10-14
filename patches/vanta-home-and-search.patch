@@ -1,9 +1,10 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,704 @@
+@@ -1258,3 +1258,506 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
++
 +
 +// Vanta: the address bar answers and acts, not only searches.
 +//  - Answers computed locally as you type: maths and units (Firefox's own
@@ -25,6 +26,34 @@
 +    // Window capture, so this runs before the address bar's own Enter.
 +    window.addEventListener("keydown", this, true);
 +    this.keepPlaceholder();
++    this.siteChip();
++  },
++
++  // Typing a site's name and a space puts that site in the field: its icon
++  // and name, lit, so you see where the words will be searched.
++  siteChip() {
++    let input = gURLBar.inputField;
++    let chip = document.createElementNS("http://www.w3.org/1999/xhtml", "span");
++    chip.id = "vanta-site-chip";
++    let icon = document.createElementNS("http://www.w3.org/1999/xhtml", "img");
++    let name = document.createElementNS("http://www.w3.org/1999/xhtml", "span");
++    chip.append(icon, name);
++    input.parentNode.before(chip);
++    let show = () => {
++      let m = /^(\S+)\s+\S/.exec(input.value);
++      let host =
++        m &&
++        !gURLBar.searchMode &&
++        !PrivateBrowsingUtils.isWindowPrivate(window) &&
++        this.manager.getProvider("VantaSiteSearch")?.siteFor(m[1]);
++      if (host) {
++        icon.src = `page-icon:https://${host}/`;
++        name.textContent = host;
++      }
++      gURLBar.toggleAttribute("vanta-site", !!host);
++    };
++    input.addEventListener("input", show);
++    input.addEventListener("blur", () => gURLBar.removeAttribute("vanta-site"));
 +  },
 +
 +  // Firefox's placeholder names the search engine; Vanta's says what the
@@ -189,7 +218,18 @@
 +        diff == 0
 +          ? "same time as you"
 +          : `${Math.abs(diff)} h ${diff > 0 ? "ahead of" : "behind"} you`;
-+      return { title: time, detail: `${place} · ${day} · ${rel}` };
++      // Where the sun is there: 0deg at 6:00 (rising), 180deg at 18:00.
++      let [h, mm] = new Intl.DateTimeFormat("en-GB", {
++        timeZone: zone,
++        hour: "2-digit",
++        minute: "2-digit",
++        hourCycle: "h23",
++      })
++        .format(now)
++        .split(":")
++        .map(Number);
++      let angle = ((((h + mm / 60 - 6) / 24) * 360) % 360 + 360) % 360;
++      return { title: time, detail: `${place} · ${day} · ${rel}`, angle };
 +    };
 +
 +    // Sites you visit, by name: "nrk" -> nrk.no.
@@ -281,6 +321,12 @@
 +              tag: "span",
 +              classList: ["urlbarView-no-wrap", "vanta-answer"],
 +              children: [
++                {
++                  name: "sky",
++                  tag: "span",
++                  classList: ["vanta-answer-sky"],
++                  children: [{ name: "body", tag: "span", classList: ["vanta-answer-body"] }],
++                },
 +                { name: "title", tag: "strong", classList: ["vanta-answer-title"] },
 +                { name: "detail", tag: "span", classList: ["vanta-answer-detail"] },
 +              ],
@@ -292,6 +338,11 @@
 +        return {
 +          title: { textContent: result.payload.title },
 +          detail: { textContent: result.payload.detail },
++          sky: {
++            // At night the moon takes the same arc.
++            style: { "--angle": `${result.payload.angle % 180}deg` },
++            attributes: { night: result.payload.angle > 180 },
++          },
 +        };
 +      }
 +    }
@@ -299,6 +350,14 @@
 +    // Heuristic, so Enter goes to the site's results. Only active when the
 +    // first word is the name of a site you visit and more words follow.
 +    class VantaSiteSearch extends UrlbarProvider {
++      // For the field's site chip, which can't wait for history.
++      siteFor(name) {
++        if (!sites) {
++          loadSites();
++          return null;
++        }
++        return sites.get(name.toLowerCase());
++      }
 +      get name() {
 +        return "VantaSiteSearch";
 +      }
@@ -343,16 +402,12 @@
 +};
 +delayedStartupPromise.then(() => VantaSearch.init());
 +
-+// Vanta: the new tab. A blank page, drawn on by the window itself (no extra
-+// content process), seamless with the frame:
-+//  - your sites, with the ones already open lit, so a click switches to the
-+//    open tab instead of opening a second copy;
-+//  - memory: what each open site costs right now, and a click unloads it;
-+//  - pick up where you left off: recently closed tabs and today's downloads.
-+// The address bar above stays the search field. Off with vanta.newtab.home.
++// Vanta: the new tab. A blank page the window draws on (no extra content
++// process), seamless with the frame: one plain search bar over a planet's
++// horizon, lit by the sun for the time of day. Opening a tab is a sunrise,
++// played once; afterwards nothing moves. Off with vanta.newtab.home.
 +var VantaHome = {
 +  PREF: "vanta.newtab.home",
-+  SITES: 8,
 +  HTML: "http://www.w3.org/1999/xhtml",
 +
 +  init() {
@@ -360,29 +415,28 @@
 +      return;
 +    }
 +    AboutNewTab.newTabURL = "about:blank";
-+    this.root = this.el("div", { id: "vanta-home" });
-+    this.root.addEventListener("click", this);
++    let el = (tag, cls, ...children) => {
++      let node = document.createElementNS(this.HTML, tag);
++      node.className = cls;
++      node.append(...children);
++      return node;
++    };
++    this.input = el("input", "vanta-home-input");
++    this.input.placeholder = "Search or enter address";
++    this.input.setAttribute("aria-label", this.input.placeholder);
++    this.input.addEventListener("keydown", this);
++    this.root = el(
++      "div",
++      "",
++      // The sun first, so the planet hides its lower half.
++      el("div", "vanta-home-sky", el("div", "vanta-home-sun"), el("div", "vanta-home-planet")),
++      el("div", "vanta-home-search", this.input)
++    );
++    this.root.id = "vanta-home";
 +    document.getElementById("tabbrowser-tabbox").append(this.root);
 +    gBrowser.addTabsProgressListener(this);
 +    gBrowser.tabContainer.addEventListener("TabSelect", this);
 +    this.update();
-+  },
-+
-+  el(tag, props = {}, ...children) {
-+    let node = document.createElementNS(this.HTML, tag);
-+    for (let [key, value] of Object.entries(props)) {
-+      if (key == "class") {
-+        node.className = value;
-+      } else if (key == "text") {
-+        node.textContent = value;
-+      } else if (key.startsWith("data-")) {
-+        node.setAttribute(key, value);
-+      } else {
-+        node[key] = value;
-+      }
-+    }
-+    node.append(...children);
-+    return node;
 +  },
 +
 +  // A blank tab the user opened, not a page a site opened and writes into.
@@ -403,10 +457,37 @@
 +
 +  update() {
 +    let home = this.isHome(gBrowser.selectedBrowser);
++    let was = document.documentElement.hasAttribute("vanta-home");
 +    document.documentElement.toggleAttribute("vanta-home", home);
-+    if (home) {
-+      this.render().catch(console.error);
++    if (!home) {
++      return;
 +    }
++    this.sky();
++    if (!was) {
++      // Each arrival is a new sunrise: restart the one-shot animation.
++      this.root.removeAttribute("dawn");
++      this.root.getBoundingClientRect();
++      this.root.setAttribute("dawn", "");
++      this.input.value = "";
++    }
++    // A new tab focuses the address bar; the search bar here takes it.
++    setTimeout(() => {
++      if (
++        document.documentElement.hasAttribute("vanta-home") &&
++        document.activeElement == gURLBar.inputField &&
++        !gURLBar.value
++      ) {
++        this.input.focus();
++      }
++    });
++  },
++
++  // Night, dawn, day or dusk, from the clock.
++  sky() {
++    let now = new Date();
++    let h = now.getHours() + now.getMinutes() / 60;
++    this.root.dataset.sky =
++      h < 6 || h >= 20 ? "night" : h < 9 ? "dawn" : h < 17 ? "day" : "dusk";
 +  },
 +
 +  handleEvent(event) {
@@ -414,294 +495,15 @@
 +      this.update();
 +      return;
 +    }
-+    let target = event.target.closest("[data-action]");
-+    if (!target) {
-+      return;
++    // Enter goes where the address bar would: a site, or your search engine.
++    if (event.key == "Enter" && this.input.value.trim()) {
++      event.preventDefault();
++      gURLBar.value = this.input.value.trim();
++      gURLBar.valueIsTyped = true;
++      gURLBar.handleNavigation({ event });
++    } else if (event.key == "Escape") {
++      this.input.value = "";
 +    }
-+    event.preventDefault();
-+    let { action } = target.dataset;
-+    let tab = this.tabs?.get(target.dataset.tab);
-+    switch (action) {
-+      case "open": {
-+        let open = gBrowser.tabs.find(
-+          t => t.linkedBrowser.currentURI.spec == target.dataset.url
-+        );
-+        if (open && !event.metaKey && !event.ctrlKey) {
-+          gBrowser.selectedTab = open;
-+        } else {
-+          openTrustedLinkIn(target.dataset.url, whereToOpenLink(event));
-+        }
-+        break;
-+      }
-+      case "switch":
-+        if (tab) {
-+          gBrowser.selectedTab = tab;
-+        }
-+        break;
-+      case "unload":
-+        if (tab) {
-+          gBrowser.discardBrowser(tab);
-+          this.render();
-+        }
-+        break;
-+      case "unload-all":
-+        for (let t of gBrowser.tabs) {
-+          if (!t.selected && !t.pinned && !t.soundPlaying) {
-+            gBrowser.discardBrowser(t);
-+          }
-+        }
-+        this.render();
-+        break;
-+      case "reopen":
-+        SessionStore.undoCloseTab(window, +target.dataset.index);
-+        break;
-+      case "download":
-+        this.downloads?.[+target.dataset.index]?.launch();
-+        break;
-+    }
-+  },
-+
-+  async render() {
-+    let [sites, memory, closed, downloads] = await Promise.all([
-+      this.topSites(),
-+      this.memory(),
-+      this.closedTabs(),
-+      this.recentDownloads(),
-+    ]);
-+    if (!document.documentElement.hasAttribute("vanta-home")) {
-+      return;
-+    }
-+    let sections = [];
-+    if (sites.length) {
-+      sections.push(this.el("nav", { class: "vanta-home-sites" }, ...sites));
-+    }
-+    let columns = [];
-+    if (memory) {
-+      columns.push(memory);
-+    }
-+    if (closed || downloads) {
-+      columns.push(
-+        this.el(
-+          "section",
-+          { class: "vanta-home-panel" },
-+          this.el("h2", { text: "Pick up where you left off" }),
-+          ...[closed, downloads].filter(Boolean)
-+        )
-+      );
-+    }
-+    if (columns.length) {
-+      sections.push(this.el("div", { class: "vanta-home-columns" }, ...columns));
-+    }
-+    this.root.replaceChildren(...sections);
-+  },
-+
-+  siteName(url) {
-+    try {
-+      let host = new URL(url).hostname;
-+      let base = Services.eTLD.getBaseDomainFromHost(host);
-+      let suffix = Services.eTLD.getPublicSuffixFromHost(host);
-+      return base.slice(0, -suffix.length - 1);
-+    } catch (e) {
-+      return url;
-+    }
-+  },
-+
-+  async topSites() {
-+    let links = [];
-+    try {
-+      links = await NewTabUtils.activityStreamLinks.getTopSites({
-+        numItems: this.SITES,
-+        onePerDomain: true,
-+      });
-+    } catch (e) {
-+      console.error(e);
-+    }
-+    let openHosts = new Set();
-+    for (let tab of gBrowser.tabs) {
-+      try {
-+        openHosts.add(tab.linkedBrowser.currentURI.host);
-+      } catch (e) {}
-+    }
-+    return links.slice(0, this.SITES).map(link => {
-+      let open = false;
-+      try {
-+        open = openHosts.has(new URL(link.url).host);
-+      } catch (e) {}
-+      return this.el(
-+        "a",
-+        {
-+          class: "vanta-home-site",
-+          href: link.url,
-+          title: open ? "Open: click to switch to it" : link.url,
-+          "data-action": "open",
-+          "data-url": link.url,
-+          "data-open": open,
-+        },
-+        this.el(
-+          "span",
-+          { class: "vanta-home-orb" },
-+          this.el("img", { src: "page-icon:" + link.url, alt: "" })
-+        ),
-+        this.el("span", { text: this.siteName(link.url) })
-+      );
-+    });
-+  },
-+
-+  formatBytes(bytes) {
-+    return bytes >= 1e9
-+      ? `${(bytes / 1e9).toFixed(1)} GB`
-+      : `${Math.round(bytes / 1e6)} MB`;
-+  },
-+
-+  // Memory per open tab: each tab's content process, split between the tabs
-+  // that share it. Unloaded tabs cost nothing and are counted as asleep.
-+  async memory() {
-+    let info;
-+    try {
-+      info = await ChromeUtils.requestProcInfo();
-+    } catch (e) {
-+      return null;
-+    }
-+    let byPid = new Map(info.children.map(p => [p.pid, p.memory]));
-+    let groups = new Map();
-+    let asleep = 0;
-+    for (let tab of gBrowser.tabs) {
-+      if (tab.selected) {
-+        continue;
-+      }
-+      if (tab.hasAttribute("pending") || !tab.linkedPanel) {
-+        asleep++;
-+        continue;
-+      }
-+      let pid = tab.linkedBrowser.frameLoader?.remoteTab?.osPid;
-+      if (!pid || !byPid.has(pid)) {
-+        continue;
-+      }
-+      let group = groups.get(pid) || [];
-+      group.push(tab);
-+      groups.set(pid, group);
-+    }
-+    this.tabs = new Map();
-+    let rows = [];
-+    for (let [pid, tabs] of groups) {
-+      for (let tab of tabs) {
-+        rows.push({ tab, bytes: byPid.get(pid) / tabs.length });
-+      }
-+    }
-+    rows.sort((a, b) => b.bytes - a.bytes);
-+    if (!rows.length) {
-+      return null;
-+    }
-+    let total = rows.reduce((sum, r) => sum + r.bytes, 0);
-+    let max = rows[0].bytes;
-+    let list = rows.slice(0, 6).map(({ tab, bytes }, i) => {
-+      let id = String(i);
-+      this.tabs.set(id, tab);
-+      let url = tab.linkedBrowser.currentURI.spec;
-+      return this.el(
-+        "li",
-+        { class: "vanta-home-row" },
-+        this.el(
-+          "button",
-+          { class: "vanta-home-row-main", "data-action": "switch", "data-tab": id },
-+          this.el("img", { src: tab.getAttribute("image") || "page-icon:" + url, alt: "" }),
-+          this.el("span", { class: "vanta-home-label", text: tab.label }),
-+          this.el("span", {
-+            class: "vanta-home-bar",
-+            style: `--share: ${(bytes / max).toFixed(3)}`,
-+          }),
-+          this.el("span", { class: "vanta-home-amount", text: this.formatBytes(bytes) })
-+        ),
-+        this.el("button", {
-+              class: "vanta-home-unload",
-+              text: "Unload",
-+              title: "Free this tab's memory. It reloads when you go back to it.",
-+              "data-action": "unload",
-+              "data-tab": id,
-+            })
-+      );
-+    });
-+    return this.el(
-+      "section",
-+      { class: "vanta-home-panel" },
-+      this.el(
-+        "h2",
-+        {},
-+        this.el("span", { text: "Memory" }),
-+        this.el("span", {
-+          class: "vanta-home-total",
-+          text:
-+            `${this.formatBytes(total)} in ${rows.length} ${rows.length == 1 ? "tab" : "tabs"}` +
-+            (asleep ? ` · ${asleep} asleep` : ""),
-+        })
-+      ),
-+      this.el("ul", {}, ...list),
-+      rows.length > 1
-+        ? this.el("button", {
-+            class: "vanta-home-link",
-+            text: "Unload all background tabs",
-+            "data-action": "unload-all",
-+          })
-+        : ""
-+    );
-+  },
-+
-+  async closedTabs() {
-+    let closed = SessionStore.getClosedTabDataForWindow(window).slice(0, 4);
-+    if (!closed.length) {
-+      return null;
-+    }
-+    return this.el(
-+      "ul",
-+      {},
-+      ...closed.map((data, index) => {
-+        let entry = data.state?.entries?.[data.state.index - 1 || 0];
-+        return this.el(
-+          "li",
-+          { class: "vanta-home-row" },
-+          this.el(
-+            "button",
-+            { class: "vanta-home-row-main", "data-action": "reopen", "data-index": index },
-+            this.el("img", { src: data.image || "page-icon:" + (entry?.url || ""), alt: "" }),
-+            this.el("span", { class: "vanta-home-label", text: data.title || entry?.url }),
-+            this.el("span", { class: "vanta-home-amount", text: "Closed" })
-+          )
-+        );
-+      })
-+    );
-+  },
-+
-+  async recentDownloads() {
-+    let { Downloads } = ChromeUtils.importESModule(
-+      "resource://gre/modules/Downloads.sys.mjs"
-+    );
-+    let list = await Downloads.getList(Downloads.ALL);
-+    let day = Date.now() - 24 * 3600 * 1000;
-+    let recent = (await list.getAll())
-+      .filter(d => d.startTime >= day && d.succeeded && d.target?.exists !== false)
-+      .sort((a, b) => b.startTime - a.startTime)
-+      .slice(0, 3);
-+    this.downloads = recent;
-+    if (!recent.length) {
-+      return null;
-+    }
-+    return this.el(
-+      "ul",
-+      {},
-+      ...recent.map((download, index) =>
-+        this.el(
-+          "li",
-+          { class: "vanta-home-row" },
-+          this.el(
-+            "button",
-+            { class: "vanta-home-row-main", "data-action": "download", "data-index": index },
-+            this.el("img", { src: "moz-icon://" + PathUtils.filename(download.target.path) + "?size=16", alt: "" }),
-+            this.el("span", { class: "vanta-home-label", text: PathUtils.filename(download.target.path) }),
-+            this.el("span", { class: "vanta-home-amount", text: "Downloaded" })
-+          )
-+        )
-+      )
-+    );
 +  },
 +};
 +delayedStartupPromise.then(() => VantaHome.init());
