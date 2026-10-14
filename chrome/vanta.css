@@ -255,6 +255,41 @@ sidebar-main,
   }
 }
 
+/* macOS paints the whole window frame with its translucent glass, so there
+   the open panel must be glass too, not black. A floating element can't
+   carry the glass itself, so the panel goes clear and the page card steps
+   aside instead: it is clipped back to the panel's edge, rounded like its
+   own corners, and the frame's glass shows through underneath the tabs.
+   The clip moves with Firefox's slide (same 400ms ease-in-out), which also
+   makes the concave corners by itself, so the fillets go. */
+@media (-moz-platform: macos) and (-moz-native-theme) {
+  :root[customtitlebar][sidebar-expand-on-hover]:not([lwtheme], [macOSNativeFullscreen]) {
+    #sidebar-container:is([sidebar-launcher-expanded], [sidebar-ongoing-animations]) {
+      background: transparent !important;
+      box-shadow: none !important;
+
+      &::before,
+      &::after {
+        display: none !important;
+      }
+    }
+
+    #tabbrowser-tabpanels {
+      clip-path: inset(0 0 0 0 round var(--vanta-radius)) !important;
+    }
+
+    #tabbrowser-tabbox[sidebar-launcher-expanded][sidebar-launcher-hovered] #tabbrowser-tabpanels {
+      clip-path: inset(0 0 0 calc(var(--sidebar-expanded-launcher-width, 240px) - var(--sidebar-launcher-collapsed-width, 50px)) round var(--vanta-radius)) !important;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      #tabbrowser-tabpanels {
+        transition: clip-path 400ms ease-in-out !important;
+      }
+    }
+  }
+}
+
 /* ----- Signature ------------------------------------------------------------ */
 
 /* The Eclipse: Vanta's mark is a dark disc with a rim of light on its
