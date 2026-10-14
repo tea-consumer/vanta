@@ -107,7 +107,7 @@ done
 # Each name matches patches/experimental/*<name>.patch; a .js file of the
 # same name holds the prefs that go with it.
 for name in ${VANTA_EXPERIMENTAL:-}; do
-  p="$(ls "$here"/patches/experimental/*"$name".patch 2>/dev/null | head -1)"
+  p="$(ls "$here"/patches/experimental/*"$name".patch 2>/dev/null | head -1 || true)"
   # A patch that has since moved into patches/ is already applied above.
   if [ -z "$p" ] && ls "$here"/patches/*"$name".patch >/dev/null 2>&1; then
     echo "apply-vanta: $name is no longer experimental, already applied" >&2
