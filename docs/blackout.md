@@ -89,7 +89,7 @@ cookie banners are PR #4's job) and a long tail (`edit-object-on-setter`,
 `json-edit`, `xml-prune`, `prevent-innerHTML` and a few others, 2% of uses).
 The rules for those are skipped.
 
-Tested in a real Firefox 157 (`blackout/test/scriptlets/`): every scriptlet
+Tested in real Firefox 157.0.1 and 158.0 (`blackout/test/scriptlets/`): every scriptlet
 above that the default lists use most, with and without a strict CSP, in both
 the sandbox and the precompiled path, plus site matching (subdomains,
 `example.*`), exceptions, alias exceptions, `#@#+js()` and the shield's
