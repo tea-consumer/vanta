@@ -10,6 +10,10 @@ the files in this repo.
   faster tab unloading, telemetry and AI features off).
 - `scripts/apply-vanta.sh`: renames Firefox's own unofficial branding to
   Vanta and appends our prefs to `browser/app/profile/firefox.js`.
+- `gecko/`: Vanta's own browser modules, copied into the Firefox tree by
+  `apply-vanta.sh`. `VantaIntegrations.sys.mjs` creates the native messaging
+  folder so desktop apps like Bitwarden can reach their extension (Touch ID
+  unlock) on a Mac without Firefox installed.
 - `patches/`: our own small patches (none yet).
 - Build flags: PGO, cross-language LTO, `-O3`, CPU-specific tuning.
 
