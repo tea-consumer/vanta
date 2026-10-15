@@ -10,7 +10,7 @@ What the patches change:
 
 | Patch | Change |
 |---|---|
-| `0001-true-black-dark-default` | Dark theme is true black with near-black surfaces and a mono accent; dark is the default instead of following the system. |
+| `0001-true-black-dark-default` | Dark theme is true black with near-black surfaces and a mono accent; dark is the default instead of following the system. Mozilla's Nova redesign, which brings its own gray theme, stays off. |
 | `0002-vanta-defaults` | First launch: no usage data, crash reports or studies sent to Mozilla; ad blocking on; no sponsored or trending suggestions; no Firefox onboarding or Mozilla Terms of Use prompt; DuckDuckGo is the default search engine. |
 | `0003-vanta-new-tab` | The new tab from desktop Vanta: date and tonight's moon over a large search line, above a planet's horizon lit by the sun for the time of day; one sunrise on arrival, none with Reduce Motion. Tapping it opens the address bar. |
 | `0004-vanta-name` | The app is called Vanta. |

@@ -1,5 +1,5 @@
 diff --git a/BrowserKit/Sources/Common/Theming/DarkTheme.swift b/BrowserKit/Sources/Common/Theming/DarkTheme.swift
-index 27a1655..f8a125c 100644
+index 27a1655f..f8a125c4 100644
 --- a/BrowserKit/Sources/Common/Theming/DarkTheme.swift
 +++ b/BrowserKit/Sources/Common/Theming/DarkTheme.swift
 @@ -24,52 +24,48 @@ public struct NightModeTheme: Theme {
@@ -139,7 +139,7 @@ index 27a1655..f8a125c 100644
      // MARK: - Shadow
      var shadowSubtle: UIColor = FXColors.DarkGrey80.withAlphaComponent(0.10)
 diff --git a/BrowserKit/Sources/Common/Theming/DefaultThemeManager.swift b/BrowserKit/Sources/Common/Theming/DefaultThemeManager.swift
-index d9a5515..c43ff98 100644
+index d9a55154..c43ff98a 100644
 --- a/BrowserKit/Sources/Common/Theming/DefaultThemeManager.swift
 +++ b/BrowserKit/Sources/Common/Theming/DefaultThemeManager.swift
 @@ -71,7 +71,9 @@ public final class DefaultThemeManager: ThemeManager, Notifiable {
@@ -154,7 +154,7 @@ index d9a5515..c43ff98 100644
          ])
  
 diff --git a/BrowserKit/Sources/Common/Theming/FxColors.swift b/BrowserKit/Sources/Common/Theming/FxColors.swift
-index ec7ed47..1643eb2 100644
+index ec7ed472..1643eb24 100644
 --- a/BrowserKit/Sources/Common/Theming/FxColors.swift
 +++ b/BrowserKit/Sources/Common/Theming/FxColors.swift
 @@ -12,6 +12,15 @@ final class FXColors {
@@ -173,3 +173,17 @@ index ec7ed47..1643eb2 100644
      // MARK: - Light Grey
      static let LightGrey05 = UIColor(rgb: 0xfbfbfe)
      static let LightGrey10 = UIColor(rgb: 0xf9f9fb)
+diff --git a/firefox-ios/Client/Nimbus/NimbusFeatureFlagLayer.swift b/firefox-ios/Client/Nimbus/NimbusFeatureFlagLayer.swift
+index 2057fa2c..6b5afd2d 100644
+--- a/firefox-ios/Client/Nimbus/NimbusFeatureFlagLayer.swift
++++ b/firefox-ios/Client/Nimbus/NimbusFeatureFlagLayer.swift
+@@ -135,7 +135,8 @@ final class NimbusFeatureFlagLayer: NimbusFeatureFlagLayerProviding, Sendable {
+             return checkNewBookmarkFolderTreeFeature()
+ 
+         case .novaDesign:
+-            return checkNovaDesignFeature()
++            // Vanta: its own true-black theme, never Mozilla's Nova redesign.
++            return false
+ 
+         case .novaPrivateThemeOverride:
+             return checkNovaPrivateThemeOverrideFeature()
