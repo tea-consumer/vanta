@@ -53,8 +53,12 @@ BUNDLE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist
 xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
 xcrun simctl install "$UDID" "$APP"
 xcrun simctl launch "$UDID" "$BUNDLE" >/dev/null
-# The first launch sets up the profile before anything is drawn.
-sleep 25
+# A Debug build on a freshly booted simulator can take a while to draw its
+# first frame; until then the screen is plain black and the PNG stays small.
 rm -f "$OUT/2-page.png"
-xcrun simctl io "$UDID" screenshot "$OUT/1-new-tab.png"
+for _ in $(seq 24); do
+  sleep 5
+  xcrun simctl io "$UDID" screenshot "$OUT/1-new-tab.png" >/dev/null 2>&1
+  [ "$(wc -c <"$OUT/1-new-tab.png")" -gt 150000 ] && break
+done
 echo "Screenshots in $OUT"
