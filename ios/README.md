@@ -15,7 +15,7 @@ What the patches change:
 | `0003-vanta-new-tab` | The new tab from desktop Vanta: date and tonight's moon over a large search line, above a planet's horizon lit by the sun for the time of day; one sunrise on arrival, none with Reduce Motion. Tapping it opens the address bar. |
 | `0004-vanta-name` | The app is called Vanta. |
 | `0005-xcode27-local-modifiedcopy` | Build fix for Xcode 27: Firefox's `ModifiedCopy` package comes from `ios/packages/` without its macro target, and `prepare.sh` builds the macro for the Mac with SwiftPM. |
-| `0006-black-toolbar-glass` | The iOS 26+ glass toolbars take the theme's black at full strength in dark mode, so they read as true black instead of gray. |
+| `0006-black-toolbar-glass` | In dark mode the toolbars drop the iOS 26 glass material, which lightens even a black tint, and are plain true black. |
 | `0007-no-mozilla-surveys` | No Mozilla survey screens or survey prompts. |
 
 The icon is `branding/src/ios.svg` rendered to `ios/branding/AppIcon.png`
