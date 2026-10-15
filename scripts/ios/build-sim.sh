@@ -17,11 +17,16 @@ DERIVED="$DEST/DerivedData"
 mkdir -p "$OUT"
 cd "$DEST/firefox-ios"
 
+# Newer Xcode than Mozilla's CI: build swift-syntax (for firefox-ios' macro
+# packages) from source instead of Xcode's prebuilt copy, and scan modules the
+# implicit way; with either on, the macro targets can't find SwiftSyntax.
 xcodebuild -project Client.xcodeproj -scheme Fennec \
   -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath "$DERIVED" -jobs "$JOBS" -skipMacroValidation \
+  -IDEPackageEnablePrebuilts NO \
+  SWIFT_ENABLE_EXPLICIT_MODULES=NO \
   COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= \
-  build 2>&1 | grep -E 'error:|warning: unre|\*\* BUILD' || true
+  build 2>&1 | tee "$(dirname "$DEST")/build.log" | grep -E 'error:|\*\* BUILD' || true
 
 APP=$(find "$DERIVED/Build/Products" -maxdepth 2 -name 'Client.app' -path '*iphonesimulator*' | head -1)
 [ -n "$APP" ] || { echo "Build failed: no Client.app"; exit 1; }
