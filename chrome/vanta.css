@@ -746,6 +746,8 @@ sidebar-main,
 
 
 
+
+
 /* ----- Address bar results ------------------------------------------------ */
 
 /* One column of light under the bar. Rows are not plates: the chosen row is
@@ -1147,15 +1149,18 @@ sidebar-main,
     color: #fff !important;
     background: none !important;
   }
+  /* The planet is scaled to the results page's size about its top, so its
+     shadows are drawn 1/scale larger to end up the size that page draws. */
   .vanta-home-planet {
-    transform: translateY(var(--leave-horizon));
+    transform-origin: 50% 0;
+    transform: translate(var(--leave-px), var(--leave-py)) scale(var(--leave-ps));
     box-shadow:
-      0 -1px 0 rgba(170, 185, 215, .4),
-      0 -8px 30px -6px rgba(170, 185, 215, .14),
-      0 -50px 140px -30px rgba(170, 185, 215, .08);
+      0 calc(-1px / var(--leave-ps)) 0 rgba(170, 185, 215, .4),
+      0 calc(-8px / var(--leave-ps)) calc(30px / var(--leave-ps)) calc(-6px / var(--leave-ps)) rgba(170, 185, 215, .14),
+      0 calc(-50px / var(--leave-ps)) calc(140px / var(--leave-ps)) calc(-30px / var(--leave-ps)) rgba(170, 185, 215, .08);
   }
   .vanta-home-sun {
-    transform: translateY(calc(var(--leave-horizon) + 40px)) scale(calc(var(--sun-size) * .5));
+    transform: translateY(calc(var(--leave-py) + 30px)) scale(calc(var(--sun-size) * .4));
     opacity: 0;
   }
 }

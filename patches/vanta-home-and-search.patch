@@ -1,6 +1,6 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,1217 @@
+@@ -1258,3 +1258,1314 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
@@ -420,6 +420,29 @@
 +    if (Services.prefs.getBoolPref(this.SKIN_PREF, true)) {
 +      this.register("html.duckduckgo.com", this.RESULTS);
 +      this.register("duckduckgo.com", this.DDG);
++      this.addViews();
++    }
++  },
++
++  // The results page's views and quick answer are added inside the page by
++  // VantaSearchChild (VantaIntegrations.sys.mjs). Registered once per
++  // session; later windows find it already there.
++  ACTOR_MODULE: "moz-src:///browser/modules/VantaIntegrations.sys.mjs",
++  addViews() {
++    try {
++      ChromeUtils.registerWindowActor("VantaSearch", {
++        child: {
++          esModuleURI: this.ACTOR_MODULE,
++          events: { DOMContentLoaded: {} },
++        },
++        matches: ["https://html.duckduckgo.com/*"],
++        messageManagerGroups: ["browsers"],
++        // It only reads the page's own address and adds to its DOM; it
++        // sends nothing to the parent, so a web process may run it.
++        safeForUntrustedWebProcess: true,
++      });
++    } catch (e) {
++      // Already registered by an earlier window.
 +    }
 +  },
 +
@@ -502,153 +525,216 @@
 +  },
 +
 +  RESULTS: `
-+    /* Vanta's results page. DuckDuckGo's script-free HTML page supplies the
-+       results; everything you see is drawn here: true black, your search set
-+       large like the new tab's heading, results as type, and the new tab's
-+       horizon low in the window. */
++/* Vanta's results page. DuckDuckGo's script-free HTML page supplies the
++   results; everything you see is drawn here: true black, your search set
++   large like the new tab's heading, results as type, and the new tab's
++   horizon low in the window. */
 +
-+    html, body {
-+      background: #000 !important;
-+      color: #fff !important;
-+      margin: 0 !important;
-+    }
-+    body {
-+      font: 400 16px/1.55 "SF Pro Text", -apple-system, "Inter", "Helvetica Neue", sans-serif !important;
-+      -moz-osx-font-smoothing: grayscale;
-+      padding: 0 0 22vh 12vw !important;
-+      max-width: 760px !important;
-+    }
++html, body {
++  background: #000 !important;
++  color: #fff !important;
++  margin: 0 !important;
++}
++body {
++  font: 400 16px/1.55 "SF Pro Text", -apple-system, "Inter", "Helvetica Neue", sans-serif !important;
++  -moz-osx-font-smoothing: grayscale;
++  padding: 0 0 22vh 12vw !important;
++  max-width: min(760px, 62vw) !important;
++}
 +
-+    /* The new tab's horizon, sunk low: a search from the new tab glides its
-+       horizon down to exactly here (VantaHome.leave), so keep the two in step. */
-+    html::before {
-+      content: "";
-+      position: fixed;
-+      left: 50%;
-+      top: 94vh;
-+      width: 420vw;
-+      aspect-ratio: 1;
-+      margin-left: -210vw;
-+      border-radius: 50%;
-+      background: #000;
-+      box-shadow:
-+        0 -1px 0 rgba(170, 185, 215, .4),
-+        0 -8px 30px -6px rgba(170, 185, 215, .14),
-+        0 -50px 140px -30px rgba(170, 185, 215, .08);
-+      pointer-events: none;
-+      z-index: 0;
-+    }
-+    body > * { position: relative; z-index: 1; }
++body > * { position: relative; z-index: 1; }
 +
-+    /* Header: no logo, no box. The query is the page's heading. */
-+    .header__logo-wrap, .header__logo, .search__button, .site-wrapper-border,
-+    #state_hidden, .result__extras__url > span:not(.result__icon),
-+    .header__form .frm__select, #bottom_spacing2,
-+    .feedback-btn, .result--ad, .badge--ad, #zero_click_wrapper {
-+      display: none !important;
-+    }
-+    .header, .header-wrap, .header__form, .search, .search--header {
-+      all: unset !important;
-+      display: block !important;
-+    }
-+    .header { padding-top: 11vh !important; }
-+    .header::before {
-+      content: "DuckDuckGo · private";
-+      display: block;
-+      margin: 0 0 18px 2px;
-+      font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
-+      letter-spacing: .18em;
-+      text-transform: uppercase;
-+      color: rgba(255, 255, 255, .45);
-+    }
-+    .search__input {
-+      all: unset !important;
-+      display: block !important;
-+      width: 100% !important;
-+      font: 650 56px/1.1 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
-+      letter-spacing: -.035em !important;
-+      color: #fff !important;
-+      caret-color: #fff !important;
-+      text-rendering: geometricPrecision;
-+    }
++/* Header: no logo, no box. The query is the page's heading. */
++.header__logo-wrap, .header__logo, .search__button, .site-wrapper-border,
++#state_hidden, .result__extras__url > span:not(.result__icon),
++.header__form .frm__select, #bottom_spacing2,
++.feedback-btn, .result--ad, .badge--ad, #zero_click_wrapper {
++  display: none !important;
++}
++.header, .header-wrap, .header__form, .search, .search--header {
++  all: unset !important;
++  display: block !important;
++}
++.header { padding-top: 11vh !important; position: relative !important; }
++/* The new tab's horizon, risen to sit under the views (All, Images, ...):
++   the curve of a planet 420vw across, its top 28px below the views. A search
++   from the new tab carries its horizon up to exactly here (VantaHome.leave),
++   so keep the two in step. Only the lit rim is drawn; inside is the page. */
++.header::after {
++  content: "";
++  position: absolute;
++  top: calc(100% + 28px);
++  left: calc(38vw - 210vw);
++  width: 420vw;
++  aspect-ratio: 1;
++  border-radius: 50%;
++  box-shadow:
++    0 -1px 0 rgba(170, 185, 215, .4),
++    0 -8px 30px -6px rgba(170, 185, 215, .14),
++    0 -50px 140px -30px rgba(170, 185, 215, .08);
++  pointer-events: none;
++}
++html { overflow-x: hidden; }
 +
-+    /* Results: the site in small spaced capitals, the title, then the words. */
-+    .serp__results, .results, #links { all: unset !important; display: block !important; margin-top: 7vh !important; }
-+    .result {
-+      all: unset !important;
-+      display: block !important;
-+      margin: 0 0 42px !important;
-+    }
-+    .result__body {
-+      display: flex !important;
-+      flex-direction: column !important;
-+      padding: 0 !important;
-+      background: none !important;
-+      border: 0 !important;
-+    }
-+    .result__extras { order: -1; margin: 0 0 8px !important; }
-+    .result__extras__url { display: flex !important; align-items: center !important; gap: 10px !important; }
-+    .result__icon, .result__icon a { display: inline-flex !important; }
-+    .result__icon__img {
-+      width: 14px !important;
-+      height: 14px !important;
-+      border-radius: 3px;
-+      opacity: .85;
-+      filter: grayscale(.6);
-+    }
-+    .result__url {
-+      font: 600 11.5px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
-+      letter-spacing: .16em !important;
-+      text-transform: uppercase !important;
-+      color: rgba(255, 255, 255, .4) !important;
-+      text-decoration: none !important;
-+      white-space: nowrap;
-+      overflow: hidden;
-+      text-overflow: ellipsis;
-+      max-width: 100%;
-+    }
-+    .result__title { margin: 0 !important; font: inherit !important; }
-+    .result__a {
-+      font: 500 26px/1.22 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
-+      letter-spacing: -.02em !important;
-+      color: #fff !important;
-+      text-decoration: none !important;
-+    }
-+    .result__a:visited { color: rgba(255, 255, 255, .5) !important; }
-+    .result__a:hover { text-decoration: underline 1px !important; text-underline-offset: 6px !important; }
-+    .result__snippet {
-+      display: block !important;
-+      margin-top: 8px !important;
-+      font-size: 16px !important;
-+      line-height: 1.6 !important;
-+      color: rgba(255, 255, 255, .55) !important;
-+      text-decoration: none !important;
-+    }
-+    .result__snippet b { color: #fff !important; font-weight: 500 !important; }
++/* The views, added by Vanta (VantaSearchChild): small spaced capitals, the
++   one you're on in white. */
++.vanta-views {
++  display: flex;
++  gap: 30px;
++  margin: 22px 0 0 2px;
++  font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
++  letter-spacing: .18em;
++  text-transform: uppercase;
++}
++.vanta-views a {
++  color: rgba(255, 255, 255, .42) !important;
++  text-decoration: none !important;
++}
++.vanta-views a:hover { color: rgba(255, 255, 255, .8) !important; }
++.vanta-views [aria-current] { color: #fff !important; }
++.header::before {
++  content: "DuckDuckGo · private";
++  display: block;
++  margin: 0 0 18px 2px;
++  font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
++  letter-spacing: .18em;
++  text-transform: uppercase;
++  color: rgba(255, 255, 255, .45);
++}
++.search__input {
++  all: unset !important;
++  display: block !important;
++  width: 100% !important;
++  font: 650 56px/1.1 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
++  letter-spacing: -.035em !important;
++  color: #fff !important;
++  caret-color: #fff !important;
++  text-rendering: geometricPrecision;
++}
 +
-+    /* Next page: a word, not a button. */
-+    .nav-link form { display: inline !important; }
-+    .nav-link input[type="submit"] {
-+      all: unset !important;
-+      cursor: pointer !important;
-+      font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
-+      letter-spacing: .18em !important;
-+      text-transform: uppercase !important;
-+      color: rgba(255, 255, 255, .6) !important;
-+      margin-right: 28px !important;
-+    }
-+    .nav-link input[type="submit"]:hover { color: #fff !important; }
++/* Results: the site in small spaced capitals, the title, then the words. */
++.serp__results { all: unset !important; display: block !important; margin-top: 120px !important; }
++.results, #links { all: unset !important; display: block !important; }
++.result {
++  all: unset !important;
++  display: block !important;
++  margin: 0 0 42px !important;
++}
++.result__body {
++  display: flex !important;
++  flex-direction: column !important;
++  padding: 0 !important;
++  background: none !important;
++  border: 0 !important;
++}
++.result__extras { order: -1; margin: 0 0 8px !important; }
++.result__extras__url { display: flex !important; align-items: center !important; gap: 10px !important; }
++.result__icon, .result__icon a { display: inline-flex !important; }
++.result__icon__img {
++  width: 14px !important;
++  height: 14px !important;
++  border-radius: 3px;
++  opacity: .85;
++  filter: grayscale(.6);
++}
++.result__url {
++  font: 600 11.5px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
++  letter-spacing: .16em !important;
++  text-transform: uppercase !important;
++  color: rgba(255, 255, 255, .4) !important;
++  text-decoration: none !important;
++  white-space: nowrap;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  max-width: 100%;
++}
++.result__title { margin: 0 !important; font: inherit !important; }
++.result__a {
++  font: 500 26px/1.22 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
++  letter-spacing: -.02em !important;
++  color: #fff !important;
++  text-decoration: none !important;
++}
++.result__a:visited { color: rgba(255, 255, 255, .5) !important; }
++.result__a:hover { text-decoration: underline 1px !important; text-underline-offset: 6px !important; }
++.result__snippet {
++  display: block !important;
++  margin-top: 8px !important;
++  font-size: 16px !important;
++  line-height: 1.6 !important;
++  color: rgba(255, 255, 255, .55) !important;
++  text-decoration: none !important;
++}
++.result__snippet b { color: #fff !important; font-weight: 500 !important; }
 +
-+    @media (prefers-reduced-motion: no-preference) {
-+      .result { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
-+      .result:nth-child(2) { animation-delay: 40ms; }
-+      .result:nth-child(3) { animation-delay: 80ms; }
-+      .result:nth-child(4) { animation-delay: 120ms; }
-+      .result:nth-child(n+5) { animation-delay: 160ms; }
-+    }
-+    @keyframes vanta-result-in {
-+      from { opacity: 0; transform: translateY(8px); }
-+    }
++/* Next page: a word, not a button. */
++.nav-link form { display: inline !important; }
++.nav-link input[type="submit"] {
++  all: unset !important;
++  cursor: pointer !important;
++  font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
++  letter-spacing: .18em !important;
++  text-transform: uppercase !important;
++  color: rgba(255, 255, 255, .6) !important;
++  margin-right: 28px !important;
++}
++.nav-link input[type="submit"]:hover { color: #fff !important; }
++
++@media (prefers-reduced-motion: no-preference) {
++  .result { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
++  .result:nth-child(2) { animation-delay: 40ms; }
++  .result:nth-child(3) { animation-delay: 80ms; }
++  .result:nth-child(4) { animation-delay: 120ms; }
++  .result:nth-child(n+5) { animation-delay: 160ms; }
++}
++@keyframes vanta-result-in {
++  from { opacity: 0; transform: translateY(8px); }
++}
++
++/* The quick answer (VantaSearchChild): the first thing under the horizon,
++   set larger than a result, with no box around it. */
++.vanta-answer {
++  display: block;
++  margin: 0 0 64px;
++  max-width: 680px;
++}
++.vanta-answer-source {
++  display: block;
++  margin: 0 0 10px;
++  font: 600 11.5px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
++  letter-spacing: .16em;
++  text-transform: uppercase;
++  color: rgba(255, 255, 255, .4) !important;
++  text-decoration: none !important;
++}
++.vanta-answer-title {
++  margin: 0;
++  font: 600 34px/1.15 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif;
++  letter-spacing: -.025em;
++  color: #fff;
++}
++.vanta-answer-text {
++  margin: 14px 0 0;
++  font-size: 17px;
++  line-height: 1.6;
++  color: rgba(255, 255, 255, .72);
++}
++.vanta-answer-facts {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: 16px 40px;
++  margin: 24px 0 0;
++}
++.vanta-answer-facts dt {
++  font: 600 11px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
++  letter-spacing: .16em;
++  text-transform: uppercase;
++  color: rgba(255, 255, 255, .4);
++}
++.vanta-answer-facts dd { margin: 4px 0 0; font-size: 15px; color: #fff; }
++@media (prefers-reduced-motion: no-preference) {
++  .vanta-answer { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
++}
 +  `,
 +
 +  DDG: `
@@ -1042,6 +1128,9 @@
 +  // horizon sinks to the results page's horizon and the sun sets behind it.
 +  // Positions come from the results page's layout (RESULTS in search.js):
 +  // query at 11vh + 32px and 12vw at 56px, horizon at 94vh.
++  // From 11vh to the top of the results page's horizon, in px.
++  RESULTS_RIM: 164,
++
 +  leave(text) {
 +    let browser = gBrowser.selectedBrowser;
 +    let page = browser.getBoundingClientRect();
@@ -1052,7 +1141,15 @@
 +    set("--leave-x", page.left + page.width * 0.12 - input.left);
 +    set("--leave-y", page.top + page.height * 0.11 + 32 - input.top);
 +    this.root.style.setProperty("--leave-scale", scale);
-+    set("--leave-horizon", page.top + page.height * 0.94 - (home.top + home.height * 0.74));
++    // The horizon rises to sit under the results page's views, where that
++    // page draws it: a planet 420vw across, centred, its top 164px below
++    // 11vh (see .header::after in the results page's style).
++    let planet = this.root.querySelector(".vanta-home-planet").getBoundingClientRect();
++    let size = page.width * 4.2;
++    let s = size / planet.width;
++    set("--leave-px", page.left + page.width / 2 - (planet.left + planet.width / 2));
++    set("--leave-py", page.top + page.height * 0.11 + this.RESULTS_RIM - planet.top);
++    this.root.style.setProperty("--leave-ps", s);
 +    this.input.value = text;
 +    this.rows = [];
 +    this.list.replaceChildren();
