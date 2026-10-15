@@ -1,9 +1,10 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,1307 @@
+@@ -1258,3 +1258,1501 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
++
 +
 +
 +// Vanta: the address bar answers and acts, not only searches.
@@ -420,6 +421,7 @@
 +    if (Services.prefs.getBoolPref(this.SKIN_PREF, true)) {
 +      this.register("html.duckduckgo.com", this.RESULTS);
 +      this.register("duckduckgo.com", this.DDG);
++      this.markCurrentView();
 +      this.addViews();
 +    }
 +  },
@@ -447,13 +449,25 @@
 +  },
 +
 +  // A user style sheet for one site, shared by every window.
-+  register(domain, css) {
++  // DuckDuckGo marks the open view only with a hashed class, so the view
++  // named in the address is lit instead.
++  markCurrentView() {
++    for (let view of ["images", "videos", "news", "maps"]) {
++      this.register(
++        null,
++        `html.react #react-duckbar nav > ul:first-of-type a[href*="ia=${view}"] { color: #fff !important; }`,
++        `regexp("https://duckduckgo\\\\.com/\\\\?(.*&)?ia=${view}(&.*)?")`
++      );
++    }
++  },
++
++  register(domain, css, condition = `domain("${domain}")`) {
 +    let sss = Cc["@mozilla.org/content/style-sheet-service;1"].getService(
 +      Ci.nsIStyleSheetService
 +    );
 +    let uri = Services.io.newURI(
 +      "data:text/css;charset=utf-8," +
-+        encodeURIComponent(`@-moz-document domain("${domain}") {\n${css}\n}`)
++        encodeURIComponent(`@-moz-document ${condition} {\n${css}\n}`)
 +    );
 +    if (!sss.sheetRegistered(uri, sss.USER_SHEET)) {
 +      sss.loadAndRegisterSheet(uri, sss.USER_SHEET);
@@ -500,6 +514,34 @@
 +      "chrome://browser/content/browser-init.js"
 +    );
 +    persistence.getSearchTerm = wrap(persistence.getSearchTerm);
++    // Firefox then looks up which built-in engine made the page and stops
++    // with an error for any other engine, leaving the engine unrecorded.
++    // Record Vanta's engine for its own results page instead.
++    let { SearchService } = ChromeUtils.importESModule(
++      "moz-src:///toolkit/components/search/SearchService.sys.mjs"
++    );
++    let wrapState = Cu.evalInSandbox(
++      `((original, search, name) => function (state, uri) {
++        try {
++          return original.call(this, state, uri);
++        } catch (e) {
++          if (!state.persist?.searchTerms || uri?.host != "html.duckduckgo.com") {
++            throw e;
++          }
++          state.persist.originalEngineName = name;
++          state.persist.isDefaultEngine = search.defaultEngine?.name == name;
++          return undefined;
++        }
++      })`,
++      sandbox,
++      null,
++      "chrome://browser/content/browser-init.js"
++    );
++    persistence.setPersistenceState = wrapState(
++      persistence.setPersistenceState,
++      SearchService,
++      this.ENGINE
++    );
 +    persistence.vantaWrapped = true;
 +  },
 +
@@ -555,17 +597,18 @@
 +  all: unset !important;
 +  display: block !important;
 +}
-+.header { padding-top: 11vh !important; position: relative !important; }
++.header { padding-top: 11vh !important; }
 +/* The new tab's horizon, risen and turned upside down: the underside of a
-+   planet 800vw across, curving down under the views, its lowest point 64px
-+   below them. A search from the new tab carries its horizon up and flips it
-+   to exactly here (VantaHome.leave), so keep the two in step. Only the lit
-+   rim is drawn; inside is the page. */
-+.header::after {
++   planet 800vw across, curving down under the views, its lowest point 168px
++   below 11vh. A search from the new tab carries its horizon up and flips it
++   to exactly here (VantaHome.leave, RESULTS_RIM), so keep the two in step.
++   It hangs off the page itself, so no box of DuckDuckGo's can clip it; only
++   the lit rim is drawn. */
++html::before {
 +  content: "";
 +  position: absolute;
-+  top: calc(100% + 64px - 800vw);
-+  left: calc(38vw - 400vw);
++  top: calc(11vh + 168px - 800vw);
++  left: calc(50vw - 400vw);
 +  width: 800vw;
 +  aspect-ratio: 1;
 +  border-radius: 50%;
@@ -574,30 +617,37 @@
 +    0 8px 30px -6px rgba(170, 185, 215, .14),
 +    0 50px 140px -30px rgba(170, 185, 215, .08);
 +  pointer-events: none;
++  z-index: 0;
 +}
++/* DuckDuckGo's own boxes are see-through, so the horizon shows behind them. */
++body :not(img, input) { background-color: transparent !important; }
 +html { overflow-x: hidden; }
 +
 +/* The views, added by Vanta (VantaSearchChild): small spaced capitals, the
 +   one you're on in white. */
 +.vanta-views {
-+  display: flex;
-+  gap: 30px;
-+  margin: 22px 0 0 2px;
-+  font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
-+  letter-spacing: .18em;
-+  text-transform: uppercase;
++  display: flex !important;
++  gap: 30px !important;
++  height: 14px !important;
++  margin: 22px 0 0 2px !important;
++  padding: 0 !important;
 +}
 +.vanta-views a {
++  all: unset !important;
++  cursor: pointer !important;
++  font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
++  letter-spacing: .18em !important;
++  text-transform: uppercase !important;
 +  color: rgba(255, 255, 255, .42) !important;
-+  text-decoration: none !important;
 +}
 +.vanta-views a:hover { color: rgba(255, 255, 255, .8) !important; }
-+.vanta-views [aria-current] { color: #fff !important; }
++.vanta-views a[aria-current] { color: #fff !important; cursor: default !important; }
 +.search__input {
 +  all: unset !important;
 +  display: block !important;
 +  width: 100% !important;
-+  font: 650 56px/1.1 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
++  font: 650 56px/68px "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
++  height: 68px !important;
 +  letter-spacing: -.035em !important;
 +  color: #fff !important;
 +  caret-color: #fff !important;
@@ -765,7 +815,7 @@
 +    }
 +    [data-testid="search-form-input-wrapper"] button { opacity: .35 !important; }
 +    [data-testid="search-form-input-wrapper"] button:hover { opacity: .8 !important; }
-+    #react-search-form #search_form_input {
++    #search_form_input {
 +      font: 650 44px/1.15 "Inter Display", -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif !important;
 +      letter-spacing: -.035em !important;
 +      color: #fff !important;
@@ -773,7 +823,7 @@
 +      padding: 0 !important;
 +      text-rendering: geometricPrecision;
 +    }
-+    #react-search-form #search_form_input::placeholder { color: rgba(255,255,255,.17) !important; }
++    #search_form_input::placeholder { color: rgba(255,255,255,.17) !important; }
 +    #header-hamburger-menu-btn { opacity: .45 !important; }
 +
 +    /* Tabs and filters: the small spaced capitals of the new tab's date line. */
@@ -890,6 +940,150 @@
 +    :is(#react-duckbar, nav:has([data-testid="date-filter-trigger"]))::before,
 +    :is(#react-duckbar, nav:has([data-testid="date-filter-trigger"]))::after {
 +      display: none !important;
++    }
++
++    /* The view pages (images, videos, news, maps) wear the results page's
++       header: the query large at the same spot, the views as spaced capitals,
++       and the same upturned horizon under them. */
++    html.react, html.react body, .site-wrapper, #web_content_wrapper, #react-layout {
++      background-color: #000 !important;
++    }
++    html.react { overflow-x: hidden; }
++    html.react:not(.react-expanded-map)::before {
++      content: "";
++      position: absolute;
++      top: calc(11vh + 168px - 800vw);
++      left: calc(50vw - 400vw);
++      width: 800vw;
++      aspect-ratio: 1;
++      border-radius: 50%;
++      box-shadow: 0 1px 0 rgba(170,185,215,.4),
++                  0 8px 30px -6px rgba(170,185,215,.14),
++                  0 50px 140px -30px rgba(170,185,215,.08);
++      pointer-events: none;
++      z-index: 0;
++    }
++    html.react:not(.react-expanded-map) body > * { position: relative; z-index: 1; }
++    html.react:not(.react-expanded-map) :is(.site-wrapper, #header_wrapper, #header,
++      #react-duckbar, #web_content_wrapper, #react-layout, #vertical_wrapper) {
++      background-color: transparent !important;
++    }
++    html.react #header_wrapper { padding-top: 11vh !important; position: relative !important; }
++    html.react #header { max-width: none !important; padding: 0 !important; margin: 0 !important; }
++    html.react #header-non-nav { padding: 0 !important; margin: 0 !important; }
++    html.react .header--aside, html.react #header-logo-wrapper,
++    html.react [data-testid="search-form-input-wrapper"] button,
++    html.react #react-duckbar nav > ul:not(:first-of-type),
++    html.react #react-duckbar nav > ul:first-of-type > li:nth-child(n+6),
++    html.react #react-duckbar svg {
++      display: none !important;
++    }
++    html.react :is(.header__search-wrap, .header__content, #react-search-form, #search_form) {
++      margin: 0 !important;
++      padding: 0 !important;
++      max-width: none !important;
++      width: auto !important;
++    }
++    html.react #header_wrapper .header__search-wrap { padding-left: 12vw !important; }
++    html.react #search_form_input {
++      font: 650 56px/68px "Inter Display", -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif !important;
++      height: 68px !important;
++      letter-spacing: -.035em !important;
++      width: min(760px, 62vw) !important;
++    }
++    html.react #react-duckbar { margin: 22px 0 0 calc(12vw + 2px) !important; padding: 0 !important; height: 14px !important; min-height: 0 !important; }
++    html.react #react-duckbar :is(div, section, nav) {
++      margin: 0 !important; padding: 0 !important; max-width: none !important;
++      min-height: 0 !important; height: auto !important; border: 0 !important;
++    }
++    html.react #react-duckbar nav::before, html.react #react-duckbar nav::after,
++    html.react #react-duckbar a::before, html.react #react-duckbar a::after,
++    html.react #header_wrapper::after { display: none !important; }
++    html.react #react-duckbar nav > ul:first-of-type { display: flex !important; gap: 30px !important; margin: 0 !important; padding: 0 !important; }
++    html.react #react-duckbar nav > ul:first-of-type > li { margin: 0 !important; padding: 0 !important; }
++    html.react #react-duckbar nav > ul:first-of-type a {
++      all: unset !important;
++      cursor: pointer !important;
++      font: 600 12px/14px system-ui, -apple-system, sans-serif !important;
++      letter-spacing: .18em !important;
++      text-transform: uppercase !important;
++      color: rgba(255,255,255,.42) !important;
++    }
++    html.react #react-duckbar nav > ul:first-of-type a :not(svg, svg *) {
++      all: unset !important;
++    }
++    html.react #react-duckbar nav > ul:first-of-type a:hover { color: rgba(255,255,255,.8) !important; }
++
++    /* Everything under the horizon. */
++    html.react:not(.react-expanded-map) #web_content_wrapper { padding-top: 150px !important; }
++    html.react [data-testid="zci-images"] > nav,
++    html.react [data-testid="zci-videos"] > nav {
++      padding-left: 12vw !important;
++      margin-bottom: 22px !important;
++      background: none !important;
++      border: 0 !important;
++    }
++    html.react [data-testid="zci-images"] > nav :is(button, span, strong, a),
++    html.react [data-testid="zci-videos"] > nav :is(button, span, strong, a) {
++      font: 600 11px/14px system-ui, -apple-system, sans-serif !important;
++      letter-spacing: .16em !important;
++      text-transform: uppercase !important;
++      color: rgba(255,255,255,.38) !important;
++      background: none !important;
++      border-color: transparent !important;
++      box-shadow: none !important;
++    }
++    html.react [data-testid="zci-images"] > nav svg,
++    html.react [data-testid="zci-videos"] > nav svg { display: inline !important; opacity: .5; }
++    html.react :is([data-testid="zci-images"], [data-testid="zci-videos"]) > div {
++      padding: 0 4vw 0 12vw !important;
++      background: none !important;
++    }
++    html.react [data-testid="zci-images"] *,
++    html.react [data-testid="zci-videos"] * {
++      background-color: transparent !important;
++      box-shadow: none !important;
++      border-color: transparent !important;
++    }
++    html.react [data-testid="zci-images"] img,
++    html.react [data-testid="zci-videos"] img { border-radius: 10px !important; }
++    html.react [data-testid="zci-videos"] article > :first-child,
++    html.react [data-testid="zci-images"] figure > :first-child { border-radius: 10px !important; overflow: hidden !important; }
++    html.react :is([data-testid="zci-images"] figure, [data-testid="zci-videos"] article) :is(h2, h3, p, span, a, figcaption) {
++      font-family: system-ui, -apple-system, sans-serif !important;
++      color: rgba(255,255,255,.6) !important;
++    }
++    html.react [data-testid="zci-videos"] article h2,
++    html.react [data-testid="zci-videos"] article h3 {
++      color: #fff !important;
++      font-weight: 500 !important;
++    }
++    html.react [data-testid="news-vertical"] { background: none !important; }
++    html.react [data-testid="news-vertical"] * { background-color: transparent !important; }
++
++    /* Maps: the map stays full size; the list beside it goes black. */
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"],
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] * {
++      background-color: #000 !important;
++      border-color: rgba(255,255,255,.07) !important;
++      box-shadow: none !important;
++    }
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] form,
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] form * {
++      background-color: transparent !important;
++      border-color: transparent !important;
++    }
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] form input {
++      font: 650 24px/32px "Inter Display", -apple-system, "SF Pro Display", sans-serif !important;
++      letter-spacing: -.02em !important;
++      color: #fff !important;
++    }
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] a,
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] a * { color: rgba(255,255,255,.8) !important; }
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] h2,
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] h3 {
++      font: 500 17px/1.3 "Inter Display", -apple-system, sans-serif !important;
++      color: #fff !important;
 +    }
 +  `,
 +};
