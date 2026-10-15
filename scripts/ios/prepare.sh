@@ -45,7 +45,11 @@ if [ ! -x "$MACRO/plugin/ModifiedCopyMacros-tool" ]; then
   git -C "$MACRO/src" checkout -q d020bf8c6432d0c6aa8428b5ca1c3225a0545b3b
   swift build --package-path "$MACRO/src" -c release -j 2 --product ModifiedCopyClient
   mkdir -p "$MACRO/plugin"
-  cp "$(find "$MACRO/src/.build" -type f -perm -u+x -name 'ModifiedCopyMacros-tool' | head -1)" "$MACRO/plugin/"
+  # SwiftPM names the macro executable ModifiedCopyMacros-tool or, in newer
+  # versions, ModifiedCopyMacros.
+  TOOL=$(find "$MACRO/src/.build" -type f -perm -u+x \( -name 'ModifiedCopyMacros-tool' -o -name 'ModifiedCopyMacros' \) | head -1)
+  [ -n "$TOOL" ] || { echo "No ModifiedCopyMacros executable in $MACRO/src/.build"; exit 1; }
+  cp "$TOOL" "$MACRO/plugin/ModifiedCopyMacros-tool"
   rm -rf "$MACRO/src"
 fi
 
