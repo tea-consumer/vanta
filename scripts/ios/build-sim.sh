@@ -17,10 +17,19 @@ DERIVED="$DEST/DerivedData"
 mkdir -p "$OUT"
 cd "$DEST/firefox-ios"
 
-# Newer Xcode than Mozilla's CI: scan modules the implicit way, or the macro
-# packages' targets can't find SwiftSyntax.
+# One simulator, reused on every run (booted after the build).
+UDID=$(xcrun simctl list devices available | grep -F "$DEVICE_NAME (" | head -1 | grep -oE '[0-9A-F-]{36}' || true)
+if [ -z "$UDID" ]; then
+  TYPE=$(xcrun simctl list devicetypes | grep -E '^iPhone [0-9]+ Pro \(' | tail -1 | grep -oE 'com\.apple[^)]+')
+  RUNTIME=$(xcrun simctl list runtimes available | grep -E '^iOS' | tail -1 | grep -oE 'com\.apple[^ ]+$')
+  UDID=$(xcrun simctl create "$DEVICE_NAME" "$TYPE" "$RUNTIME")
+fi
+
+# Build for that simulator. No -sdk: it would force the macro packages (which
+# run on the Mac at compile time) to build for iOS too, and Xcode 27 then
+# can't find SwiftSyntax for them. Modules are scanned the implicit way.
 xcodebuild -project Client.xcodeproj -scheme Fennec \
-  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  -destination "platform=iOS Simulator,id=$UDID" \
   -derivedDataPath "$DERIVED" -jobs "$JOBS" -skipMacroValidation \
   SWIFT_ENABLE_EXPLICIT_MODULES=NO \
   COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= \
@@ -31,13 +40,7 @@ grep -E 'error:|\*\* BUILD' "$(dirname "$DEST")/build.log" | sort -u || true
 APP=$(find "$DERIVED/Build/Products" -maxdepth 2 -name 'Client.app' -path '*iphonesimulator*' | head -1)
 [ -n "$APP" ] || { echo "Build failed: no Client.app"; exit 1; }
 
-# One simulator, reused on every run.
-UDID=$(xcrun simctl list devices available | grep -F "$DEVICE_NAME (" | head -1 | grep -oE '[0-9A-F-]{36}' || true)
-if [ -z "$UDID" ]; then
-  TYPE=$(xcrun simctl list devicetypes | grep -E '^iPhone [0-9]+ Pro \(' | tail -1 | grep -oE 'com\.apple[^)]+')
-  RUNTIME=$(xcrun simctl list runtimes available | grep -E '^iOS' | tail -1 | grep -oE 'com\.apple[^ ]+$')
-  UDID=$(xcrun simctl create "$DEVICE_NAME" "$TYPE" "$RUNTIME")
-fi
+# Boot only now, so the simulator doesn't hold RAM during the build.
 xcrun simctl boot "$UDID" 2>/dev/null || true
 xcrun simctl bootstatus "$UDID" -b >/dev/null
 xcrun simctl ui "$UDID" appearance dark
