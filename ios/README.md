@@ -14,6 +14,7 @@ What the patches change:
 | `0002-vanta-defaults` | First launch: no usage data, crash reports or studies sent to Mozilla; ad blocking on; no sponsored or trending suggestions; no Firefox onboarding or Mozilla Terms of Use prompt; DuckDuckGo is the default search engine. |
 | `0003-vanta-new-tab` | The new tab from desktop Vanta: date and tonight's moon over a large search line, above a planet's horizon lit by the sun for the time of day; one sunrise on arrival, none with Reduce Motion. Tapping it opens the address bar. |
 | `0004-vanta-name` | The app is called Vanta. |
+| `0005-xcode27-modifiedcopy-link` | Build fix: drops a second, package-less link to the `ModifiedCopy` macro library, which makes Xcode 27 build the macro for iOS instead of the Mac. |
 
 The icon is `branding/src/ios.svg` rendered to `ios/branding/AppIcon.png`
 (full-bleed; iOS rounds the corners).

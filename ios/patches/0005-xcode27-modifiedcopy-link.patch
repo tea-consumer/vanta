@@ -1,0 +1,31 @@
+diff --git a/firefox-ios/Client.xcodeproj/project.pbxproj b/firefox-ios/Client.xcodeproj/project.pbxproj
+index 269f3bb6..1176ca9e 100644
+--- a/firefox-ios/Client.xcodeproj/project.pbxproj
++++ b/firefox-ios/Client.xcodeproj/project.pbxproj
+@@ -2339,7 +2339,6 @@
+ 		EDC3C2562CCAC9CB005A047F /* SearchEnginesManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDC3C2552CCAC9CB005A047F /* SearchEnginesManager.swift */; };
+ 		EDC3D34F2CB5E70500C62DE3 /* SearchEngineTestAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EDC3D34E2CB5E70500C62DE3 /* SearchEngineTestAssets.xcassets */; };
+ 		EDC3D3552CB70A3F00C62DE3 /* OpenSearchEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDC3D3542CB70A3F00C62DE3 /* OpenSearchEngineTests.swift */; };
+-		EDD09DC12FCF6AB20038C8FA /* ModifiedCopy in Frameworks */ = {isa = PBXBuildFile; productRef = EDD09DC02FCF6AB20038C8FA /* ModifiedCopy */; };
+ 		EDD21F2E2CAEFB8F00AF7D1F /* SearchEngineSelectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD21F2D2CAEFB8F00AF7D1F /* SearchEngineSelectionViewController.swift */; };
+ 		EDD2A7F82CDACE7C00ED464C /* UnifiedSearchKit in Frameworks */ = {isa = PBXBuildFile; productRef = EDD2A7F72CDACE7C00ED464C /* UnifiedSearchKit */; };
+ 		EDD2A7FA2CDBD1D100ED464C /* SearchEngineElement+initFromSearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD2A7F92CDBD1D000ED464C /* SearchEngineElement+initFromSearchEngine.swift */; };
+@@ -12637,7 +12636,6 @@
+ 				216A0D762A40E7AB008077BA /* Redux in Frameworks */,
+ 				0B6D1C882E15456F00919F1E /* SummarizeKit in Frameworks */,
+ 				7B8A47F61D01D3B400C07734 /* PassKit.framework in Frameworks */,
+-				EDD09DC12FCF6AB20038C8FA /* ModifiedCopy in Frameworks */,
+ 			);
+ 			runOnlyForDeploymentPostprocessing = 0;
+ 		};
+@@ -33902,10 +33900,6 @@
+ 			package = 5A37861729A2C337006B3A34 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+ 			productName = "Sentry-Dynamic";
+ 		};
+-		EDD09DC02FCF6AB20038C8FA /* ModifiedCopy */ = {
+-			isa = XCSwiftPackageProductDependency;
+-			productName = ModifiedCopy;
+-		};
+ 		EDD2A7F72CDACE7C00ED464C /* UnifiedSearchKit */ = {
+ 			isa = XCSwiftPackageProductDependency;
+ 			productName = UnifiedSearchKit;
