@@ -743,6 +743,9 @@ sidebar-main,
   color: var(--vanta-on-accent) !important;
 }
 
+
+
+
 /* ----- Address bar results ------------------------------------------------ */
 
 /* One column of light under the bar. Rows are not plates: the chosen row is
@@ -1129,4 +1132,43 @@ sidebar-main,
 }
 @keyframes vanta-appear {
   from { transform: translateY(10px); opacity: 0; }
+}
+
+/* Leaving for the results page: the date and suggestions fade, the search
+   glides up to where the results page sets it, the horizon sinks to the
+   results page's horizon and the sun sets. Then the home fades and the
+   results page is underneath, in the same places. */
+#vanta-home[leaving] {
+  .vanta-home-date, .vanta-home-suggestions { opacity: 0; }
+  .vanta-home-input {
+    transform: translate(var(--leave-x), var(--leave-y)) scale(var(--leave-scale));
+    /* Plain white like the results page. Text clipped from a background
+       drops out while it moves, so the words are drawn as ordinary text. */
+    color: #fff !important;
+    background: none !important;
+  }
+  .vanta-home-planet {
+    transform: translateY(var(--leave-horizon));
+    box-shadow:
+      0 -1px 0 rgba(170, 185, 215, .4),
+      0 -8px 30px -6px rgba(170, 185, 215, .14),
+      0 -50px 140px -30px rgba(170, 185, 215, .08);
+  }
+  .vanta-home-sun {
+    transform: translateY(calc(var(--leave-horizon) + 40px)) scale(calc(var(--sun-size) * .5));
+    opacity: 0;
+  }
+}
+#vanta-home[gone] { opacity: 0; }
+/* The cover that hides the page under the home would show through the fade. */
+:root[vanta-home] #tabbrowser-tabbox:has(#vanta-home[leaving])::before { display: none !important; }
+.vanta-home-input { transform-origin: 0 0; }
+@media (prefers-reduced-motion: no-preference) {
+  #vanta-home[leaving] {
+    .vanta-home-date, .vanta-home-suggestions { transition: opacity 180ms ease; }
+    .vanta-home-input { transition: transform 720ms cubic-bezier(.2, .8, .2, 1); }
+    .vanta-home-planet { transition: transform 900ms cubic-bezier(.3, .7, .2, 1), box-shadow 900ms ease; }
+    .vanta-home-sun { transition: transform 800ms cubic-bezier(.4, 0, .6, 1), opacity 600ms ease; }
+  }
+  #vanta-home[gone] { transition: opacity 260ms ease; }
 }

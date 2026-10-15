@@ -1,6 +1,6 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,1132 @@
+@@ -1258,3 +1258,1217 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
@@ -519,8 +519,8 @@
 +      max-width: 760px !important;
 +    }
 +
-+    /* The horizon from the new tab, low and dim, so the page reads as the same
-+       place a little later in the evening. */
++    /* The new tab's horizon, sunk low: a search from the new tab glides its
++       horizon down to exactly here (VantaHome.leave), so keep the two in step. */
 +    html::before {
 +      content: "";
 +      position: fixed;
@@ -640,18 +640,11 @@
 +    .nav-link input[type="submit"]:hover { color: #fff !important; }
 +
 +    @media (prefers-reduced-motion: no-preference) {
-+      /* The horizon rises into place as the results arrive, like the new
-+         tab's sunrise, then stays still. */
-+      html::before { animation: vanta-horizon-rise 1800ms cubic-bezier(.16, 1, .3, 1) both; }
 +      .result { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
 +      .result:nth-child(2) { animation-delay: 40ms; }
 +      .result:nth-child(3) { animation-delay: 80ms; }
 +      .result:nth-child(4) { animation-delay: 120ms; }
 +      .result:nth-child(n+5) { animation-delay: 160ms; }
-+    }
-+    @keyframes vanta-horizon-rise {
-+      from { transform: translateY(28vh); opacity: 0; }
-+      40% { opacity: 1; }
 +    }
 +    @keyframes vanta-result-in {
 +      from { opacity: 0; transform: translateY(8px); }
@@ -895,6 +888,14 @@
 +    );
 +  },
 +
++  onStateChange(browser, webProgress, request, flags) {
++    let done = Ci.nsIWebProgressListener.STATE_STOP | Ci.nsIWebProgressListener.STATE_IS_WINDOW;
++    if (browser == this.leaving && webProgress.isTopLevel && (flags & done) == done) {
++      this.leaveLoaded = !this.isHome(browser);
++      this.update();
++    }
++  },
++
 +  onLocationChange(browser, webProgress) {
 +    if (webProgress.isTopLevel && browser == gBrowser.selectedBrowser) {
 +      this.update();
@@ -902,6 +903,27 @@
 +  },
 +
 +  update() {
++    if (this.leaving) {
++      // A search from here is on its way to the results page: the home
++      // stays over it until that page has drawn, then fades.
++      if (this.leaving != gBrowser.selectedBrowser) {
++        this.finishLeave(true);
++      } else if (!this.isHome(this.leaving)) {
++        let results = /^https:\/\/html\.duckduckgo\.com\//.test(this.leaving.currentURI.spec);
++        // The address changes before the page draws; wait for it to load
++        // (onStateChange calls back here), or the fade shows a blank page.
++        if (results && !this.leaveLoaded) {
++          return;
++        }
++        clearTimeout(this.leaveTimer);
++        // Let the glide finish before the results page shows through.
++        let wait = results ? Math.max(320, this.leaveStart + 950 - Date.now()) : 0;
++        this.leaveTimer = setTimeout(() => this.finishLeave(), wait);
++        return;
++      } else {
++        return;
++      }
++    }
 +    let home = this.isHome(gBrowser.selectedBrowser);
 +    let was = document.documentElement.hasAttribute("vanta-home");
 +    document.documentElement.toggleAttribute("vanta-home", home);
@@ -990,14 +1012,77 @@
 +  },
 +
 +  // Enter goes where the address bar would: a site, or your search engine.
++  // A search glides into the results page (see leave()).
 +  go(row, event) {
 +    if (row?.url) {
 +      openTrustedLinkIn(row.url, "current");
 +      return;
 +    }
-+    gURLBar.value = row?.text ?? this.input.value.trim();
++    let text = row?.text ?? this.input.value.trim();
++    if (text && this.isSearch(text)) {
++      this.leave(text);
++    }
++    gURLBar.value = text;
 +    gURLBar.valueIsTyped = true;
 +    gURLBar.handleNavigation({ event });
++  },
++
++  isSearch(text) {
++    try {
++      return !!Services.uriFixup.getFixupURIInfo(
++        text,
++        Ci.nsIURIFixup.FIXUP_FLAG_ALLOW_KEYWORD_LOOKUP
++      ).keywordAsSent;
++    } catch (e) {
++      return false;
++    }
++  },
++
++  // The search glides to where the results page sets it, smaller, while the
++  // horizon sinks to the results page's horizon and the sun sets behind it.
++  // Positions come from the results page's layout (RESULTS in search.js):
++  // query at 11vh + 32px and 12vw at 56px, horizon at 94vh.
++  leave(text) {
++    let browser = gBrowser.selectedBrowser;
++    let page = browser.getBoundingClientRect();
++    let home = this.root.getBoundingClientRect();
++    let input = this.input.getBoundingClientRect();
++    let scale = 56 / 68;
++    let set = (name, px) => this.root.style.setProperty(name, px + "px");
++    set("--leave-x", page.left + page.width * 0.12 - input.left);
++    set("--leave-y", page.top + page.height * 0.11 + 32 - input.top);
++    this.root.style.setProperty("--leave-scale", scale);
++    set("--leave-horizon", page.top + page.height * 0.94 - (home.top + home.height * 0.74));
++    this.input.value = text;
++    this.rows = [];
++    this.list.replaceChildren();
++    // End the arrival animation first, so the horizon transitions from
++    // where it rests rather than jumping.
++    this.root.removeAttribute("dawn");
++    getComputedStyle(this.root.querySelector(".vanta-home-planet")).transform;
++    this.root.setAttribute("leaving", "");
++    this.leaveStart = Date.now();
++    this.leaveLoaded = false;
++    this.leaving = browser;
++    clearTimeout(this.leaveTimer);
++    // If the page never arrives, don't hold the home over it.
++    this.leaveTimer = setTimeout(() => this.finishLeave(), 6000);
++  },
++
++  finishLeave(now) {
++    clearTimeout(this.leaveTimer);
++    let done = () => {
++      this.leaving = null;
++      this.root.removeAttribute("leaving");
++      this.root.removeAttribute("gone");
++      this.update();
++    };
++    if (now || !this.root.hasAttribute("leaving")) {
++      done();
++      return;
++    }
++    this.root.setAttribute("gone", "");
++    setTimeout(done, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 280);
 +  },
 +
 +  select() {
