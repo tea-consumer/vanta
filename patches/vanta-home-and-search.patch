@@ -1,6 +1,6 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,1314 @@
+@@ -1258,3 +1258,1307 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
@@ -556,22 +556,23 @@
 +  display: block !important;
 +}
 +.header { padding-top: 11vh !important; position: relative !important; }
-+/* The new tab's horizon, risen to sit under the views (All, Images, ...):
-+   the curve of a planet 420vw across, its top 28px below the views. A search
-+   from the new tab carries its horizon up to exactly here (VantaHome.leave),
-+   so keep the two in step. Only the lit rim is drawn; inside is the page. */
++/* The new tab's horizon, risen and turned upside down: the underside of a
++   planet 800vw across, curving down under the views, its lowest point 64px
++   below them. A search from the new tab carries its horizon up and flips it
++   to exactly here (VantaHome.leave), so keep the two in step. Only the lit
++   rim is drawn; inside is the page. */
 +.header::after {
 +  content: "";
 +  position: absolute;
-+  top: calc(100% + 28px);
-+  left: calc(38vw - 210vw);
-+  width: 420vw;
++  top: calc(100% + 64px - 800vw);
++  left: calc(38vw - 400vw);
++  width: 800vw;
 +  aspect-ratio: 1;
 +  border-radius: 50%;
 +  box-shadow:
-+    0 -1px 0 rgba(170, 185, 215, .4),
-+    0 -8px 30px -6px rgba(170, 185, 215, .14),
-+    0 -50px 140px -30px rgba(170, 185, 215, .08);
++    0 1px 0 rgba(170, 185, 215, .4),
++    0 8px 30px -6px rgba(170, 185, 215, .14),
++    0 50px 140px -30px rgba(170, 185, 215, .08);
 +  pointer-events: none;
 +}
 +html { overflow-x: hidden; }
@@ -592,15 +593,6 @@
 +}
 +.vanta-views a:hover { color: rgba(255, 255, 255, .8) !important; }
 +.vanta-views [aria-current] { color: #fff !important; }
-+.header::before {
-+  content: "DuckDuckGo · private";
-+  display: block;
-+  margin: 0 0 18px 2px;
-+  font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
-+  letter-spacing: .18em;
-+  text-transform: uppercase;
-+  color: rgba(255, 255, 255, .45);
-+}
 +.search__input {
 +  all: unset !important;
 +  display: block !important;
@@ -613,7 +605,7 @@
 +}
 +
 +/* Results: the site in small spaced capitals, the title, then the words. */
-+.serp__results { all: unset !important; display: block !important; margin-top: 120px !important; }
++.serp__results { all: unset !important; display: block !important; margin-top: 150px !important; }
 +.results, #links { all: unset !important; display: block !important; }
 +.result {
 +  all: unset !important;
@@ -1125,11 +1117,11 @@
 +  },
 +
 +  // The search glides to where the results page sets it, smaller, while the
-+  // horizon sinks to the results page's horizon and the sun sets behind it.
-+  // Positions come from the results page's layout (RESULTS in search.js):
-+  // query at 11vh + 32px and 12vw at 56px, horizon at 94vh.
-+  // From 11vh to the top of the results page's horizon, in px.
-+  RESULTS_RIM: 164,
++  // horizon rises and turns over to curve under the results page's views and
++  // the sun sets. Positions come from the results page's layout (RESULTS in
++  // search.js): query at 11vh and 12vw at 56px, and the horizon's lowest
++  // point RESULTS_RIM px below 11vh.
++  RESULTS_RIM: 168,
 +
 +  leave(text) {
 +    let browser = gBrowser.selectedBrowser;
@@ -1139,13 +1131,14 @@
 +    let scale = 56 / 68;
 +    let set = (name, px) => this.root.style.setProperty(name, px + "px");
 +    set("--leave-x", page.left + page.width * 0.12 - input.left);
-+    set("--leave-y", page.top + page.height * 0.11 + 32 - input.top);
++    set("--leave-y", page.top + page.height * 0.11 - input.top);
 +    this.root.style.setProperty("--leave-scale", scale);
-+    // The horizon rises to sit under the results page's views, where that
-+    // page draws it: a planet 420vw across, centred, its top 164px below
-+    // 11vh (see .header::after in the results page's style).
++    // The horizon rises and turns upside down to curve under the results
++    // page's views, where that page draws it: the underside of a planet
++    // 800vw across, centred, its lowest point RESULTS_RIM below 11vh (see
++    // .header::after in the results page's style).
 +    let planet = this.root.querySelector(".vanta-home-planet").getBoundingClientRect();
-+    let size = page.width * 4.2;
++    let size = page.width * 8;
 +    let s = size / planet.width;
 +    set("--leave-px", page.left + page.width / 2 - (planet.left + planet.width / 2));
 +    set("--leave-py", page.top + page.height * 0.11 + this.RESULTS_RIM - planet.top);

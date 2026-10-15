@@ -748,6 +748,7 @@ sidebar-main,
 
 
 
+
 /* ----- Address bar results ------------------------------------------------ */
 
 /* One column of light under the bar. Rows are not plates: the chosen row is
@@ -1149,11 +1150,13 @@ sidebar-main,
     color: #fff !important;
     background: none !important;
   }
-  /* The planet is scaled to the results page's size about its top, so its
-     shadows are drawn 1/scale larger to end up the size that page draws. */
+  /* The planet turns over about the top of its curve: scaling it to minus
+     its height flattens the horizon to a line and bends it the other way.
+     Its shadows turn with it, and are drawn 1/scale larger to end up the
+     size the results page draws. */
   .vanta-home-planet {
     transform-origin: 50% 0;
-    transform: translate(var(--leave-px), var(--leave-py)) scale(var(--leave-ps));
+    transform: translate(var(--leave-px), var(--leave-py)) scale(var(--leave-ps), calc(var(--leave-ps) * -1));
     box-shadow:
       0 calc(-1px / var(--leave-ps)) 0 rgba(170, 185, 215, .4),
       0 calc(-8px / var(--leave-ps)) calc(30px / var(--leave-ps)) calc(-6px / var(--leave-ps)) rgba(170, 185, 215, .14),
