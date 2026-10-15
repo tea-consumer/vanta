@@ -25,13 +25,15 @@ if [ -z "$UDID" ]; then
   UDID=$(xcrun simctl create "$DEVICE_NAME" "$TYPE" "$RUNTIME")
 fi
 
-# Build for that simulator. No -sdk: it would force the macro packages (which
-# run on the Mac at compile time) to build for iOS too, and Xcode 27 then
-# can't find SwiftSyntax for them. Modules are scanned the implicit way.
-xcodebuild -project Client.xcodeproj -scheme Fennec \
+# Build for that simulator the way Mozilla's Xcode 27 CI does (Debug, active
+# arch only), without -sdk: it would also force the macro packages, which run
+# on the Mac at compile time, to build for iOS.
+xcodebuild -resolvePackageDependencies -onlyUsePackageVersionsFromResolvedFile \
+  -project Client.xcodeproj -scheme Fennec -derivedDataPath "$DERIVED" >/dev/null
+xcodebuild -project Client.xcodeproj -scheme Fennec -configuration Debug \
   -destination "platform=iOS Simulator,id=$UDID" \
   -derivedDataPath "$DERIVED" -jobs "$JOBS" -skipMacroValidation \
-  SWIFT_ENABLE_EXPLICIT_MODULES=NO \
+  ONLY_ACTIVE_ARCH=YES \
   COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= \
   build >"$(dirname "$DEST")/build.log" 2>&1 && BUILT=1 || BUILT=0
 grep -E 'error:|\*\* BUILD' "$(dirname "$DEST")/build.log" | sort -u || true
