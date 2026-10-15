@@ -1,0 +1,18 @@
+diff --git a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
+index 216cfb1f..68b78ae1 100644
+--- a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
++++ b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
+@@ -240,7 +240,12 @@ class BrowserViewController: UIViewController,
+ 
+     private lazy var effect: some UIVisualEffect = {
+         if #available(iOS 26, *), !DeviceInfo.isRunningLiquidGlassEarlyBeta {
+-            return UIGlassEffect(style: .regular)
++            let glass = UIGlassEffect(style: .regular)
++            // Vanta: the toolbars stay true black in the dark theme.
++            if self.currentTheme().type.getInterfaceStyle() == .dark {
++                glass.tintColor = .black
++            }
++            return glass
+         } else {
+             return UIBlurEffect(style: .systemUltraThinMaterial)
+         }

@@ -1,5 +1,5 @@
 diff --git a/firefox-ios/Client/Frontend/Home/Homepage/HomepageViewController.swift b/firefox-ios/Client/Frontend/Home/Homepage/HomepageViewController.swift
-index d956b9b..48da1fb 100644
+index d956b9ba..dbd40a28 100644
 --- a/firefox-ios/Client/Frontend/Home/Homepage/HomepageViewController.swift
 +++ b/firefox-ios/Client/Frontend/Home/Homepage/HomepageViewController.swift
 @@ -51,6 +51,12 @@ final class HomepageViewController: UIViewController,
@@ -144,13 +144,13 @@ index d956b9b..48da1fb 100644
 +        searchLabel.isAccessibilityElement = true
 +        searchLabel.accessibilityTraits = .searchField
 +
-+        let dateRow = UIStackView(arrangedSubviews: [moon, dateLabel])
++        let dateRow = UIStackView(arrangedSubviews: [moon, dateLabel, UIView()])
 +        dateRow.axis = .horizontal
 +        dateRow.alignment = .center
 +        dateRow.spacing = 10
 +        let column = UIStackView(arrangedSubviews: [dateRow, searchLabel])
 +        column.axis = .vertical
-+        column.alignment = .leading
++        column.alignment = .fill
 +        column.spacing = 18
 +        column.translatesAutoresizingMaskIntoConstraints = false
 +        content.translatesAutoresizingMaskIntoConstraints = false
@@ -162,7 +162,7 @@ index d956b9b..48da1fb 100644
 +            content.trailingAnchor.constraint(equalTo: trailingAnchor),
 +            content.bottomAnchor.constraint(equalTo: bottomAnchor),
 +            column.leadingAnchor.constraint(equalTo: content.readableContentGuide.leadingAnchor, constant: 12),
-+            column.trailingAnchor.constraint(lessThanOrEqualTo: content.readableContentGuide.trailingAnchor),
++            column.trailingAnchor.constraint(equalTo: content.readableContentGuide.trailingAnchor),
 +            column.topAnchor.constraint(equalTo: content.safeAreaLayoutGuide.topAnchor, constant: 72),
 +            moon.widthAnchor.constraint(equalToConstant: 14),
 +            moon.heightAnchor.constraint(equalToConstant: 14),

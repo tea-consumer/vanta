@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Vanta for iOS: build for the iOS Simulator, install it in one simulator and
-# take screenshots of the new tab and a page. No signing, nothing touches a
+# take a screenshot of the new tab. No signing, nothing touches a
 # phone. Run scripts/ios/prepare.sh first.
 #
 #   scripts/ios/build-sim.sh [work-dir] [out-dir]
@@ -53,9 +53,8 @@ BUNDLE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist
 xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
 xcrun simctl install "$UDID" "$APP"
 xcrun simctl launch "$UDID" "$BUNDLE" >/dev/null
-sleep 8
+# The first launch sets up the profile before anything is drawn.
+sleep 25
+rm -f "$OUT/2-page.png"
 xcrun simctl io "$UDID" screenshot "$OUT/1-new-tab.png"
-xcrun simctl openurl "$UDID" "fennec://open-url?url=https%3A%2F%2Fduckduckgo.com%2F%3Fq%3Dsolar%2Beclipse"
-sleep 8
-xcrun simctl io "$UDID" screenshot "$OUT/2-page.png"
 echo "Screenshots in $OUT"
