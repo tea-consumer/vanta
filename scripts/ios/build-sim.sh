@@ -26,7 +26,9 @@ xcodebuild -project Client.xcodeproj -scheme Fennec \
   -IDEPackageEnablePrebuilts NO \
   SWIFT_ENABLE_EXPLICIT_MODULES=NO \
   COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= \
-  build 2>&1 | tee "$(dirname "$DEST")/build.log" | grep -E 'error:|\*\* BUILD' || true
+  build >"$(dirname "$DEST")/build.log" 2>&1 && BUILT=1 || BUILT=0
+grep -E 'error:|\*\* BUILD' "$(dirname "$DEST")/build.log" | sort -u || true
+[ "$BUILT" = 1 ] || { echo "Build failed, see $(dirname "$DEST")/build.log"; exit 1; }
 
 APP=$(find "$DERIVED/Build/Products" -maxdepth 2 -name 'Client.app' -path '*iphonesimulator*' | head -1)
 [ -n "$APP" ] || { echo "Build failed: no Client.app"; exit 1; }
