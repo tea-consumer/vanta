@@ -1,0 +1,24 @@
+diff --git a/firefox-ios/Client/Frontend/Microsurvey/MicrosurveySurfaceManager.swift b/firefox-ios/Client/Frontend/Microsurvey/MicrosurveySurfaceManager.swift
+index 2496ef65..99226103 100644
+--- a/firefox-ios/Client/Frontend/Microsurvey/MicrosurveySurfaceManager.swift
++++ b/firefox-ios/Client/Frontend/Microsurvey/MicrosurveySurfaceManager.swift
+@@ -32,6 +32,7 @@ class MicrosurveySurfaceManager: MicrosurveyManager {
+     /// Checks whether a message exists, and is not expired, and attempts to
+     /// build a `MicrosurveyPromptView` to be presented.
+     func showMicrosurveyPrompt() -> MicrosurveyModel? {
++        guard VantaDefaults.showsMozillaSurveys else { return nil }
+         retrieveMessage()
+         guard let message else { return nil }
+         let surveyQuestion = message.text
+diff --git a/firefox-ios/Client/Frontend/SurveySurface/SurveySurfaceManager.swift b/firefox-ios/Client/Frontend/SurveySurface/SurveySurfaceManager.swift
+index 7e48ed2b..0a89f799 100644
+--- a/firefox-ios/Client/Frontend/SurveySurface/SurveySurfaceManager.swift
++++ b/firefox-ios/Client/Frontend/SurveySurface/SurveySurfaceManager.swift
+@@ -27,6 +27,7 @@ class SurveySurfaceManager: SurveySurfaceDelegate {
+     var shouldShowSurveySurface: Bool {
+         // TODO: Remove hack (temporary fix to avoid showing SurveySurface in UITest for release branch)
+         if AppConstants.isRunningUITests { return false }
++        guard VantaDefaults.showsMozillaSurveys else { return false }
+         updateMessage()
+         return message != nil
+     }

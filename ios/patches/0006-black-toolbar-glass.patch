@@ -1,18 +1,16 @@
 diff --git a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
-index 216cfb1f..68b78ae1 100644
+index 216cfb1f..449f5929 100644
 --- a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
 +++ b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
-@@ -240,7 +240,12 @@ class BrowserViewController: UIViewController,
- 
-     private lazy var effect: some UIVisualEffect = {
-         if #available(iOS 26, *), !DeviceInfo.isRunningLiquidGlassEarlyBeta {
--            return UIGlassEffect(style: .regular)
-+            let glass = UIGlassEffect(style: .regular)
+@@ -3982,7 +3982,10 @@ class BrowserViewController: UIViewController,
+         let colors = currentTheme.colors
+         backgroundView.backgroundColor = isBottomSearchHomepage ? colors.layer1 : colors.layerSurfaceLow
+         if #available(iOS 26, *), let glassEffect = effect as? UIGlassEffect {
+-            glassEffect.tintColor = currentTheme.colors.layerToolbarGlass.withAlphaComponent(0.5)
 +            // Vanta: the toolbars stay true black in the dark theme.
-+            if self.currentTheme().type.getInterfaceStyle() == .dark {
-+                glass.tintColor = .black
-+            }
-+            return glass
-         } else {
-             return UIBlurEffect(style: .systemUltraThinMaterial)
++            let glassTint = currentTheme.colors.layerToolbarGlass
++            let isDark = currentTheme.type.getInterfaceStyle() == .dark
++            glassEffect.tintColor = isDark ? glassTint : glassTint.withAlphaComponent(0.5)
+             bottomBlurView.effect = glassEffect
+             topBlurView.effect = glassEffect
          }

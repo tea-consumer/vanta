@@ -1,5 +1,5 @@
 diff --git a/firefox-ios/Client/Application/AppDelegate.swift b/firefox-ios/Client/Application/AppDelegate.swift
-index d6d79b0..86def4b 100644
+index d6d79b0b..1f52faab 100644
 --- a/firefox-ios/Client/Application/AppDelegate.swift
 +++ b/firefox-ios/Client/Application/AppDelegate.swift
 @@ -92,6 +92,8 @@ class AppDelegate: UIResponder,
@@ -11,7 +11,7 @@ index d6d79b0..86def4b 100644
          appLaunchUtil = AppLaunchUtil(profile: profile)
          appLaunchUtil?.setUpPreLaunchDependencies()
  
-@@ -472,3 +474,26 @@ extension AppDelegate {
+@@ -472,3 +474,27 @@ extension AppDelegate {
          return configuration
      }
  }
@@ -24,6 +24,7 @@ index d6d79b0..86def4b 100644
 +enum VantaDefaults {
 +    static let appliedKey = "vanta.defaultsApplied"
 +    static let asksForMozillaTerms = false
++    static let showsMozillaSurveys = false
 +
 +    static func apply(to prefs: Prefs) {
 +        guard prefs.boolForKey(appliedKey) != true else { return }
@@ -39,7 +40,7 @@ index d6d79b0..86def4b 100644
 +    }
 +}
 diff --git a/firefox-ios/Client/Frontend/Browser/SearchEngines/SearchEnginesManager.swift b/firefox-ios/Client/Frontend/Browser/SearchEngines/SearchEnginesManager.swift
-index f7759b7..41ee8cf 100644
+index f7759b75..41ee8cf5 100644
 --- a/firefox-ios/Client/Frontend/Browser/SearchEngines/SearchEnginesManager.swift
 +++ b/firefox-ios/Client/Frontend/Browser/SearchEngines/SearchEnginesManager.swift
 @@ -80,8 +80,10 @@ class SearchEnginesManager: SearchEnginesManagerProvider {
@@ -70,7 +71,7 @@ index f7759b7..41ee8cf 100644
          get {
              return self.orderedEngines[safe: 0]
 diff --git a/firefox-ios/Client/Frontend/Browser/TermsOfUse/TermsOfUseCoordinator.swift b/firefox-ios/Client/Frontend/Browser/TermsOfUse/TermsOfUseCoordinator.swift
-index 13bf9e2..18c03bf 100644
+index 13bf9e2b..18c03bf3 100644
 --- a/firefox-ios/Client/Frontend/Browser/TermsOfUse/TermsOfUseCoordinator.swift
 +++ b/firefox-ios/Client/Frontend/Browser/TermsOfUse/TermsOfUseCoordinator.swift
 @@ -109,6 +109,8 @@ final class TermsOfUseCoordinator: BaseCoordinator, TermsOfUseCoordinatorDelegat
