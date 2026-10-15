@@ -5,7 +5,8 @@
     {"src": "branding/src/small.svg",     "kind": "app",   "smallest": 16, "family": "app",  "ships": "every app icon 32px and below"},
     {"src": "branding/src/macos.svg",     "kind": "app",   "smallest": 48, "family": "app",  "ships": "macOS Dock, Finder, disk image (16/32 from small.svg)"},
     {"src": "branding/src/private.svg",   "kind": "app",   "smallest": 192, "family": "app", "ships": "private-browsing about logo, 192/384px"},
-    {"src": "branding/src/document.svg",  "kind": "app",   "smallest": 16, "family": "app",  "ships": "macOS document icon, 16-1024px"}
+    {"src": "branding/src/document.svg",  "kind": "app",   "smallest": 16, "family": "app",  "ships": "macOS document icon, 16-1024px"},
+    {"src": "branding/src/ios.svg",       "kind": "app",   "smallest": 40, "family": "app",  "ships": "iOS app icon (ios/branding/AppIcon.png, 1024px; iOS rounds the corners)"}
   ],
   "glyph_dir": "branding/glyphs",
   "skip": ["branding/src/wordmark.svg", "branding/src/dmg-background.svg"]

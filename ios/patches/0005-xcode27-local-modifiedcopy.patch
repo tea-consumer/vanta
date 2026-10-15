@@ -1,0 +1,74 @@
+diff --git a/firefox-ios/Client.xcodeproj/project.pbxproj b/firefox-ios/Client.xcodeproj/project.pbxproj
+index 269f3bb6..1fbabeb8 100644
+--- a/firefox-ios/Client.xcodeproj/project.pbxproj
++++ b/firefox-ios/Client.xcodeproj/project.pbxproj
+@@ -18923,7 +18923,7 @@
+ 				5A37861729A2C337006B3A34 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
+ 				AB2AC6612BCFD0A200022AAB /* XCRemoteSwiftPackageReference "swift-certificates" */,
+ 				5A984D322C8A31A0007938C9 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+-				EDD592482FC1090C0015EF9E /* XCRemoteSwiftPackageReference "ModifiedCopyMacro" */,
++				EDD592482FC1090C0015EF9E /* XCLocalSwiftPackageReference "VantaPackages/ModifiedCopy" */,
+ 			);
+ 			productRefGroup = F84B21BF1A090F8100AAB793 /* Products */;
+ 			projectDirPath = "";
+@@ -33588,13 +33588,9 @@
+ 				version = 1.19.3;
+ 			};
+ 		};
+-		EDD592482FC1090C0015EF9E /* XCRemoteSwiftPackageReference "ModifiedCopyMacro" */ = {
+-			isa = XCRemoteSwiftPackageReference;
+-			repositoryURL = "https://github.com/WilhelmOks/ModifiedCopyMacro.git";
+-			requirement = {
+-				kind = revision;
+-				revision = d020bf8c6432d0c6aa8428b5ca1c3225a0545b3b;
+-			};
++		EDD592482FC1090C0015EF9E /* XCLocalSwiftPackageReference "VantaPackages/ModifiedCopy" */ = {
++			isa = XCLocalSwiftPackageReference;
++			relativePath = VantaPackages/ModifiedCopy;
+ 		};
+ /* End XCRemoteSwiftPackageReference section */
+ 
+@@ -33912,7 +33908,7 @@
+ 		};
+ 		EDD592492FC1090C0015EF9E /* ModifiedCopy */ = {
+ 			isa = XCSwiftPackageProductDependency;
+-			package = EDD592482FC1090C0015EF9E /* XCRemoteSwiftPackageReference "ModifiedCopyMacro" */;
++			package = EDD592482FC1090C0015EF9E /* XCLocalSwiftPackageReference "VantaPackages/ModifiedCopy" */;
+ 			productName = ModifiedCopy;
+ 		};
+ 		EDF5679F2C8B51DC00FDB09D /* SiteImageView */ = {
+diff --git a/firefox-ios/Client.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved b/firefox-ios/Client.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+index fa9baec2..56658908 100644
+--- a/firefox-ios/Client.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
++++ b/firefox-ios/Client.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+@@ -82,14 +82,6 @@
+         "revision" : "f56a6e483163a761adc8cd25c337db0ed1eac524"
+       }
+     },
+-    {
+-      "identity" : "modifiedcopymacro",
+-      "kind" : "remoteSourceControl",
+-      "location" : "https://github.com/WilhelmOks/ModifiedCopyMacro.git",
+-      "state" : {
+-        "revision" : "d020bf8c6432d0c6aa8428b5ca1c3225a0545b3b"
+-      }
+-    },
+     {
+       "identity" : "sentry-cocoa",
+       "kind" : "remoteSourceControl",
+@@ -126,15 +118,6 @@
+         "version" : "3.15.1"
+       }
+     },
+-    {
+-      "identity" : "swift-syntax",
+-      "kind" : "remoteSourceControl",
+-      "location" : "https://github.com/swiftlang/swift-syntax.git",
+-      "state" : {
+-        "revision" : "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
+-        "version" : "603.0.2"
+-      }
+-    },
+     {
+       "identity" : "swiftdraw",
+       "kind" : "remoteSourceControl",

@@ -1,0 +1,189 @@
+diff --git a/BrowserKit/Sources/Common/Theming/DarkTheme.swift b/BrowserKit/Sources/Common/Theming/DarkTheme.swift
+index 27a1655f..f8a125c4 100644
+--- a/BrowserKit/Sources/Common/Theming/DarkTheme.swift
++++ b/BrowserKit/Sources/Common/Theming/DarkTheme.swift
+@@ -24,52 +24,48 @@ public struct NightModeTheme: Theme {
+ 
+ private struct DarkColourPalette: ThemeColourPalette {
+     // MARK: - Layers
+-    var layer1: UIColor = FXColors.DarkGrey60
+-    var layer2: UIColor = FXColors.DarkGrey30
+-    var layer3: UIColor = FXColors.DarkGrey80
+-    var layer4: UIColor = FXColors.DarkGrey20.withAlphaComponent(0.7)
+-    var layer5: UIColor = FXColors.DarkGrey40
+-    var layer5Hover: UIColor = FXColors.DarkGrey20
+-    var layerScrim: UIColor = FXColors.DarkGrey90.withAlphaComponent(0.95)
++    var layer1: UIColor = FXColors.Black
++    var layer2: UIColor = FXColors.VantaSurface2
++    var layer3: UIColor = FXColors.Black
++    var layer4: UIColor = FXColors.VantaSurface3.withAlphaComponent(0.7)
++    var layer5: UIColor = FXColors.VantaSurface2
++    var layer5Hover: UIColor = FXColors.VantaSurface3
++    var layerScrim: UIColor = FXColors.Black.withAlphaComponent(0.95)
+     var layerGradient = Gradient(colors: [FXColors.Violet70, FXColors.Violet60])
+     var layerGradientOverlay = Gradient(colors: [FXColors.DarkGrey40.withAlphaComponent(0),
+                                                  FXColors.DarkGrey40.withAlphaComponent(0.4)])
+-    var layerAccentNonOpaque: UIColor = FXColors.Blue20.withAlphaComponent(0.2)
++    var layerAccentNonOpaque: UIColor = FXColors.White.withAlphaComponent(0.12)
+     var layerAccentPrivate: UIColor = FXColors.Purple60
+     var layerAccentPrivateNonOpaque: UIColor = FXColors.Purple60.withAlphaComponent(0.3)
+     var layerSepia: UIColor = FXColors.Orange05
+-    var layerHomepage = Gradient(colors: [
+-        FXColors.DarkGrey60.withAlphaComponent(1),
+-        FXColors.DarkGrey60.withAlphaComponent(1),
+-        FXColors.DarkGrey60.withAlphaComponent(1)
+-    ])
++    var layerHomepage = Gradient(colors: [FXColors.Black, FXColors.Black, FXColors.Black])
+     var layerInformation: UIColor = FXColors.Blue50
+     var layerSuccess: UIColor = FXColors.Green80
+     var layerWarning: UIColor = FXColors.Yellow70.withAlphaComponent(0.77)
+     var layerCritical: UIColor = FXColors.Pink80
+     var layerCriticalSubdued: UIColor = FXColors.Red05.withAlphaComponent(0.7)
+-    var layerSelectedText: UIColor = FXColors.Blue40
++    var layerSelectedText: UIColor = FXColors.VantaInkDim
+     var layerAutofillText: UIColor = FXColors.LightGrey05.withAlphaComponent(0.34)
+-    var layerEmphasis: UIColor = FXColors.DarkGrey80
++    var layerEmphasis: UIColor = FXColors.VantaSurface2
+     var layerGradientURL = Gradient(colors: [
+-        FXColors.DarkGrey80.withAlphaComponent(0),
+-        FXColors.DarkGrey80.withAlphaComponent(1)
++        FXColors.VantaSurface2.withAlphaComponent(0),
++        FXColors.VantaSurface2.withAlphaComponent(1)
+     ])
+-    var layerSurfaceLow = FXColors.DarkGrey60
+-    var layerSurfaceMedium = FXColors.DarkGrey80
+-    var layerSurfaceMediumAlpha = FXColors.DarkGrey80.withAlphaComponent(0.8)
+-    var layerSurfaceMediumAlt = FXColors.DarkGrey40
+-    var layerSurfaceMediumAltGlass = FXColors.DarkGrey40
++    var layerSurfaceLow = FXColors.Black
++    var layerSurfaceMedium = FXColors.VantaSurface2
++    var layerSurfaceMediumAlpha = FXColors.VantaSurface2.withAlphaComponent(0.8)
++    var layerSurfaceMediumAlt = FXColors.VantaSurface2
++    var layerSurfaceMediumAltGlass = FXColors.VantaSurface2
+     var layerGradientSummary = Gradient(colors: [
+         FXColors.Red70,
+         FXColors.Orange50
+     ])
+-    var layerToolbarGlass: UIColor = FXColors.DarkGrey60
++    var layerToolbarGlass: UIColor = FXColors.Black
+ 
+     // MARK: - Actions
+-    var actionPrimary: UIColor = FXColors.Blue30
+-    var actionPrimaryHover: UIColor = FXColors.Blue20
+-    var actionPrimaryDisabled: UIColor = FXColors.Blue30.withAlphaComponent(0.5)
++    var actionPrimary: UIColor = FXColors.VantaInk
++    var actionPrimaryHover: UIColor = FXColors.White
++    var actionPrimaryDisabled: UIColor = FXColors.VantaInk.withAlphaComponent(0.5)
+     var actionSecondary: UIColor = FXColors.DarkGrey05
+     var actionSecondaryDisabled: UIColor = FXColors.DarkGrey05.withAlphaComponent(0.5)
+     var actionSecondaryHover: UIColor = FXColors.LightGrey90
+@@ -81,44 +77,44 @@ private struct DarkColourPalette: ThemeColourPalette {
+     var actionWarning: UIColor = FXColors.Yellow40.withAlphaComponent(0.41)
+     var actionCritical: UIColor = FXColors.Pink70.withAlphaComponent(0.69)
+     var actionInformation: UIColor = FXColors.Blue60
+-    var actionTabActive: UIColor = FXColors.DarkGrey30
+-    var actionTabInactive: UIColor = FXColors.DarkGrey80
+-    var actionCloseButton: UIColor = FXColors.DarkGrey30
++    var actionTabActive: UIColor = FXColors.VantaSurface3
++    var actionTabInactive: UIColor = FXColors.VantaSurface1
++    var actionCloseButton: UIColor = FXColors.VantaSurface3
+ 
+     // MARK: - Text
+-    var textPrimary: UIColor = FXColors.LightGrey05
+-    var textSecondary: UIColor = FXColors.LightGrey40
++    var textPrimary: UIColor = FXColors.VantaInk
++    var textSecondary: UIColor = FXColors.VantaInkDim
+     var textDisabled: UIColor = FXColors.LightGrey05.withAlphaComponent(0.4)
+     var textCritical: UIColor = FXColors.Red20
+-    var textAccent: UIColor = FXColors.Blue30
++    var textAccent: UIColor = FXColors.VantaInk
+     var textOnDark: UIColor = FXColors.LightGrey05
+     var textOnLight: UIColor = FXColors.DarkGrey90
+-    var textInverted: UIColor = FXColors.DarkGrey90
++    var textInverted: UIColor = FXColors.Black
+     var textInvertedDisabled: UIColor = FXColors.DarkGrey90.withAlphaComponent(0.7)
+ 
+     // MARK: - Icons
+-    var iconPrimary: UIColor = FXColors.LightGrey05
+-    var iconSecondary: UIColor = FXColors.LightGrey40
++    var iconPrimary: UIColor = FXColors.VantaInk
++    var iconSecondary: UIColor = FXColors.VantaInkDim
+     var iconDisabled: UIColor = FXColors.LightGrey05.withAlphaComponent(0.4)
+-    var iconAccent: UIColor = FXColors.Blue30
++    var iconAccent: UIColor = FXColors.VantaInk
+     var iconOnColor: UIColor = FXColors.LightGrey05
+     var iconCritical: UIColor = FXColors.Red20
+     var iconSpinner: UIColor = FXColors.White
+     var iconAccentViolet: UIColor = FXColors.Violet20
+-    var iconAccentBlue: UIColor = FXColors.Blue30
++    var iconAccentBlue: UIColor = FXColors.VantaInk
+     var iconAccentPink: UIColor = FXColors.Pink20
+     var iconAccentGreen: UIColor = FXColors.Green20
+     var iconAccentYellow: UIColor = FXColors.Yellow20
+     var iconRatingNeutral: UIColor = FXColors.LightGrey05.withAlphaComponent(0.3)
+ 
+     // MARK: - Border
+-    var borderPrimary: UIColor = FXColors.DarkGrey05
+-    var borderSecondary: UIColor = FXColors.DarkGrey10
+-    var borderAccent: UIColor = FXColors.Blue30
+-    var borderAccentNonOpaque: UIColor = FXColors.Blue20.withAlphaComponent(0.2)
++    var borderPrimary: UIColor = FXColors.VantaLine
++    var borderSecondary: UIColor = FXColors.VantaSurface3
++    var borderAccent: UIColor = FXColors.VantaInkDim
++    var borderAccentNonOpaque: UIColor = FXColors.White.withAlphaComponent(0.2)
+     var borderAccentPrivate: UIColor = FXColors.Purple60
+     var borderInverted: UIColor = FXColors.DarkGrey90
+-    var borderToolbarDivider: UIColor = FXColors.DarkGrey60
++    var borderToolbarDivider: UIColor = FXColors.Black
+ 
+     // MARK: - Shadow
+     var shadowSubtle: UIColor = FXColors.DarkGrey80.withAlphaComponent(0.10)
+diff --git a/BrowserKit/Sources/Common/Theming/DefaultThemeManager.swift b/BrowserKit/Sources/Common/Theming/DefaultThemeManager.swift
+index d9a55154..c43ff98a 100644
+--- a/BrowserKit/Sources/Common/Theming/DefaultThemeManager.swift
++++ b/BrowserKit/Sources/Common/Theming/DefaultThemeManager.swift
+@@ -71,7 +71,9 @@ public final class DefaultThemeManager: ThemeManager, Notifiable {
+         self.isNovaDesignOnClosure = isNovaDesignOnClosure
+ 
+         self.userDefaults.register(defaults: [
+-            ThemeKeys.systemThemeIsOn: true,
++            // Vanta is dark by default; following the system theme is opt-in.
++            ThemeKeys.systemThemeIsOn: false,
++            ThemeKeys.themeName: ThemeType.dark.rawValue,
+             ThemeKeys.NightMode.isOn: false
+         ])
+ 
+diff --git a/BrowserKit/Sources/Common/Theming/FxColors.swift b/BrowserKit/Sources/Common/Theming/FxColors.swift
+index ec7ed472..1643eb24 100644
+--- a/BrowserKit/Sources/Common/Theming/FxColors.swift
++++ b/BrowserKit/Sources/Common/Theming/FxColors.swift
+@@ -12,6 +12,15 @@ final class FXColors {
+     static let Black = UIColor(rgb: 0x000000)
+     static let White = UIColor(rgb: 0xffffff)
+ 
++    // MARK: - Vanta
++    // True black with near-black surfaces, and a mono accent (Vanta's "Mono" theme).
++    static let VantaSurface1 = UIColor(rgb: 0x0e0e10)
++    static let VantaSurface2 = UIColor(rgb: 0x18181b)
++    static let VantaSurface3 = UIColor(rgb: 0x232327)
++    static let VantaLine = UIColor(rgb: 0x2a2a2f)
++    static let VantaInk = UIColor(rgb: 0xf2f3f5)
++    static let VantaInkDim = UIColor(rgb: 0x9a9ba3)
++
+     // MARK: - Light Grey
+     static let LightGrey05 = UIColor(rgb: 0xfbfbfe)
+     static let LightGrey10 = UIColor(rgb: 0xf9f9fb)
+diff --git a/firefox-ios/Client/Nimbus/NimbusFeatureFlagLayer.swift b/firefox-ios/Client/Nimbus/NimbusFeatureFlagLayer.swift
+index 2057fa2c..6b5afd2d 100644
+--- a/firefox-ios/Client/Nimbus/NimbusFeatureFlagLayer.swift
++++ b/firefox-ios/Client/Nimbus/NimbusFeatureFlagLayer.swift
+@@ -135,7 +135,8 @@ final class NimbusFeatureFlagLayer: NimbusFeatureFlagLayerProviding, Sendable {
+             return checkNewBookmarkFolderTreeFeature()
+ 
+         case .novaDesign:
+-            return checkNovaDesignFeature()
++            // Vanta: its own true-black theme, never Mozilla's Nova redesign.
++            return false
+ 
+         case .novaPrivateThemeOverride:
+             return checkNovaPrivateThemeOverrideFeature()

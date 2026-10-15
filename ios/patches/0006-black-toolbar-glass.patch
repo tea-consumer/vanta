@@ -1,0 +1,21 @@
+diff --git a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
+index 216cfb1f..88b86135 100644
+--- a/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
++++ b/firefox-ios/Client/Frontend/Browser/BrowserViewController/Views/BrowserViewController.swift
+@@ -3986,6 +3986,16 @@ class BrowserViewController: UIViewController,
+             bottomBlurView.effect = glassEffect
+             topBlurView.effect = glassEffect
+         }
++        // Vanta: the glass material lightens even a black tint, so the dark
++        // theme drops it and the toolbars are plain true black.
++        if currentTheme.type.getInterfaceStyle() == .dark {
++            [topBlurView, bottomBlurView].forEach {
++                $0.effect = nil
++                $0.contentView.backgroundColor = currentTheme.colors.layerToolbarGlass
++            }
++        } else {
++            [topBlurView, bottomBlurView].forEach { $0.contentView.backgroundColor = nil }
++        }
+ 
+         setNeedsStatusBarAppearanceUpdate()
+ 
