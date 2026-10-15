@@ -34,6 +34,21 @@ for set in AppIcon AppIcon_Beta AppIcon_Developer; do
   done
 done
 
+# ModifiedCopy's macro, built for the Mac by SwiftPM (Xcode 27 builds it for
+# iOS inside the app build). build-sim.sh loads it with -load-plugin-executable.
+rm -rf firefox-ios/VantaPackages && mkdir -p firefox-ios/VantaPackages
+cp -R "$ROOT/ios/packages/ModifiedCopy" firefox-ios/VantaPackages/ModifiedCopy
+MACRO="$(dirname "$DEST")/modifiedcopy-macro"
+if [ ! -x "$MACRO/plugin/ModifiedCopyMacros-tool" ]; then
+  rm -rf "$MACRO" && mkdir -p "$MACRO"
+  git clone -q https://github.com/WilhelmOks/ModifiedCopyMacro.git "$MACRO/src"
+  git -C "$MACRO/src" checkout -q d020bf8c6432d0c6aa8428b5ca1c3225a0545b3b
+  swift build --package-path "$MACRO/src" -c release -j 2 --product ModifiedCopyClient
+  mkdir -p "$MACRO/plugin"
+  cp "$(find "$MACRO/src/.build" -type f -perm -u+x -name 'ModifiedCopyMacros-tool' | head -1)" "$MACRO/plugin/"
+  rm -rf "$MACRO/src"
+fi
+
 # From Mozilla's bootstrap.sh, without its SwiftLint download and git hooks.
 if [ ! -x firefox-ios/bin/nimbus-fml.sh ]; then
   curl --proto '=https' --tlsv1.2 -sSf \

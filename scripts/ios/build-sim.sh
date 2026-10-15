@@ -28,12 +28,13 @@ fi
 # Build for that simulator the way Mozilla's Xcode 27 CI does (Debug, active
 # arch only), without -sdk: it would also force the macro packages, which run
 # on the Mac at compile time, to build for iOS.
-xcodebuild -resolvePackageDependencies -onlyUsePackageVersionsFromResolvedFile \
-  -project Client.xcodeproj -scheme Fennec -derivedDataPath "$DERIVED" >/dev/null
+MACRO="$(dirname "$DEST")/modifiedcopy-macro/plugin/ModifiedCopyMacros-tool"
+[ -x "$MACRO" ] || { echo "Run prepare.sh first: no ModifiedCopy macro at $MACRO"; exit 1; }
 xcodebuild -project Client.xcodeproj -scheme Fennec -configuration Debug \
   -destination "platform=iOS Simulator,id=$UDID" \
   -derivedDataPath "$DERIVED" -jobs "$JOBS" -skipMacroValidation \
   ONLY_ACTIVE_ARCH=YES \
+  OTHER_SWIFT_FLAGS="\$(inherited) -load-plugin-executable $MACRO#ModifiedCopyMacros" \
   COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= \
   build >"$(dirname "$DEST")/build.log" 2>&1 && BUILT=1 || BUILT=0
 grep -E 'error:|\*\* BUILD' "$(dirname "$DEST")/build.log" | sort -u || true
