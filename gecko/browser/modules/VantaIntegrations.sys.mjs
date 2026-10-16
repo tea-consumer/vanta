@@ -44,7 +44,20 @@ export const VantaIntegrations = {
 export class VantaSearchChild extends JSWindowActorChild {
   handleEvent(event) {
     let doc = this.document;
-    if (event.type != "DOMContentLoaded" || !doc.location.pathname.startsWith("/html")) {
+    if (event.type == "click") {
+      this.backToAll(event);
+      return;
+    }
+    if (event.type != "DOMContentLoaded") {
+      return;
+    }
+    if (doc.location.host == "duckduckgo.com") {
+      // DuckDuckGo's own views (images, news) link "All" to its own results
+      // page; it goes back to Vanta's instead.
+      this.contentWindow.addEventListener("click", this, true);
+      return;
+    }
+    if (!doc.location.pathname.startsWith("/html")) {
       return;
     }
     let query = new URLSearchParams(doc.location.search).get("q")?.trim();
@@ -54,6 +67,18 @@ export class VantaSearchChild extends JSWindowActorChild {
     }
     this.addViews(doc, header, query);
     this.addAnswer(doc, query);
+  }
+
+  backToAll(event) {
+    let link = event.target.closest?.('#react-duckbar a[href*="ia=web"]');
+    let query = new URLSearchParams(this.document.location.search).get("q");
+    if (!link || !query || event.button != 0 || event.metaKey || event.ctrlKey) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    this.document.location.href =
+      "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(query);
   }
 
   addViews(doc, header, query) {
