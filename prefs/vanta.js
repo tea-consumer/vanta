@@ -137,7 +137,7 @@ pref("browser.newtabpage.activity-stream.showSponsoredCheckboxes", false);
 pref("browser.newtabpage.activity-stream.default.sites", "");
 pref("browser.urlbar.quicksuggest.enabled", false);
 pref("browser.urlbar.trending.featureGate", false);
-pref("browser.search.suggest.enabled", false);
+pref("browser.search.suggest.enabled", true);
 pref("extensions.getAddons.showPane", false);
 pref("extensions.htmlaboutaddons.recommendations.enabled", false);
 pref("browser.discovery.enabled", false);
@@ -165,6 +165,31 @@ pref("vanta.accent", "mono");
 pref("vanta.toolbar.seeThrough", false);
 // Frame (toolbar, rail, border) black with a faint tint of the page colour.
 pref("vanta.toolbar.pageTint", true);
+// The new tab: your search set large like a page heading, under the date and
+// tonight's moon, over a sunlit planet horizon with a sunrise as it opens. Drawn by the window on a blank page, so a new tab
+// costs no extra process.
+pref("vanta.newtab.home", true);
+// Searches go to Vanta's own results page: DuckDuckGo's script-free
+// results, drawn in Vanta's design. The "Vanta" engine is made the default
+// once on first run, so a choice made later in Settings sticks.
+pref("vanta.search.skin", true);
+// The address bar shows only your search words on a results page.
+pref("browser.urlbar.showSearchTerms.featureGate", true);
+pref("browser.urlbar.showSearchTerms.enabled", true);
+// The Vanta home is also the start page and the Home button: both open a
+// blank tab, which the window draws the home on.
+pref("browser.startup.page", 1);
+pref("browser.startup.homepage", "about:blank");
+// Private windows keep Vanta's own black look instead of Firefox's purple.
+pref("browser.theme.dark-private-windows", false);
+// The address bar answers as you type (maths, units, time in a city),
+// searches a site by name ("yr oslo"), and opens a result in split view
+// with Shift+Enter.
+pref("vanta.search.answers", true);
+pref("browser.urlbar.suggest.calculator", true);
+pref("browser.urlbar.unitConversion.enabled", true);
+// No "Press tab to search with" row under the bar.
+pref("browser.urlbar.suggest.engines", false);
 // Vertical tabs in a compact sidebar that expands while hovered, with the
 // address bar in one slim row on top.
 pref("sidebar.revamp", true);

@@ -1,0 +1,1553 @@
+--- a/browser/base/content/browser-init.js
++++ b/browser/base/content/browser-init.js
+@@ -1258,3 +1258,1550 @@
+   },
+ };
+ delayedStartupPromise.then(() => VantaPageTint.init());
++
++
++// Vanta: the address bar answers and acts, not only searches.
++//  - Answers computed locally as you type: maths and units (Firefox's own
++//    calculator and converter, switched on in prefs), and the time in any
++//    city ("time tokyo", "tokyo time").
++//  - A site's name and a space searches that site: "yr oslo", "nrk valg".
++//    Sites come from your history; Enter goes straight there.
++//  - Shift+Enter opens the chosen result in split view beside this page.
++// The provider is shared by all windows, so the first window registers it
++// and hands it to another window when it closes.
++var VantaSearch = {
++  PREF: "vanta.search.answers",
++
++  init() {
++    if (!Services.prefs.getBoolPref(this.PREF, true)) {
++      return;
++    }
++    this.register();
++    // Window capture, so this runs before the address bar's own Enter.
++    window.addEventListener("keydown", this, true);
++    this.keepPlaceholder();
++    this.siteChip();
++  },
++
++  // Typing a site's name and a space puts that site in the field: its icon
++  // and name, lit, so you see where the words will be searched.
++  siteChip() {
++    let input = gURLBar.inputField;
++    let chip = document.createElementNS("http://www.w3.org/1999/xhtml", "span");
++    chip.id = "vanta-site-chip";
++    let icon = document.createElementNS("http://www.w3.org/1999/xhtml", "img");
++    let name = document.createElementNS("http://www.w3.org/1999/xhtml", "span");
++    chip.append(icon, name);
++    input.parentNode.before(chip);
++    let show = () => {
++      let m = /^(\S+)\s+\S/.exec(input.value);
++      let host =
++        m &&
++        !gURLBar.searchMode &&
++        !PrivateBrowsingUtils.isWindowPrivate(window) &&
++        this.manager.getProvider("VantaSiteSearch")?.siteFor(m[1]);
++      if (host) {
++        icon.src = `page-icon:https://${host}/`;
++        name.textContent = host;
++      }
++      gURLBar.toggleAttribute("vanta-site", !!host);
++    };
++    input.addEventListener("input", show);
++    input.addEventListener("blur", () => gURLBar.removeAttribute("vanta-site"));
++  },
++
++  // Firefox's placeholder names the search engine; Vanta's says what the
++  // field does. Fluent sets it again when the engine changes, so keep ours.
++  keepPlaceholder() {
++    let input = gURLBar.inputField;
++    let text = "Search, calculate, or go to a site";
++    let put = () => {
++      if (input.placeholder != text) {
++        input.placeholder = text;
++      }
++    };
++    new MutationObserver(put).observe(input, {
++      attributes: true,
++      attributeFilter: ["placeholder"],
++    });
++    put();
++  },
++
++  get manager() {
++    let { ProvidersManager } = ChromeUtils.importESModule(
++      "moz-src:///browser/components/urlbar/UrlbarProvidersManager.sys.mjs"
++    );
++    return ProvidersManager.getInstanceForSap("urlbar");
++  },
++
++  register() {
++    let manager = this.manager;
++    if (manager.getProvider("VantaSiteSearch")) {
++      return;
++    }
++    let providers = this.makeProviders();
++    for (let provider of providers) {
++      manager.registerProvider(provider);
++    }
++    // Heuristic results are ranked by provider order. Site search only runs
++    // for "<a site you visit> <words>", and then it should win over the
++    // plain web search, so it goes first.
++    let list = manager.providers;
++    list.unshift(...list.splice(list.indexOf(providers[0]), 1));
++    window.addEventListener(
++      "unload",
++      () => {
++        for (let provider of providers) {
++          manager.unregisterProvider(provider);
++        }
++        let next = BrowserWindowTracker.orderedWindows.find(
++          w => w != window && w.VantaSearch
++        );
++        next?.VantaSearch.register();
++      },
++      { once: true }
++    );
++  },
++
++  // Shift+Enter: open the selected result beside this page.
++  handleEvent(event) {
++    if (
++      event.target != gURLBar.inputField ||
++      event.key != "Enter" ||
++      !event.shiftKey ||
++      event.altKey
++    ) {
++      return;
++    }
++    let tab = gBrowser.selectedTab;
++    if (tab.pinned || tab.splitview || !gURLBar.view.isOpen) {
++      return;
++    }
++    let result = gURLBar.view.selectedResult;
++    let url = result?.payload.url;
++    if (!url && result?.payload.engine) {
++      let { SearchService } = ChromeUtils.importESModule(
++        "moz-src:///toolkit/components/search/SearchService.sys.mjs"
++      );
++      let engine = SearchService.getEngineByName(result.payload.engine);
++      url = engine?.getSubmission(result.payload.query || gURLBar.value).uri
++        .spec;
++    }
++    if (!url) {
++      return;
++    }
++    event.preventDefault();
++    event.stopPropagation();
++    gURLBar.view.close();
++    gURLBar.handleRevert();
++    let newTab = gBrowser.addTrustedTab(url, { index: tab._tPos + 1 });
++    gBrowser.addTabSplitView([tab, newTab], { trigger: "vanta_urlbar" });
++    gBrowser.selectedTab = newTab;
++  },
++
++  makeProviders() {
++    const { UrlbarProvider } = ChromeUtils.importESModule(
++      "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs"
++    );
++    const { UrlbarResult } = ChromeUtils.importESModule(
++      "chrome://browser/content/urlbar/UrlbarResult.mjs"
++    );
++    const { UrlbarShared } = ChromeUtils.importESModule(
++      "chrome://browser/content/urlbar/UrlbarShared.mjs"
++    );
++    const { SearchService } = ChromeUtils.importESModule(
++      "moz-src:///toolkit/components/search/SearchService.sys.mjs"
++    );
++
++    // Every IANA zone's city, so "time são paulo" or "time reykjavik" work
++    // without a list of our own.
++    let zones = new Map();
++    for (let zone of Intl.supportedValuesOf("timeZone")) {
++      let city = zone.split("/").pop().replace(/_/g, " ").toLowerCase();
++      zones.set(city, zone);
++    }
++    for (let [city, zone] of [
++      ["new york", "America/New_York"],
++      ["san francisco", "America/Los_Angeles"],
++      ["beijing", "Asia/Shanghai"],
++      ["delhi", "Asia/Kolkata"],
++      ["mumbai", "Asia/Kolkata"],
++      ["bergen", "Europe/Oslo"],
++      ["trondheim", "Europe/Oslo"],
++      ["washington", "America/New_York"],
++      ["seattle", "America/Los_Angeles"],
++      ["boston", "America/New_York"],
++    ]) {
++      zones.set(city, zone);
++    }
++
++    let timeAnswer = text => {
++      let m = /^(?:time\s+(?:in\s+)?(.+)|(.+?)\s+time)$/i.exec(text.trim());
++      let city = (m?.[1] || m?.[2])?.toLowerCase();
++      let zone = city && zones.get(city);
++      if (!zone) {
++        return null;
++      }
++      let now = new Date();
++      let time = now.toLocaleTimeString(undefined, {
++        timeZone: zone,
++        hour: "2-digit",
++        minute: "2-digit",
++      });
++      let day = now.toLocaleDateString(undefined, {
++        timeZone: zone,
++        weekday: "long",
++        day: "numeric",
++        month: "long",
++      });
++      let offset = tz => {
++        let parts = new Intl.DateTimeFormat("en-US", {
++          timeZone: tz,
++          timeZoneName: "longOffset",
++        }).formatToParts(now);
++        let name = parts.find(p => p.type == "timeZoneName").value;
++        let [, sign, h, mm] = /GMT(?:([+-])(\d+):?(\d+)?)?/.exec(name) || [];
++        return sign ? (sign == "-" ? -1 : 1) * (+h * 60 + +(mm || 0)) : 0;
++      };
++      let diff =
++        (offset(zone) -
++          offset(Intl.DateTimeFormat().resolvedOptions().timeZone)) /
++        60;
++      let place = city.replace(/\b\w/g, c => c.toUpperCase());
++      let rel =
++        diff == 0
++          ? "same time as you"
++          : `${Math.abs(diff)} h ${diff > 0 ? "ahead of" : "behind"} you`;
++      // Where the sun is there: 0deg at 6:00 (rising), 180deg at 18:00.
++      let [h, mm] = new Intl.DateTimeFormat("en-GB", {
++        timeZone: zone,
++        hour: "2-digit",
++        minute: "2-digit",
++        hourCycle: "h23",
++      })
++        .format(now)
++        .split(":")
++        .map(Number);
++      let angle = ((((h + mm / 60 - 6) / 24) * 360) % 360 + 360) % 360;
++      return { title: time, detail: `${place} · ${day} · ${rel}`, angle };
++    };
++
++    // Sites you visit, by name: "nrk" -> nrk.no.
++    let sites = null;
++    let loadSites = async () => {
++      let rows = await PlacesUtils.withConnectionWrapper(
++        "VantaSearch",
++        db =>
++          db.executeCached(
++            `SELECT host, frecency FROM moz_origins
++             WHERE frecency <> 0 ORDER BY frecency DESC LIMIT 400`
++          )
++      );
++      sites = new Map();
++      for (let row of rows) {
++        let host = row.getResultByName("host");
++        let name;
++        try {
++          let base = Services.eTLD.getBaseDomainFromHost(host);
++          let suffix = Services.eTLD.getPublicSuffixFromHost(host);
++          name = base.slice(0, -suffix.length - 1);
++        } catch (e) {
++          continue;
++        }
++        if (name && !sites.has(name)) {
++          sites.set(name, host.replace(/^www\./, ""));
++        }
++      }
++      setTimeout(() => (sites = null), 10 * 60 * 1000);
++    };
++    let siteSearch = async text => {
++      let m = /^(\S+)\s+(.+)$/.exec(text.trim());
++      if (!m) {
++        return null;
++      }
++      if (!sites) {
++        await loadSites();
++      }
++      let host = sites.get(m[1].toLowerCase());
++      if (!host) {
++        return null;
++      }
++      // The site's own engine when one is installed (Wikipedia, YouTube…),
++      // otherwise your default engine limited to that site.
++      let engine = (await SearchService.getVisibleEngines()).find(e => {
++        try {
++          return e.searchUrlDomain.endsWith(host.split(".").slice(-2).join("."));
++        } catch (ex) {
++          return false;
++        }
++      });
++      let query = m[2];
++      let url = engine
++        ? engine.getSubmission(query).uri.spec
++        : (await SearchService.getDefault()).getSubmission(
++            `site:${host} ${query}`
++          ).uri.spec;
++      return { url, host, query };
++    };
++
++    class VantaAnswers extends UrlbarProvider {
++      get name() {
++        return "VantaAnswers";
++      }
++      get type() {
++        return UrlbarShared.PROVIDER_TYPE.PROFILE;
++      }
++      async isActive(context) {
++        this.answer = timeAnswer(context.searchString);
++        return !!this.answer && !context.restrictInSearchMode?.();
++      }
++      startQuery(context, add) {
++        add(
++          this,
++          new UrlbarResult({
++            type: UrlbarShared.RESULT_TYPE.DYNAMIC,
++            source: UrlbarShared.RESULT_SOURCE.OTHER_LOCAL,
++            suggestedIndex: 1,
++            payload: { dynamicType: "vantaAnswer", ...this.answer },
++          })
++        );
++      }
++      getViewTemplate() {
++        return {
++          attributes: { selectable: true },
++          children: [
++            {
++              name: "content",
++              tag: "span",
++              classList: ["urlbarView-no-wrap", "vanta-answer"],
++              children: [
++                {
++                  name: "sky",
++                  tag: "span",
++                  classList: ["vanta-answer-sky"],
++                  children: [{ name: "body", tag: "span", classList: ["vanta-answer-body"] }],
++                },
++                { name: "title", tag: "strong", classList: ["vanta-answer-title"] },
++                { name: "detail", tag: "span", classList: ["vanta-answer-detail"] },
++              ],
++            },
++          ],
++        };
++      }
++      getViewUpdate(result) {
++        return {
++          title: { textContent: result.payload.title },
++          detail: { textContent: result.payload.detail },
++          sky: {
++            // At night the moon takes the same arc.
++            style: { "--angle": `${result.payload.angle % 180}deg` },
++            attributes: { night: result.payload.angle > 180 },
++          },
++        };
++      }
++    }
++
++    // Heuristic, so Enter goes to the site's results. Only active when the
++    // first word is the name of a site you visit and more words follow.
++    class VantaSiteSearch extends UrlbarProvider {
++      // For the field's site chip, which can't wait for history.
++      siteFor(name) {
++        if (!sites) {
++          loadSites();
++          return null;
++        }
++        return sites.get(name.toLowerCase());
++      }
++      get name() {
++        return "VantaSiteSearch";
++      }
++      get type() {
++        return UrlbarShared.PROVIDER_TYPE.HEURISTIC;
++      }
++      async isActive(context) {
++        if (
++          context.searchMode ||
++          context.restrictSource ||
++          context.isPrivate ||
++          /^[a-z]+:|\//i.test(context.searchString)
++        ) {
++          return false;
++        }
++        this.found = await siteSearch(context.searchString);
++        return !!this.found;
++      }
++      getPriority() {
++        return 0;
++      }
++      startQuery(context, add) {
++        let { url, host, query } = this.found;
++        add(
++          this,
++          new UrlbarResult({
++            type: UrlbarShared.RESULT_TYPE.URL,
++            source: UrlbarShared.RESULT_SOURCE.OTHER_LOCAL,
++            heuristic: true,
++            payload: {
++              url,
++              title: `Search ${host} for “${query}”`,
++              icon: `page-icon:https://${host}/`,
++            },
++          })
++        );
++      }
++    }
++
++    return [new VantaSiteSearch(), new VantaAnswers()];
++  },
++};
++delayedStartupPromise.then(() => VantaSearch.init());
++
++// Vanta: search results drawn by Vanta. Searches go to DuckDuckGo's
++// script-free results page (private, no trackers, no scripts) and Vanta
++// styles all of it: RESULTS is the whole look of that page. DuckDuckGo's
++// regular pages (images, news) get a lighter skin, DDG, whose rules only
++// match that page's markup. The engine is added
++// and made the default once, so a later choice in Settings sticks;
++// vanta.search.skin turns both styles off.
++var VantaSearchSkin = {
++  ENGINE: "Vanta",
++  ENGINE_PREF: "vanta.search.engineSet",
++  SKIN_PREF: "vanta.search.skin",
++
++  init() {
++    this.setEngine();
++    this.showSearchTerms();
++    if (Services.prefs.getBoolPref(this.SKIN_PREF, true)) {
++      this.register("html.duckduckgo.com", this.RESULTS);
++      this.register("duckduckgo.com", this.DDG);
++      this.markCurrentView();
++      this.addViews();
++    }
++  },
++
++  // The results page's views and quick answer are added inside the page by
++  // VantaSearchChild (VantaIntegrations.sys.mjs). Registered once per
++  // session; later windows find it already there.
++  ACTOR_MODULE: "moz-src:///browser/modules/VantaIntegrations.sys.mjs",
++  addViews() {
++    try {
++      ChromeUtils.registerWindowActor("VantaSearch", {
++        child: {
++          esModuleURI: this.ACTOR_MODULE,
++          events: { DOMContentLoaded: {} },
++        },
++        matches: ["https://html.duckduckgo.com/*", "https://duckduckgo.com/*"],
++        messageManagerGroups: ["browsers"],
++        // It only reads the page's own address and adds to its DOM; it
++        // sends nothing to the parent, so a web process may run it.
++        safeForUntrustedWebProcess: true,
++      });
++    } catch (e) {
++      // Already registered by an earlier window.
++    }
++  },
++
++  // A user style sheet for one site, shared by every window.
++  // DuckDuckGo marks the open view only with a hashed class, so the view
++  // named in the address is lit instead.
++  markCurrentView() {
++    for (let view of ["images", "videos", "news", "maps"]) {
++      this.register(
++        null,
++        `html.react #react-duckbar nav > ul:first-of-type a[href*="ia=${view}"] { color: #fff !important; }`,
++        `regexp("https://duckduckgo\\\\.com/\\\\?(.*&)?ia=${view}(&.*)?")`
++      );
++    }
++  },
++
++  register(domain, css, condition = `domain("${domain}")`) {
++    let sss = Cc["@mozilla.org/content/style-sheet-service;1"].getService(
++      Ci.nsIStyleSheetService
++    );
++    let uri = Services.io.newURI(
++      "data:text/css;charset=utf-8," +
++        encodeURIComponent(`@-moz-document ${condition} {\n${css}\n}`)
++    );
++    if (!sss.sheetRegistered(uri, sss.USER_SHEET)) {
++      sss.loadAndRegisterSheet(uri, sss.USER_SHEET);
++    }
++  },
++
++  // The address bar shows only the words you searched, as Firefox does for
++  // its built-in engines. Firefox only recognises those engines' pages, so
++  // the shared check also accepts Vanta's results page. The wrapper lives in
++  // its own sandbox so it outlives the window that installed it.
++  showSearchTerms() {
++    let { UrlbarSearchTermsPersistence: persistence } = ChromeUtils.importESModule(
++      "moz-src:///browser/components/urlbar/UrlbarSearchTermsPersistence.sys.mjs"
++    );
++    if (persistence.vantaWrapped) {
++      return;
++    }
++    let sandbox = Cu.Sandbox(Services.scriptSecurityManager.getSystemPrincipal(), {
++      wantGlobalProperties: ["URL"],
++    });
++    let wrap = Cu.evalInSandbox(
++      `(original => function (uri) {
++        let terms = original.call(this, uri);
++        if (terms) {
++          return terms;
++        }
++        try {
++          let url = URL.fromURI(uri);
++          let query = url.searchParams.get("q")?.trim();
++          if (
++            url.hostname == "html.duckduckgo.com" &&
++            url.pathname.startsWith("/html") &&
++            query &&
++            query.length <= 1000 &&
++            !/^https?:/.test(query)
++          ) {
++            return url.searchParams.get("q");
++          }
++        } catch (e) {}
++        return "";
++      })`,
++      sandbox,
++      null,
++      "chrome://browser/content/browser-init.js"
++    );
++    persistence.getSearchTerm = wrap(persistence.getSearchTerm);
++    // Firefox then looks up which built-in engine made the page and stops
++    // with an error for any other engine, leaving the engine unrecorded.
++    // Record Vanta's engine for its own results page instead.
++    let { SearchService } = ChromeUtils.importESModule(
++      "moz-src:///toolkit/components/search/SearchService.sys.mjs"
++    );
++    let wrapState = Cu.evalInSandbox(
++      `((original, search, name) => function (state, uri) {
++        try {
++          return original.call(this, state, uri);
++        } catch (e) {
++          if (!state.persist?.searchTerms || uri?.host != "html.duckduckgo.com") {
++            throw e;
++          }
++          state.persist.originalEngineName = name;
++          state.persist.isDefaultEngine = search.defaultEngine?.name == name;
++          return undefined;
++        }
++      })`,
++      sandbox,
++      null,
++      "chrome://browser/content/browser-init.js"
++    );
++    persistence.setPersistenceState = wrapState(
++      persistence.setPersistenceState,
++      SearchService,
++      this.ENGINE
++    );
++    persistence.vantaWrapped = true;
++  },
++
++  async setEngine() {
++    let { SearchService } = ChromeUtils.importESModule(
++      "moz-src:///toolkit/components/search/SearchService.sys.mjs"
++    );
++    await SearchService.init();
++    let engine = SearchService.getEngineByName(this.ENGINE);
++    if (!engine) {
++      engine = await SearchService.addUserEngine({
++        name: this.ENGINE,
++        url: "https://html.duckduckgo.com/html/?q={searchTerms}",
++        suggestUrl: "https://duckduckgo.com/ac/?q={searchTerms}&type=list",
++      });
++    }
++    if (Services.prefs.getBoolPref(this.ENGINE_PREF, false)) {
++      return;
++    }
++    await SearchService.setDefault(engine, SearchService.CHANGE_REASON.USER);
++    await SearchService.setDefaultPrivate(engine, SearchService.CHANGE_REASON.USER);
++    Services.prefs.setBoolPref(this.ENGINE_PREF, true);
++  },
++
++  RESULTS: `
++/* Vanta's results page. DuckDuckGo's script-free HTML page supplies the
++   results; everything you see is drawn here: true black, your search set
++   large like the new tab's heading, results as type, and the new tab's
++   horizon low in the window. */
++
++html, body {
++  background: #000 !important;
++  color: #fff !important;
++  margin: 0 !important;
++}
++body {
++  font: 400 16px/1.55 "SF Pro Text", -apple-system, "Inter", "Helvetica Neue", sans-serif !important;
++  -moz-osx-font-smoothing: grayscale;
++  padding: 0 0 22vh 12vw !important;
++  max-width: min(760px, 62vw) !important;
++}
++
++body > * { position: relative; z-index: 1; }
++
++/* Header: no logo, no box. The query is the page's heading. */
++.header__logo-wrap, .header__logo, .search__button, .site-wrapper-border,
++#state_hidden, .result__extras__url > span:not(.result__icon),
++.header__form .frm__select, #bottom_spacing2,
++.feedback-btn, .result--ad, .badge--ad, #zero_click_wrapper {
++  display: none !important;
++}
++.header, .header-wrap, .header__form, .search, .search--header {
++  all: unset !important;
++  display: block !important;
++}
++.header { padding-top: 11vh !important; }
++/* The new tab's horizon, risen and turned upside down: the underside of a
++   planet 800vw across, curving down under the views, its lowest point 168px
++   below 11vh. A search from the new tab carries its horizon up and flips it
++   to exactly here (VantaHome.leave, RESULTS_RIM), so keep the two in step.
++   It hangs off the page itself, so no box of DuckDuckGo's can clip it; only
++   the lit rim is drawn. */
++html::before {
++  /* The planet: 800vw across, its lowest point 168px below 11vh. Lit like
++     a body with the sun just behind it: a bright rim, a little light
++     inside the limb, and haze below. (The page clips sideways, so it never
++     scrolls.) */
++  content: "";
++  position: absolute;
++  top: calc(11vh + 168px - 800vw);
++  left: calc(50vw - 400vw);
++  width: 800vw;
++  aspect-ratio: 1;
++  border-radius: 50%;
++  box-shadow:
++    0 1px 0 rgba(205, 216, 242, .55),
++    0 3px 6px -1px rgba(170, 185, 215, .18),
++    0 8px 30px -6px rgba(170, 185, 215, .14),
++    0 50px 140px -30px rgba(170, 185, 215, .08),
++    inset 0 -1px 0 rgba(220, 228, 250, .22),
++    inset 0 -46px 90px -50px rgba(170, 185, 215, .13);
++  pointer-events: none;
++  z-index: 0;
++}
++html::after {
++  /* Where the hidden sun is nearest, the rim catches more light. */
++  content: "";
++  position: absolute;
++  top: calc(11vh + 168px - 40px);
++  left: 24vw;
++  width: 52vw;
++  height: 80px;
++  background: radial-gradient(closest-side, rgba(205, 218, 245, .16), transparent);
++  pointer-events: none;
++  z-index: 0;
++}
++/* DuckDuckGo's own boxes are see-through, so the horizon shows behind them.
++   (The skin for DuckDuckGo's other pages matches this host too, hence the
++   id.) */
++html body, html body :not(img, input), html body #header {
++  background-color: transparent !important;
++}
++html { overflow-x: hidden; }
++
++/* The views, added by Vanta (VantaSearchChild): small spaced capitals, the
++   one you're on in white. */
++.vanta-views {
++  display: flex !important;
++  gap: 30px !important;
++  height: 14px !important;
++  margin: 22px 0 0 2px !important;
++  padding: 0 !important;
++}
++.vanta-views a {
++  text-shadow: 0 1px 0 rgba(200, 212, 240, .14) !important;
++  all: unset !important;
++  cursor: pointer !important;
++  font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
++  letter-spacing: .18em !important;
++  text-transform: uppercase !important;
++  color: rgba(255, 255, 255, .42) !important;
++}
++.vanta-views a:hover { color: rgba(255, 255, 255, .8) !important; }
++.vanta-views a[aria-current] { color: #fff !important; cursor: default !important; }
++.search__input {
++  /* Lit from below by the rim. */
++  text-shadow: 0 1px 0 rgba(200, 212, 240, .22), 0 22px 48px rgba(170, 185, 215, .12) !important;
++  all: unset !important;
++  display: block !important;
++  width: 100% !important;
++  font: 650 56px/68px "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
++  height: 68px !important;
++  letter-spacing: -.035em !important;
++  color: #fff !important;
++  caret-color: #fff !important;
++  text-rendering: geometricPrecision;
++}
++
++/* Results: the site in small spaced capitals, the title, then the words. */
++.serp__results { all: unset !important; display: block !important; margin-top: 150px !important; }
++.results, #links { all: unset !important; display: block !important; }
++.result {
++  all: unset !important;
++  display: block !important;
++  margin: 0 0 42px !important;
++}
++.result__body {
++  display: flex !important;
++  flex-direction: column !important;
++  padding: 0 !important;
++  background: none !important;
++  border: 0 !important;
++}
++.result__extras { order: -1; margin: 0 0 8px !important; }
++.result__extras__url { display: flex !important; align-items: center !important; gap: 10px !important; }
++.result__icon, .result__icon a { display: inline-flex !important; }
++.result__icon__img {
++  width: 14px !important;
++  height: 14px !important;
++  border-radius: 3px;
++  opacity: .85;
++  filter: grayscale(.6);
++}
++.result__url {
++  font: 600 11.5px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
++  letter-spacing: .16em !important;
++  text-transform: uppercase !important;
++  color: rgba(255, 255, 255, .4) !important;
++  text-decoration: none !important;
++  white-space: nowrap;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  max-width: 100%;
++}
++.result__title { margin: 0 !important; font: inherit !important; }
++.result__a {
++  font: 500 26px/1.22 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
++  letter-spacing: -.02em !important;
++  color: #fff !important;
++  text-decoration: none !important;
++}
++.result__a:visited { color: rgba(255, 255, 255, .5) !important; }
++.result__a:hover { text-decoration: underline 1px !important; text-underline-offset: 6px !important; }
++.result__snippet {
++  display: block !important;
++  margin-top: 8px !important;
++  font-size: 16px !important;
++  line-height: 1.6 !important;
++  color: rgba(255, 255, 255, .55) !important;
++  text-decoration: none !important;
++}
++.result__snippet b { color: #fff !important; font-weight: 500 !important; }
++
++/* Next page: a word, not a button. */
++.nav-link form { display: inline !important; }
++.nav-link input[type="submit"] {
++  all: unset !important;
++  cursor: pointer !important;
++  font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
++  letter-spacing: .18em !important;
++  text-transform: uppercase !important;
++  color: rgba(255, 255, 255, .6) !important;
++  margin-right: 28px !important;
++}
++.nav-link input[type="submit"]:hover { color: #fff !important; }
++
++@media (prefers-reduced-motion: no-preference) {
++  .result { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
++  .result:nth-child(2) { animation-delay: 40ms; }
++  .result:nth-child(3) { animation-delay: 80ms; }
++  .result:nth-child(4) { animation-delay: 120ms; }
++  .result:nth-child(n+5) { animation-delay: 160ms; }
++}
++@keyframes vanta-result-in {
++  from { opacity: 0; transform: translateY(8px); }
++}
++
++/* The quick answer (VantaSearchChild): the first thing under the horizon,
++   set larger than a result, with no box around it. */
++.vanta-answer {
++  display: block;
++  margin: 0 0 64px;
++  max-width: 680px;
++}
++.vanta-answer-source {
++  display: block;
++  margin: 0 0 10px;
++  font: 600 11.5px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
++  letter-spacing: .16em;
++  text-transform: uppercase;
++  color: rgba(255, 255, 255, .4) !important;
++  text-decoration: none !important;
++}
++.vanta-answer-title {
++  margin: 0;
++  font: 600 34px/1.15 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif;
++  letter-spacing: -.025em;
++  color: #fff;
++}
++.vanta-answer-text {
++  margin: 14px 0 0;
++  font-size: 17px;
++  line-height: 1.6;
++  color: rgba(255, 255, 255, .72);
++}
++.vanta-answer-facts {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: 16px 40px;
++  margin: 24px 0 0;
++}
++.vanta-answer-facts dt {
++  font: 600 11px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
++  letter-spacing: .16em;
++  text-transform: uppercase;
++  color: rgba(255, 255, 255, .4);
++}
++.vanta-answer-facts dd { margin: 4px 0 0; font-size: 15px; color: #fff; }
++@media (prefers-reduced-motion: no-preference) {
++  .vanta-answer { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
++}
++  `,
++
++  DDG: `
++    /* Vanta's skin for DuckDuckGo results: the same editorial voice as the new
++       tab. True black, your search set large like a heading, results as quiet
++       type with no boxes. Only stable hooks (ids, data-testid) are used, since
++       DuckDuckGo's class names change with every deploy. */
++
++    html, body, .site-wrapper, #header_wrapper, #header, #react-duckbar,
++    #web_content_wrapper, #react-layout, #vertical_wrapper, #zero_click_wrapper,
++    [data-testid="mainline"], [data-testid="sidebar"] {
++      background: #000 !important;
++      border-color: transparent !important;
++      box-shadow: none !important;
++    }
++    body {
++      -moz-osx-font-smoothing: grayscale;
++      --vanta-ink: #fff;
++      --vanta-dim: rgba(255,255,255,.6);
++      --vanta-faint: rgba(255,255,255,.38);
++    }
++
++    /* Header: no logo, no slogan, no pill. Just the words you searched. */
++    #header-logo-wrapper, .header--aside > :not(#header-hamburger-menu-btn),
++    [data-testid="floating-feedback-prompt"], #footer-feedback-wrapper,
++    [data-testid="privacy-reminder"] {
++      display: none !important;
++    }
++    #header_wrapper { padding-top: 28px !important; }
++    [data-testid="search-form-input-wrapper"] {
++      background: none !important;
++      border: 0 !important;
++      box-shadow: none !important;
++      border-radius: 0 !important;
++      padding-left: 0 !important;
++    }
++    [data-testid="search-form-input-wrapper"] button { opacity: .35 !important; }
++    [data-testid="search-form-input-wrapper"] button:hover { opacity: .8 !important; }
++    #search_form_input {
++      font: 650 44px/1.15 "Inter Display", -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif !important;
++      letter-spacing: -.035em !important;
++      color: #fff !important;
++      height: auto !important;
++      padding: 0 !important;
++      text-rendering: geometricPrecision;
++    }
++    #search_form_input::placeholder { color: rgba(255,255,255,.17) !important; }
++    #header-hamburger-menu-btn { opacity: .45 !important; }
++
++    /* Tabs and filters: the small spaced capitals of the new tab's date line. */
++    #react-duckbar {
++      border-bottom: 0 !important;
++    }
++    #react-duckbar a, #react-duckbar button, #react-duckbar span, #react-duckbar label {
++      font-family: system-ui, -apple-system, sans-serif !important;
++      font-size: 11.5px !important;
++      font-weight: 600 !important;
++      letter-spacing: .16em !important;
++      text-transform: uppercase !important;
++      color: var(--vanta-faint) !important;
++      background: none !important;
++      border-color: transparent !important;
++      box-shadow: none !important;
++    }
++    #react-duckbar svg { color: var(--vanta-faint) !important; fill: currentColor; }
++    #react-duckbar [aria-current="page"], #react-duckbar [aria-current="page"] *,
++    #react-duckbar a:hover, #react-duckbar button:hover {
++      color: #fff !important;
++    }
++    #react-duckbar [aria-current="page"] { box-shadow: inset 0 -1px 0 #fff !important; }
++    #react-duckbar input[type="checkbox"] + *, #react-duckbar [role="switch"] {
++      filter: grayscale(1) brightness(.8);
++    }
++
++    /* Results: type, not cards. */
++    [data-testid="result"] {
++      background: none !important;
++      border: 0 !important;
++      box-shadow: none !important;
++      padding-block: 14px !important;
++    }
++    [data-testid="result"]:hover { background: none !important; }
++    [data-testid="result-extras-site-search-link"] img {
++      border-radius: 3px;
++    }
++    [data-testid="result-extras-site-search-link"] div {
++      background: none !important;
++      box-shadow: none !important;
++      width: 16px !important;
++      height: 16px !important;
++    }
++    /* The site, small and spaced; the full address only on hover. */
++    [data-testid="result"] p {
++      color: var(--vanta-faint) !important;
++    }
++    [data-testid="result-extras-url-link"] { display: none !important; }
++    [data-testid="result"]:hover [data-testid="result-extras-url-link"] { display: block !important; }
++    [data-testid="result-extras-url-link"] * { color: var(--vanta-faint) !important; text-decoration: none !important; }
++    [data-testid="result-title-a"] {
++      font: 500 24px/1.25 "Inter Display", -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif !important;
++      letter-spacing: -.02em !important;
++      color: #fff !important;
++      text-decoration: none !important;
++    }
++    [data-testid="result-title-a"] * { font: inherit !important; color: inherit !important; }
++    [data-testid="result-title-a"]:visited { color: rgba(255,255,255,.55) !important; }
++    [data-testid="result-title-a"]:hover {
++      text-decoration: underline 1px !important;
++      text-underline-offset: 5px !important;
++    }
++    [data-result="snippet"], [data-result="snippet"] * {
++      font-size: 15.5px !important;
++      line-height: 1.55 !important;
++      color: var(--vanta-dim) !important;
++    }
++    [data-result="snippet"] b { color: #fff !important; font-weight: 500 !important; }
++    [data-testid="result"] a:not([data-testid]) { color: rgba(255,255,255,.82) !important; text-decoration: none !important; }
++    [data-testid="result"] button[aria-haspopup="menu"] { opacity: .3 !important; }
++
++    /* Other modules (images, news, the answer box) sit on black too. */
++    [data-testid="mainline"] section, [data-testid="mainline"] li,
++    [data-testid="sidebar"] section, [data-testid="sidebar"] > div {
++      background-color: transparent !important;
++      box-shadow: none !important;
++      border-color: rgba(255,255,255,.08) !important;
++    }
++    [data-testid="mainline"] h2, [data-testid="sidebar"] h2 {
++      color: #fff !important;
++    }
++    #more-results {
++      background: none !important;
++      border: 0 !important;
++      color: var(--vanta-dim) !important;
++      text-transform: uppercase;
++      letter-spacing: .16em;
++      font-size: 11.5px !important;
++    }
++
++    /* The filter row (region, safe search, time) in the same small capitals. */
++    nav:has([data-testid="date-filter-trigger"]) :is(button, span, strong) {
++      font-family: system-ui, -apple-system, sans-serif !important;
++      font-size: 11.5px !important;
++      font-weight: 600 !important;
++      letter-spacing: .16em !important;
++      text-transform: uppercase !important;
++      color: var(--vanta-faint) !important;
++      background-color: transparent !important;
++      border-color: transparent !important;
++      box-shadow: none !important;
++    }
++    nav:has([data-testid="date-filter-trigger"]) label { filter: grayscale(1) brightness(.75); }
++    nav:has([data-testid="date-filter-trigger"]) button:hover * { color: #fff !important; }
++
++    /* No fades or tints at the edges of the header rows. */
++    :is(#header_wrapper, #react-duckbar, nav:has([data-testid="date-filter-trigger"])),
++    :is(#header_wrapper, #react-duckbar, nav:has([data-testid="date-filter-trigger"])) *,
++    :is(#header_wrapper, #react-duckbar, nav:has([data-testid="date-filter-trigger"])) *::before,
++    :is(#header_wrapper, #react-duckbar, nav:has([data-testid="date-filter-trigger"])) *::after {
++      background-image: none !important;
++    }
++    :is(#react-duckbar, nav:has([data-testid="date-filter-trigger"]))::before,
++    :is(#react-duckbar, nav:has([data-testid="date-filter-trigger"]))::after {
++      display: none !important;
++    }
++
++    /* The view pages (images, videos, news, maps) wear the results page's
++       header: the query large at the same spot, the views as spaced capitals,
++       and the same upturned horizon under them. */
++    html.react, html.react body, .site-wrapper, #web_content_wrapper, #react-layout {
++      background-color: #000 !important;
++    }
++    html.react { overflow-x: hidden; }
++    html.react:not(.react-expanded-map)::before {
++      /* The planet: 800vw across, its lowest point 168px below 11vh. Lit like
++         a body with the sun just behind it: a bright rim, a little light
++         inside the limb, and haze below. (The page clips sideways, so it never
++         scrolls.) */
++      content: "";
++      position: absolute;
++      top: calc(11vh + 168px - 800vw);
++      left: calc(50vw - 400vw);
++      width: 800vw;
++      aspect-ratio: 1;
++      border-radius: 50%;
++      box-shadow:
++        0 1px 0 rgba(205, 216, 242, .55),
++        0 3px 6px -1px rgba(170, 185, 215, .18),
++        0 8px 30px -6px rgba(170, 185, 215, .14),
++        0 50px 140px -30px rgba(170, 185, 215, .08),
++        inset 0 -1px 0 rgba(220, 228, 250, .22),
++        inset 0 -46px 90px -50px rgba(170, 185, 215, .13);
++      pointer-events: none;
++      z-index: 0;
++    }
++    html.react:not(.react-expanded-map)::after {
++      /* Where the hidden sun is nearest, the rim catches more light. */
++      content: "";
++      position: absolute;
++      top: calc(11vh + 168px - 40px);
++      left: 24vw;
++      width: 52vw;
++      height: 80px;
++      background: radial-gradient(closest-side, rgba(205, 218, 245, .16), transparent);
++      pointer-events: none;
++      z-index: 0;
++    }
++    html.react:not(.react-expanded-map) body > * { position: relative; z-index: 1; }
++    html.react:not(.react-expanded-map) :is(.site-wrapper, #header_wrapper, #header,
++      #react-duckbar, #web_content_wrapper, #react-layout, #vertical_wrapper) {
++      background-color: transparent !important;
++    }
++    html.react #header_wrapper { padding-top: 11vh !important; position: relative !important; }
++    html.react #header { max-width: none !important; padding: 0 !important; margin: 0 !important; }
++    html.react #header-non-nav { padding: 0 !important; margin: 0 !important; }
++    html.react .header--aside, html.react #header-logo-wrapper,
++    html.react [data-testid="search-form-input-wrapper"] button,
++    html.react #react-duckbar nav > ul:not(:first-of-type),
++    html.react #react-duckbar nav > ul:first-of-type > li:nth-child(n+6),
++    html.react #react-duckbar nav > ul:first-of-type > li:has(button),
++    html.react #react-duckbar svg {
++      display: none !important;
++    }
++    html.react :is(.header__search-wrap, .header__content, #react-search-form, #search_form) {
++      margin: 0 !important;
++      padding: 0 !important;
++      max-width: none !important;
++      width: auto !important;
++    }
++    html.react #header_wrapper .header__search-wrap { padding-left: 12vw !important; }
++    html.react #search_form_input {
++      /* Lit from below by the rim. */
++      text-shadow: 0 1px 0 rgba(200, 212, 240, .22), 0 22px 48px rgba(170, 185, 215, .12) !important;
++      font: 650 56px/68px "Inter Display", -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif !important;
++      height: 68px !important;
++      letter-spacing: -.035em !important;
++      width: min(760px, 62vw) !important;
++    }
++    html.react #react-duckbar { margin: 22px 0 0 calc(12vw + 2px) !important; padding: 0 !important; height: 14px !important; min-height: 0 !important; }
++    html.react #react-duckbar :is(div, section, nav) {
++      margin: 0 !important; padding: 0 !important; max-width: none !important;
++      min-height: 0 !important; height: auto !important; border: 0 !important;
++    }
++    html.react #react-duckbar nav::before, html.react #react-duckbar nav::after,
++    html.react #react-duckbar a::before, html.react #react-duckbar a::after,
++    html.react #header_wrapper::after { display: none !important; }
++    html.react #react-duckbar nav > ul:first-of-type { display: flex !important; gap: 30px !important; margin: 0 !important; padding: 0 !important; }
++    html.react #react-duckbar nav > ul:first-of-type > li { margin: 0 !important; padding: 0 !important; }
++    html.react #react-duckbar nav > ul:first-of-type a {
++      text-shadow: 0 1px 0 rgba(200, 212, 240, .14) !important;
++      all: unset !important;
++      cursor: pointer !important;
++      font: 600 12px/14px system-ui, -apple-system, sans-serif !important;
++      letter-spacing: .18em !important;
++      text-transform: uppercase !important;
++      color: rgba(255,255,255,.42) !important;
++    }
++    html.react #react-duckbar nav > ul:first-of-type a :not(svg, svg *) {
++      all: unset !important;
++    }
++    html.react #react-duckbar nav > ul:first-of-type a:hover { color: rgba(255,255,255,.8) !important; }
++
++    /* Everything under the horizon. */
++    html.react:not(.react-expanded-map) #web_content_wrapper { padding-top: 150px !important; }
++    html.react [data-testid="zci-images"] > nav,
++    html.react [data-testid="zci-videos"] > nav {
++      padding-left: 12vw !important;
++      margin-bottom: 22px !important;
++      background: none !important;
++      border: 0 !important;
++    }
++    html.react [data-testid="zci-images"] > nav :is(button, span, strong, a),
++    html.react [data-testid="zci-videos"] > nav :is(button, span, strong, a) {
++      font: 600 11px/14px system-ui, -apple-system, sans-serif !important;
++      letter-spacing: .16em !important;
++      text-transform: uppercase !important;
++      color: rgba(255,255,255,.38) !important;
++      background: none !important;
++      border-color: transparent !important;
++      box-shadow: none !important;
++    }
++    html.react [data-testid="zci-images"] > nav svg,
++    html.react [data-testid="zci-videos"] > nav svg { display: inline !important; opacity: .5; }
++    html.react :is([data-testid="zci-images"], [data-testid="zci-videos"]) > div {
++      padding: 0 4vw 0 12vw !important;
++      background: none !important;
++    }
++    html.react [data-testid="zci-images"] *,
++    html.react [data-testid="zci-videos"] * {
++      background-color: transparent !important;
++      box-shadow: none !important;
++      border-color: transparent !important;
++    }
++    html.react [data-testid="zci-images"] img,
++    html.react [data-testid="zci-videos"] img { border-radius: 10px !important; }
++    html.react [data-testid="zci-videos"] article > :first-child,
++    html.react [data-testid="zci-images"] figure > :first-child { border-radius: 10px !important; overflow: hidden !important; }
++    html.react :is([data-testid="zci-images"] figure, [data-testid="zci-videos"] article) :is(h2, h3, p, span, a, figcaption) {
++      font-family: system-ui, -apple-system, sans-serif !important;
++      color: rgba(255,255,255,.6) !important;
++    }
++    html.react [data-testid="zci-videos"] article h2,
++    html.react [data-testid="zci-videos"] article h3 {
++      color: #fff !important;
++      font-weight: 500 !important;
++    }
++    html.react [data-testid="news-vertical"] { background: none !important; }
++    html.react [data-testid="news-vertical"] * { background-color: transparent !important; }
++
++    /* Maps: the map stays full size; the list beside it goes black. */
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"],
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] * {
++      background-color: #000 !important;
++      border-color: rgba(255,255,255,.07) !important;
++      box-shadow: none !important;
++    }
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] form,
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] form * {
++      background-color: transparent !important;
++      border-color: transparent !important;
++    }
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] form input {
++      font: 650 24px/32px "Inter Display", -apple-system, "SF Pro Display", sans-serif !important;
++      letter-spacing: -.02em !important;
++      color: #fff !important;
++    }
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] a,
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] a * { color: rgba(255,255,255,.8) !important; }
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] h2,
++    html.react-expanded-map aside[data-testid="maps-vertical-sidebar"] h3 {
++      font: 500 17px/1.3 "Inter Display", -apple-system, sans-serif !important;
++      color: #fff !important;
++    }
++  `,
++};
++delayedStartupPromise.then(() => VantaSearchSkin.init());
++
++// Vanta: the new tab. A blank page the window draws on (no extra content
++// process), seamless with the frame: your search set large like a page
++// heading, under the date and tonight's moon, over a planet's horizon lit by
++// the sun for the time of day. As you type, suggestions are set under your
++// words in the same type: searches first, then pages from your history. Opening a tab is a sunrise,
++// played once; afterwards nothing moves. Off with vanta.newtab.home.
++var VantaHome = {
++  PREF: "vanta.newtab.home",
++  HTML: "http://www.w3.org/1999/xhtml",
++
++  init() {
++    if (!Services.prefs.getBoolPref(this.PREF, true)) {
++      return;
++    }
++    AboutNewTab.newTabURL = "about:blank";
++    let el = (tag, cls, ...children) => {
++      let node = document.createElementNS(this.HTML, tag);
++      node.className = cls;
++      node.append(...children);
++      return node;
++    };
++    this.input = el("input", "vanta-home-input");
++    this.input.placeholder = "Search or enter address";
++    this.input.setAttribute("aria-label", this.input.placeholder);
++    this.input.addEventListener("keydown", this);
++    this.input.addEventListener("input", this);
++    this.list = el("ol", "vanta-home-suggestions");
++    this.list.addEventListener("click", this);
++    this.list.addEventListener("mousedown", e => e.preventDefault());
++    this.root = el(
++      "div",
++      "",
++      // The sun first, so the planet hides its lower half.
++      el("div", "vanta-home-sky", el("div", "vanta-home-sun"), el("div", "vanta-home-planet")),
++      el(
++        "div",
++        "vanta-home-search",
++        el(
++          "div",
++          "vanta-home-date",
++          (this.moon = el("span", "vanta-home-moon")),
++          (this.date = el("span", ""))
++        ),
++        this.input,
++        this.list
++      )
++    );
++    this.root.id = "vanta-home";
++    document.getElementById("tabbrowser-tabbox").append(this.root);
++    gBrowser.addTabsProgressListener(this);
++    gBrowser.tabContainer.addEventListener("TabSelect", this);
++    this.update();
++  },
++
++  // A blank tab the user opened, not a page a site opened and writes into.
++  // Firefox loads a blank home page (start page, Home button) as blanktab.html.
++  // A private window opens on about:privatebrowsing; the home covers it too.
++  BLANK: [
++    "about:blank",
++    "chrome://browser/content/blanktab.html",
++    "about:privatebrowsing",
++  ],
++  isHome(browser) {
++    return (
++      this.BLANK.includes(browser.currentURI.spec) &&
++      !browser.isLoadingDocument &&
++      !browser.browsingContext?.opener &&
++      !browser.hasContentOpener
++    );
++  },
++
++  onStateChange(browser, webProgress, request, flags) {
++    let done = Ci.nsIWebProgressListener.STATE_STOP | Ci.nsIWebProgressListener.STATE_IS_WINDOW;
++    if (browser == this.leaving && webProgress.isTopLevel && (flags & done) == done) {
++      this.leaveLoaded = !this.isHome(browser);
++      this.update();
++    }
++  },
++
++  onLocationChange(browser, webProgress) {
++    if (webProgress.isTopLevel && browser == gBrowser.selectedBrowser) {
++      this.update();
++    }
++  },
++
++  update() {
++    if (this.leaving) {
++      // A search from here is on its way to the results page: the home
++      // stays over it until that page has drawn, then fades.
++      if (this.leaving != gBrowser.selectedBrowser) {
++        this.finishLeave(true);
++      } else if (!this.isHome(this.leaving)) {
++        let results = /^https:\/\/html\.duckduckgo\.com\//.test(this.leaving.currentURI.spec);
++        // The address changes before the page draws; wait for it to load
++        // (onStateChange calls back here), or the fade shows a blank page.
++        if (results && !this.leaveLoaded) {
++          return;
++        }
++        clearTimeout(this.leaveTimer);
++        // Let the glide finish before the results page shows through.
++        let wait = results ? Math.max(320, this.leaveStart + 950 - Date.now()) : 0;
++        this.leaveTimer = setTimeout(() => this.finishLeave(), wait);
++        return;
++      } else {
++        return;
++      }
++    }
++    let home = this.isHome(gBrowser.selectedBrowser);
++    let was = document.documentElement.hasAttribute("vanta-home");
++    document.documentElement.toggleAttribute("vanta-home", home);
++    if (!home) {
++      return;
++    }
++    this.sky();
++    if (!was) {
++      // Each arrival is a new sunrise: restart the one-shot animation.
++      this.root.removeAttribute("dawn");
++      this.root.getBoundingClientRect();
++      this.root.setAttribute("dawn", "");
++      this.input.value = "";
++      this.suggest();
++    }
++    // A new tab focuses the address bar; the search bar here takes it.
++    setTimeout(() => {
++      if (
++        document.documentElement.hasAttribute("vanta-home") &&
++        document.activeElement == gURLBar.inputField &&
++        !gURLBar.value
++      ) {
++        this.input.focus();
++      }
++    });
++  },
++
++  // Night, dawn, day or dusk, from the clock; the date; the moon's phase.
++  sky() {
++    let now = new Date();
++    this.date.textContent = now.toLocaleDateString(undefined, {
++      weekday: "long",
++      day: "numeric",
++      month: "long",
++    });
++    // Days into the lunar month, from a known new moon (6 Jan 2000, 18:14
++    // UTC). Waxing is lit from the right, waning from the left.
++    let phase = ((now - Date.UTC(2000, 0, 6, 18, 14)) / 864e5 / 29.530588) % 1;
++    let lit = 1 - Math.abs(1 - 2 * phase);
++    this.moon.style.setProperty(
++      "--moon-shadow",
++      `${(phase < 0.5 ? -1 : 1) * Math.round(14 * (1 - lit))}px`
++    );
++    let h = now.getHours() + now.getMinutes() / 60;
++    this.root.dataset.sky =
++      h < 6 || h >= 20 ? "night" : h < 9 ? "dawn" : h < 17 ? "day" : "dusk";
++  },
++
++  handleEvent(event) {
++    switch (event.type) {
++      case "TabSelect":
++        this.update();
++        break;
++      case "input":
++        clearTimeout(this.typing);
++        this.typing = setTimeout(() => this.suggest(), 60);
++        break;
++      case "click": {
++        let row = event.target.closest("li");
++        if (row) {
++          this.go(this.rows[[...this.list.children].indexOf(row)], event);
++        }
++        break;
++      }
++      case "keydown":
++        this.onKey(event);
++        break;
++    }
++  },
++
++  onKey(event) {
++    let count = this.list.children.length;
++    if ((event.key == "ArrowDown" || event.key == "ArrowUp") && count) {
++      event.preventDefault();
++      let step = event.key == "ArrowDown" ? 1 : -1;
++      // -1 is the words as typed.
++      this.selected = ((this.selected ?? -1) + step + count + 2) % (count + 1) - 1;
++      this.select();
++    } else if (event.key == "Enter" && this.input.value.trim()) {
++      event.preventDefault();
++      this.go(this.rows?.[this.selected ?? -1], event);
++    } else if (event.key == "Escape") {
++      this.input.value = "";
++      this.suggest();
++    }
++  },
++
++  // Enter goes where the address bar would: a site, or your search engine.
++  // A search glides into the results page (see leave()).
++  go(row, event) {
++    if (row?.url) {
++      openTrustedLinkIn(row.url, "current");
++      return;
++    }
++    let text = row?.text ?? this.input.value.trim();
++    if (text && this.isSearch(text)) {
++      this.leave(text);
++    }
++    gURLBar.value = text;
++    gURLBar.valueIsTyped = true;
++    gURLBar.handleNavigation({ event });
++  },
++
++  isSearch(text) {
++    try {
++      return !!Services.uriFixup.getFixupURIInfo(
++        text,
++        Ci.nsIURIFixup.FIXUP_FLAG_ALLOW_KEYWORD_LOOKUP
++      ).keywordAsSent;
++    } catch (e) {
++      return false;
++    }
++  },
++
++  // The search glides to where the results page sets it, smaller, while the
++  // horizon rises and turns over to curve under the results page's views and
++  // the sun sets. Positions come from the results page's layout (RESULTS in
++  // search.js): query at 11vh and 12vw at 56px, and the horizon's lowest
++  // point RESULTS_RIM px below 11vh.
++  RESULTS_RIM: 168,
++
++  leave(text) {
++    let browser = gBrowser.selectedBrowser;
++    let page = browser.getBoundingClientRect();
++    let home = this.root.getBoundingClientRect();
++    let input = this.input.getBoundingClientRect();
++    let scale = 56 / 68;
++    let set = (name, px) => this.root.style.setProperty(name, px + "px");
++    set("--leave-x", page.left + page.width * 0.12 - input.left);
++    set("--leave-y", page.top + page.height * 0.11 - input.top);
++    this.root.style.setProperty("--leave-scale", scale);
++    // The horizon rises and turns upside down to curve under the results
++    // page's views, where that page draws it: the underside of a planet
++    // 800vw across, centred, its lowest point RESULTS_RIM below 11vh (see
++    // .header::after in the results page's style).
++    let planet = this.root.querySelector(".vanta-home-planet").getBoundingClientRect();
++    let size = page.width * 8;
++    let s = size / planet.width;
++    set("--leave-px", page.left + page.width / 2 - (planet.left + planet.width / 2));
++    set("--leave-py", page.top + page.height * 0.11 + this.RESULTS_RIM - planet.top);
++    this.root.style.setProperty("--leave-ps", s);
++    this.input.value = text;
++    this.rows = [];
++    this.list.replaceChildren();
++    // End the arrival animation first, so the horizon transitions from
++    // where it rests rather than jumping.
++    this.root.removeAttribute("dawn");
++    getComputedStyle(this.root.querySelector(".vanta-home-planet")).transform;
++    this.root.setAttribute("leaving", "");
++    this.leaveStart = Date.now();
++    this.leaveLoaded = false;
++    this.leaving = browser;
++    clearTimeout(this.leaveTimer);
++    // If the page never arrives, don't hold the home over it.
++    this.leaveTimer = setTimeout(() => this.finishLeave(), 6000);
++  },
++
++  finishLeave(now) {
++    clearTimeout(this.leaveTimer);
++    let done = () => {
++      this.leaving = null;
++      this.root.removeAttribute("leaving");
++      this.root.removeAttribute("gone");
++      this.update();
++    };
++    if (now || !this.root.hasAttribute("leaving")) {
++      done();
++      return;
++    }
++    this.root.setAttribute("gone", "");
++    setTimeout(done, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 280);
++  },
++
++  select() {
++    [...this.list.children].forEach((li, i) =>
++      li.toggleAttribute("selected", i == this.selected)
++    );
++    let row = this.rows[this.selected];
++    this.input.value = row?.text ?? this.typed;
++  },
++
++  async suggest() {
++    let typed = this.input.value;
++    let query = typed.trim();
++    this.typed = typed;
++    this.selected = -1;
++    if (!query) {
++      this.rows = [];
++      this.list.replaceChildren();
++      return;
++    }
++    let [searches, pages] = await Promise.all([
++      this.searchSuggestions(query),
++      this.historyMatches(query).catch(() => []),
++    ]);
++    if (this.input.value != typed) {
++      return;
++    }
++    this.rows = [
++      ...searches.slice(0, 4).map(text => ({ text })),
++      ...pages.slice(0, 3),
++    ];
++    this.list.replaceChildren(
++      ...this.rows.map(row => {
++        let li = this.el("li", { class: row.url ? "vanta-home-page" : "vanta-home-term" });
++        if (row.url) {
++          let icon = this.el("img", { src: "page-icon:" + row.url, alt: "" });
++          icon.addEventListener("error", () => icon.remove(), { once: true });
++          li.append(
++            icon,
++            this.el("span", {}, row.title || row.host),
++            this.el("span", { class: "vanta-home-host" }, row.host)
++          );
++        } else {
++          // The words you typed stay dim; what the suggestion adds is lit.
++          let rest = row.text.toLowerCase().startsWith(query.toLowerCase())
++            ? row.text.slice(query.length)
++            : null;
++          li.append(
++            rest === null
++              ? row.text
++              : this.el(
++                  "span",
++                  {},
++                  this.el("span", { class: "vanta-home-typed" }, row.text.slice(0, query.length)),
++                  rest
++                )
++          );
++        }
++        return li;
++      })
++    );
++  },
++
++  async searchSuggestions(query) {
++    try {
++      let { SearchService } = ChromeUtils.importESModule(
++        "moz-src:///toolkit/components/search/SearchService.sys.mjs"
++      );
++      let { SearchSuggestionController } = ChromeUtils.importESModule(
++        "moz-src:///toolkit/components/search/SearchSuggestionController.sys.mjs"
++      );
++      this.controller ??= new SearchSuggestionController();
++      let result = await this.controller.fetch({
++        searchString: query,
++        inPrivateBrowsing: PrivateBrowsingUtils.isWindowPrivate(window),
++        engine: await SearchService.getDefault(),
++        maxLocalResults: 2,
++        maxRemoteResults: 6,
++      });
++      let seen = new Set([query.toLowerCase()]);
++      return [...(result?.local || []), ...(result?.remote || [])]
++        .map(entry => entry.value)
++        .filter(text => text && !seen.has(text.toLowerCase()) && seen.add(text.toLowerCase()));
++    } catch (e) {
++      return [];
++    }
++  },
++
++  // Pages you have visited whose address or title contains the words.
++  async historyMatches(query) {
++    if (PrivateBrowsingUtils.isWindowPrivate(window)) {
++      return [];
++    }
++    let db = await PlacesUtils.promiseDBConnection();
++    let like = "%" + query.replace(/[%_/]/g, "/$&") + "%";
++    let rows = await db.executeCached(
++      `SELECT url, title FROM moz_places
++       WHERE hidden = 0 AND frecency <> 0
++         AND (url LIKE :pattern ESCAPE '/' OR title LIKE :pattern ESCAPE '/')
++       ORDER BY frecency DESC LIMIT 6`,
++      { pattern: like }
++    );
++    let hosts = new Set();
++    let pages = [];
++    for (let row of rows) {
++      let url = row.getResultByName("url");
++      let host;
++      try {
++        host = new URL(url).hostname.replace(/^www\./, "");
++      } catch (e) {
++        continue;
++      }
++      // One page per site keeps the list short and varied.
++      if (!hosts.has(host) && /^https?:/.test(url)) {
++        hosts.add(host);
++        pages.push({ url, host, title: row.getResultByName("title") });
++      }
++    }
++    return pages;
++  },
++
++  el(tag, props = {}, ...children) {
++    let node = document.createElementNS(this.HTML, tag);
++    for (let [key, value] of Object.entries(props)) {
++      if (key == "class") {
++        node.className = value;
++      } else {
++        node.setAttribute(key, value);
++      }
++    }
++    node.append(...children);
++    return node;
++  },
++};
++delayedStartupPromise.then(() => VantaHome.init());

@@ -742,3 +742,441 @@ sidebar-main,
   background-color: var(--vanta-accent) !important;
   color: var(--vanta-on-accent) !important;
 }
+
+
+
+
+
+
+
+/* ----- Address bar results ------------------------------------------------ */
+
+/* One column of light under the bar. Rows are not plates: the chosen row is
+   lit from the upper left, the rest stay dim. Firefox's engine chip and the
+   "Press tab to search with" row are gone. */
+#urlbar {
+  --urlbarview-background-color-selected: transparent !important;
+  --urlbarview-text-color-selected: var(--vanta-text) !important;
+}
+#urlbar .searchmode-switcher { display: none !important; }
+.urlbarView-row,
+.urlbarView-row[selected],
+.urlbarView-row[row-selectable]:hover { background: none !important; }
+.urlbarView-row { color: var(--vanta-text-muted) !important; }
+.urlbarView-row-inner { border-radius: 10px !important; }
+.urlbarView-row[row-selectable]:hover:not([selected]) > .urlbarView-row-inner {
+  background: rgba(255,255,255,.03) !important;
+}
+.urlbarView-action, .urlbarView-url { color: var(--vanta-text-muted) !important; }
+.urlbarView-row[type="dynamic"]:has(.urlbarView-press-tab-label) { display: none !important; }
+
+/* Answers (time in a city, maths, units): the answer itself, large, then a
+   quiet line of context. */
+.vanta-answer, .urlbarView-row[dynamicType="calculator"] .urlbarView-no-wrap,
+.urlbarView-row[dynamicType="unitConversion"] .urlbarView-no-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding-block: 10px !important;
+}
+.vanta-answer-title,
+.urlbarView-row:is([dynamicType="calculator"], [dynamicType="unitConversion"]) strong {
+  font-size: 30px !important;
+  font-weight: 200 !important;
+  letter-spacing: -.01em !important;
+  color: var(--vanta-text) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.vanta-answer-detail { color: var(--vanta-text-muted) !important; }
+.urlbarView-dynamic-calculator-tail150 { display: none !important; }
+
+/* Focus: the same line of light as the new tab runs along the field's
+   lower edge, entering from the left. Opacity and scale only. */
+#urlbar .urlbar-background::after {
+  content: "";
+  position: absolute;
+  inset: auto 14px -1px 14px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,.9), rgba(200,216,255,.35) 30%, rgba(200,216,255,.06) 75%, transparent);
+  transform-origin: left center;
+  transform: scaleX(.2);
+  opacity: 0;
+  pointer-events: none;
+}
+#urlbar:focus-within .urlbar-background::after { opacity: 1; transform: none; }
+#urlbar[open] .urlbar-background::after { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  #urlbar .urlbar-background::after {
+    transition: opacity 200ms ease, transform 600ms cubic-bezier(.16, 1, .3, 1);
+  }
+}
+
+/* Open, the field and its results are one black body over the dimmed page,
+   and its lower edge is a horizon: sunlit from the left, like the new tab. */
+#urlbar[open] {
+  --urlbar-background-color-focus: #000 !important;
+}
+#urlbar[open] :is(.urlbar-background, .urlbarView-background) {
+  border-color: transparent !important;
+}
+#urlbar[open] .urlbarView-background {
+  box-shadow: 0 30px 80px -10px rgba(0,0,0,.95) !important;
+}
+#urlbar[open] .urlbarView-background::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -1px 0;
+  height: 1px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, transparent 2%, rgba(255,236,210,.9) 18%, rgba(190,210,255,.35) 55%, transparent 96%);
+  box-shadow: 0 6px 24px 2px rgba(255,190,130,.10);
+}
+#tabbrowser-tabbox { transition: opacity 220ms ease; }
+:root:has(#urlbar[open]) #tabbrowser-tabbox { opacity: .35; }
+
+/* The chosen row catches the sun: a glare along its lower edge, bright on
+   the left and fading out, instead of a filled plate. */
+.urlbarView-row[selected] > .urlbarView-row-inner {
+  background:
+    linear-gradient(90deg, rgba(255,240,220,.5), rgba(255,240,220,0) 60%) bottom left / 100% 1px no-repeat,
+    radial-gradient(ellipse 45% 120% at 0 100%, rgba(255,220,180,.09), transparent) !important;
+  box-shadow: none !important;
+}
+/* Result icons sit in small dark bodies, lit from the upper left. */
+.urlbarView-row:not([dynamicType]) .urlbarView-favicon {
+  padding: 6px !important;
+  margin-inline-end: 12px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.14), rgba(255,255,255,.02) 68%) !important;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.12) !important;
+  box-sizing: content-box !important;
+}
+.urlbarView-row { padding-block: 3px !important; }
+
+/* The site the words will be searched on, in the field. */
+#vanta-site-chip { display: none; }
+#urlbar[vanta-site] #vanta-site-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  margin-inline: 2px 8px;
+  padding: 2px 9px 2px 6px;
+  border-radius: 99px;
+  color: var(--vanta-text);
+  font-size: 12px;
+  background: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.03) 70%);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.25);
+  & > img { width: 14px; height: 14px; border-radius: 3px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  #urlbar[vanta-site] #vanta-site-chip { animation: vanta-chip-in 280ms cubic-bezier(.2, 1.6, .4, 1); }
+}
+@keyframes vanta-chip-in { from { opacity: 0; transform: scale(.7); } }
+
+/* The time in a city: where the sun is there, on an arc over the horizon.
+   Below the line it's night, and the sun is a dim moon. */
+.vanta-answer-sky {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 30px;
+  overflow: hidden;
+  margin-inline-end: 4px;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    top: 4px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px dashed rgba(255,255,255,.18);
+  }
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 26px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+  }
+}
+.vanta-answer-body {
+  position: absolute;
+  left: 26px;
+  top: 26px;
+  width: 0;
+  height: 0;
+  transform: rotate(var(--angle));
+  &::before {
+    content: "";
+    position: absolute;
+    left: -26px;
+    top: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #fff4dc;
+    box-shadow: 0 0 10px 2px rgba(255, 200, 120, .6);
+  }
+  .vanta-answer-sky[night] > &::before {
+    background: #8d97ad;
+    box-shadow: none;
+  }
+}
+.vanta-answer-sky[night] { opacity: .7; }
+
+/* ----- New tab (vanta.newtab.home) ---------------------------------------- */
+
+/* A new tab is a blank page the window draws on (VantaHome in
+   browser-init.js): true black, no card edge, one surface with the frame.
+   One plain search bar; below it lies a planet's horizon. The sun sits on
+   it by the time of day, warm at dawn and dusk, white by day, gone at night (only a thin
+   moonlit rim). Opening a tab is a sunrise, played once; afterwards nothing
+   moves. Only transform and opacity animate. */
+#vanta-home { display: none; }
+:root[vanta-home] {
+  #tabbrowser-tabbox { position: relative !important; }
+  #tabbrowser-tabbox::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: var(--vanta-frame) !important;
+    z-index: 9 !important;
+  }
+  .browserStack, #tabbrowser-tabpanels, #tabbrowser-tabbox {
+    box-shadow: none !important;
+    outline: none !important;
+  }
+  #vanta-home {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 10 !important;
+    overflow: hidden !important;
+    padding: 24vh 12vw 0 !important;
+    /* Opaque, so a page under it (a private window's own page) never shows. */
+    background: #000 !important;
+    color: var(--vanta-text) !important;
+    font: 13px/1.4 system-ui, -apple-system, sans-serif !important;
+  }
+}
+
+#vanta-home {
+  --glow: 190, 210, 255;
+  --sun: 255, 255, 255;
+  --sun-x: 34%;
+  --sun-size: 1;
+  &[data-sky="dawn"] { --glow: 255, 168, 110; --sun: 255, 226, 190; --sun-x: 22%; --sun-size: .9; }
+  &[data-sky="dusk"] { --glow: 255, 140, 96; --sun: 255, 214, 170; --sun-x: 70%; --sun-size: .9; }
+  &[data-sky="night"] { --glow: 170, 185, 215; --sun-size: 0; }
+}
+
+.vanta-home-sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The planet: a body far wider than the window, lit along its upper rim
+   by its atmosphere. */
+.vanta-home-planet {
+  position: absolute;
+  left: 50%;
+  top: 74%;
+  width: 420vw;
+  aspect-ratio: 1;
+  margin-left: -210vw;
+  border-radius: 50%;
+  background: #000;
+  box-shadow:
+    0 -1px 0 rgba(var(--glow), .55),
+    0 -8px 30px -6px rgba(var(--glow), .28);
+  #vanta-home[data-sky="night"] & {
+    box-shadow:
+      0 -1px 0 rgba(var(--glow), .45),
+      0 -8px 30px -6px rgba(var(--glow), .16),
+      0 -50px 140px -30px rgba(var(--glow), .10);
+  }
+}
+
+/* The sun on the horizon: a point, its glare along the rim, and a wide
+   halo. Drawn as one gradient layer so it stays cheap. */
+.vanta-home-sun {
+  position: absolute;
+  left: var(--sun-x);
+  top: 74%;
+  width: 900px;
+  height: 340px;
+  margin: -170px 0 0 -450px;
+  background:
+    radial-gradient(closest-side, rgba(var(--sun), 1) 0, rgba(var(--sun), 1) 1.1%, rgba(var(--sun), .55) 3%, rgba(var(--glow), .22) 14%, rgba(var(--glow), .06) 45%, transparent 100%),
+    radial-gradient(ellipse 50% 2.5% at 50% 50%, rgba(var(--sun), .55), transparent);
+  transform: scale(var(--sun-size));
+  opacity: calc(var(--sun-size) * 1);
+}
+
+/* The search, set like a page heading: large type lit from above, under a
+   small line with the date and tonight's moon. Nothing is drawn around it. */
+.vanta-home-search {
+  position: relative;
+  width: 100%;
+}
+.vanta-home-date {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px 2px;
+  font: 600 12px/14px system-ui, -apple-system, sans-serif;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.5);
+}
+/* The moon as it is tonight: lit from the sun's side, the rest in shadow. */
+.vanta-home-moon {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #cfd3dc 70%);
+  box-shadow: inset var(--moon-shadow, 0) 0 0 1px #000, 0 0 0 1px rgba(255,255,255,.12);
+}
+/* Firefox styles chrome inputs as boxes; this one is only the words. */
+.vanta-home-input {
+  appearance: none !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  font: 650 68px/1.08 "Inter Display", "Helvetica Neue", system-ui, -apple-system, sans-serif !important;
+  letter-spacing: -.035em !important;
+  /* Large light text on black: grayscale smoothing keeps its edges clean. */
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: geometricPrecision !important;
+  color: transparent !important;
+  background: linear-gradient(165deg, #fff 30%, #8d8f99) !important;
+  background-clip: text !important;
+  caret-color: #fff !important;
+  &:placeholder-shown { background: none !important; }
+  &::placeholder { color: rgba(255,255,255,.17) !important; opacity: 1 !important; }
+}
+
+/* Suggestions, set under your words in the same type, smaller: searches
+   first, then pages you have visited. No box and no rows of plates; the
+   chosen one is lit, the rest wait in shadow. */
+.vanta-home-suggestions {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  & > li {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    width: fit-content;
+    max-width: 100%;
+    padding: 3px 0;
+    font: 500 26px/1.25 "Inter Display", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+    letter-spacing: -.02em;
+    -moz-osx-font-smoothing: grayscale;
+    color: rgba(255,255,255,.58);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: default;
+    transition: color 120ms ease, transform 200ms cubic-bezier(.2, 1.4, .4, 1);
+  }
+  & > li:hover { color: rgba(255,255,255,.85); }
+  & > li[selected] {
+    color: #fff;
+    transform: translateX(6px);
+  }
+  /* The part you typed stays dim, so the suggested words stand out. */
+  & .vanta-home-typed { color: rgba(255,255,255,.3); }
+  & > li[selected] .vanta-home-typed { color: rgba(255,255,255,.55); }
+  /* Pages: a step quieter, with the site's icon and name. */
+  & > .vanta-home-page {
+    align-items: center;
+    font-size: 17px;
+    font-weight: 450;
+    letter-spacing: 0;
+    padding-block: 5px;
+    & > img { width: 16px; height: 16px; border-radius: 3px; flex: none; -moz-context-properties: fill; fill: currentColor; }
+    & > span:not(.vanta-home-host) { overflow: hidden; text-overflow: ellipsis; }
+  }
+  & > .vanta-home-term + .vanta-home-page { margin-top: 12px; }
+  & .vanta-home-host { font-size: 14px; color: rgba(255,255,255,.35); }
+}
+
+/* Sunrise. */
+@media (prefers-reduced-motion: no-preference) {
+  #vanta-home[dawn] {
+    .vanta-home-planet { animation: vanta-rise 1500ms cubic-bezier(.16, 1, .3, 1) both; }
+    .vanta-home-sun { animation: vanta-sunrise 1700ms cubic-bezier(.2, 1, .3, 1) 150ms both; }
+    .vanta-home-search { animation: vanta-appear 900ms cubic-bezier(.2, .9, .3, 1) 250ms both; }
+  }
+}
+@keyframes vanta-rise {
+  from { transform: translateY(70px); opacity: .25; }
+}
+@keyframes vanta-sunrise {
+  from { transform: translateY(60px) scale(calc(var(--sun-size) * .35)); opacity: 0; }
+  55% { opacity: calc(var(--sun-size) * 1); }
+}
+@keyframes vanta-appear {
+  from { transform: translateY(10px); opacity: 0; }
+}
+
+/* Leaving for the results page: the date and suggestions fade, the search
+   glides up to where the results page sets it, the horizon sinks to the
+   results page's horizon and the sun sets. Then the home fades and the
+   results page is underneath, in the same places. */
+#vanta-home[leaving] {
+  .vanta-home-date, .vanta-home-suggestions { opacity: 0; }
+  .vanta-home-input {
+    transform: translate(var(--leave-x), var(--leave-y)) scale(var(--leave-scale));
+    /* Plain white like the results page. Text clipped from a background
+       drops out while it moves, so the words are drawn as ordinary text. */
+    color: #fff !important;
+    background: none !important;
+  }
+  /* The planet turns over about the top of its curve: scaling it to minus
+     its height flattens the horizon to a line and bends it the other way.
+     Its shadows turn with it, and are drawn 1/scale larger to end up the
+     size the results page draws. */
+  .vanta-home-planet {
+    transform-origin: 50% 0;
+    transform: translate(var(--leave-px), var(--leave-py)) scale(var(--leave-ps), calc(var(--leave-ps) * -1));
+    box-shadow:
+      0 calc(-1px / var(--leave-ps)) 0 rgba(170, 185, 215, .4),
+      0 calc(-8px / var(--leave-ps)) calc(30px / var(--leave-ps)) calc(-6px / var(--leave-ps)) rgba(170, 185, 215, .14),
+      0 calc(-50px / var(--leave-ps)) calc(140px / var(--leave-ps)) calc(-30px / var(--leave-ps)) rgba(170, 185, 215, .08);
+  }
+  .vanta-home-sun {
+    transform: translateY(calc(var(--leave-py) + 30px)) scale(calc(var(--sun-size) * .4));
+    opacity: 0;
+  }
+}
+#vanta-home[gone] { opacity: 0; }
+/* The cover that hides the page under the home would show through the fade. */
+:root[vanta-home] #tabbrowser-tabbox:has(#vanta-home[leaving])::before { display: none !important; }
+.vanta-home-input { transform-origin: 0 0; }
+@media (prefers-reduced-motion: no-preference) {
+  #vanta-home[leaving] {
+    .vanta-home-date, .vanta-home-suggestions { transition: opacity 180ms ease; }
+    .vanta-home-input { transition: transform 720ms cubic-bezier(.2, .8, .2, 1); }
+    .vanta-home-planet { transition: transform 900ms cubic-bezier(.3, .7, .2, 1), box-shadow 900ms ease; }
+    .vanta-home-sun { transition: transform 800ms cubic-bezier(.4, 0, .6, 1), opacity 600ms ease; }
+  }
+  #vanta-home[gone] { transition: opacity 260ms ease; }
+}
