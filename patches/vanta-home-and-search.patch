@@ -1,6 +1,6 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,1536 @@
+@@ -1258,3 +1258,1550 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
@@ -604,36 +604,45 @@
 +   It hangs off the page itself, so no box of DuckDuckGo's can clip it; only
 +   the lit rim is drawn. */
 +html::before {
-+  /* The planet's underside, drawn as gradients in a page-wide strip so it
-+     never makes the page wider than the window. Lit like a body with the
-+     sun just behind it: the rim brightest in the middle and fading to the
-+     sides, a little light inside the limb, and haze below. */
++  /* The planet: 800vw across, its lowest point 168px below 11vh. Lit like
++     a body with the sun just behind it: a bright rim, a little light
++     inside the limb, and haze below. (The page clips sideways, so it never
++     scrolls.) */
 +  content: "";
 +  position: absolute;
-+  top: 0;
-+  left: 0;
-+  width: 100%;
-+  height: calc(11vh + 168px + 180px);
-+  --rim: calc(11vh + 168px);
-+  background:
-+    radial-gradient(ellipse 26vw 34px at 50% var(--rim),
-+      rgba(205, 218, 245, .2), transparent),
-+    radial-gradient(circle 400vw at 50% calc(var(--rim) - 400vw),
-+      transparent calc(400vw - 140px),
-+      rgba(170, 185, 215, .025) calc(400vw - 60px),
-+      rgba(170, 185, 215, .06) calc(400vw - 4px),
-+      rgba(205, 216, 242, .62) calc(400vw - .25px),
-+      rgba(190, 202, 232, .3) calc(400vw + .75px),
-+      rgba(170, 185, 215, .12) calc(400vw + 2.5px),
-+      rgba(170, 185, 215, .07) calc(400vw + 26px),
-+      rgba(170, 185, 215, .03) calc(400vw + 80px),
-+      transparent calc(400vw + 170px));
-+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, .3), #000 38%, #000 62%, rgba(0, 0, 0, .3));
++  top: calc(11vh + 168px - 800vw);
++  left: calc(50vw - 400vw);
++  width: 800vw;
++  aspect-ratio: 1;
++  border-radius: 50%;
++  box-shadow:
++    0 1px 0 rgba(205, 216, 242, .55),
++    0 3px 6px -1px rgba(170, 185, 215, .18),
++    0 8px 30px -6px rgba(170, 185, 215, .14),
++    0 50px 140px -30px rgba(170, 185, 215, .08),
++    inset 0 -1px 0 rgba(220, 228, 250, .22),
++    inset 0 -46px 90px -50px rgba(170, 185, 215, .13);
 +  pointer-events: none;
 +  z-index: 0;
 +}
-+/* DuckDuckGo's own boxes are see-through, so the horizon shows behind them. */
-+body :not(img, input) { background-color: transparent !important; }
++html::after {
++  /* Where the hidden sun is nearest, the rim catches more light. */
++  content: "";
++  position: absolute;
++  top: calc(11vh + 168px - 40px);
++  left: 24vw;
++  width: 52vw;
++  height: 80px;
++  background: radial-gradient(closest-side, rgba(205, 218, 245, .16), transparent);
++  pointer-events: none;
++  z-index: 0;
++}
++/* DuckDuckGo's own boxes are see-through, so the horizon shows behind them.
++   (The skin for DuckDuckGo's other pages matches this host too, hence the
++   id.) */
++html body, html body :not(img, input), html body #header {
++  background-color: transparent !important;
++}
 +html { overflow-x: hidden; }
 +
 +/* The views, added by Vanta (VantaSearchChild): small spaced capitals, the
@@ -966,31 +975,36 @@
 +    }
 +    html.react { overflow-x: hidden; }
 +    html.react:not(.react-expanded-map)::before {
-+      /* The planet's underside, drawn as gradients in a page-wide strip so it
-+         never makes the page wider than the window. Lit like a body with the
-+         sun just behind it: the rim brightest in the middle and fading to the
-+         sides, a little light inside the limb, and haze below. */
++      /* The planet: 800vw across, its lowest point 168px below 11vh. Lit like
++         a body with the sun just behind it: a bright rim, a little light
++         inside the limb, and haze below. (The page clips sideways, so it never
++         scrolls.) */
 +      content: "";
 +      position: absolute;
-+      top: 0;
-+      left: 0;
-+      width: 100%;
-+      height: calc(11vh + 168px + 180px);
-+      --rim: calc(11vh + 168px);
-+      background:
-+        radial-gradient(ellipse 26vw 34px at 50% var(--rim),
-+          rgba(205, 218, 245, .2), transparent),
-+        radial-gradient(circle 400vw at 50% calc(var(--rim) - 400vw),
-+          transparent calc(400vw - 140px),
-+          rgba(170, 185, 215, .025) calc(400vw - 60px),
-+          rgba(170, 185, 215, .06) calc(400vw - 4px),
-+          rgba(205, 216, 242, .62) calc(400vw - .25px),
-+          rgba(190, 202, 232, .3) calc(400vw + .75px),
-+          rgba(170, 185, 215, .12) calc(400vw + 2.5px),
-+          rgba(170, 185, 215, .07) calc(400vw + 26px),
-+          rgba(170, 185, 215, .03) calc(400vw + 80px),
-+          transparent calc(400vw + 170px));
-+      mask-image: linear-gradient(90deg, rgba(0, 0, 0, .3), #000 38%, #000 62%, rgba(0, 0, 0, .3));
++      top: calc(11vh + 168px - 800vw);
++      left: calc(50vw - 400vw);
++      width: 800vw;
++      aspect-ratio: 1;
++      border-radius: 50%;
++      box-shadow:
++        0 1px 0 rgba(205, 216, 242, .55),
++        0 3px 6px -1px rgba(170, 185, 215, .18),
++        0 8px 30px -6px rgba(170, 185, 215, .14),
++        0 50px 140px -30px rgba(170, 185, 215, .08),
++        inset 0 -1px 0 rgba(220, 228, 250, .22),
++        inset 0 -46px 90px -50px rgba(170, 185, 215, .13);
++      pointer-events: none;
++      z-index: 0;
++    }
++    html.react:not(.react-expanded-map)::after {
++      /* Where the hidden sun is nearest, the rim catches more light. */
++      content: "";
++      position: absolute;
++      top: calc(11vh + 168px - 40px);
++      left: 24vw;
++      width: 52vw;
++      height: 80px;
++      background: radial-gradient(closest-side, rgba(205, 218, 245, .16), transparent);
 +      pointer-events: none;
 +      z-index: 0;
 +    }
