@@ -190,6 +190,11 @@ pref("browser.urlbar.suggest.calculator", true);
 pref("browser.urlbar.unitConversion.enabled", true);
 // No "Press tab to search with" row under the bar.
 pref("browser.urlbar.suggest.engines", false);
+// No "Firefox Suggest" or "Vanta suggestions" headings in the results.
+pref("browser.urlbar.groupLabels.enabled", false);
+// A results page you visited comes back as the search it was ("solar
+// eclipse"), not as a page called "solar eclipse at DuckDuckGo".
+pref("browser.urlbar.restyleSearches", true);
 // Vertical tabs in a compact sidebar that expands while hovered, with the
 // address bar in one slim row on top.
 pref("sidebar.revamp", true);

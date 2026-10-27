@@ -1,6 +1,6 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,1550 @@
+@@ -1258,3 +1258,1728 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
@@ -414,6 +414,14 @@
 +  ENGINE_PREF: "vanta.search.engineSet",
 +  SKIN_PREF: "vanta.search.skin",
 +
++  // The results page sets a long search smaller in its heading, so more of
++  // it shows. VantaSearchChild.headingSize (VantaIntegrations.sys.mjs) sizes
++  // the page, this one the new tab's glide into it; keep the two in step.
++  headingSize(query) {
++    let n = query.length;
++    return n <= 26 ? 56 : n <= 33 ? 46 : n <= 41 ? 38 : 32;
++  },
++
 +  init() {
 +    this.setEngine();
 +    this.showSearchTerms();
@@ -580,16 +588,28 @@
 +  font: 400 16px/1.55 "SF Pro Text", -apple-system, "Inter", "Helvetica Neue", sans-serif !important;
 +  -moz-osx-font-smoothing: grayscale;
 +  padding: 0 0 22vh 12vw !important;
-+  max-width: min(760px, 62vw) !important;
++  /* The body spans the window and holds the horizon, clipping it at the
++     window's sides, so the page is never wider than the window. The column
++     is its children. */
++  position: relative !important;
++  box-sizing: border-box !important;
++  width: auto !important;
++  max-width: none !important;
++  min-height: 100vh !important;
++  overflow-x: clip !important;
++  overflow-y: visible !important;
 +}
 +
-+body > * { position: relative; z-index: 1; }
++/* 12vw either side in a narrow window, at most 760px. */
++body > * { position: relative; z-index: 1; max-width: min(760px, 76vw) !important; }
 +
-+/* Header: no logo, no box. The query is the page's heading. */
++/* Header: no logo, no box. The query is the page's heading. Ads are left
++   out, and so is DuckDuckGo's summary box, which VantaSearchChild sets as
++   the quick answer instead. */
 +.header__logo-wrap, .header__logo, .search__button, .site-wrapper-border,
 +#state_hidden, .result__extras__url > span:not(.result__icon),
 +.header__form .frm__select, #bottom_spacing2,
-+.feedback-btn, .result--ad, .badge--ad, #zero_click_wrapper {
++.feedback-btn, .result.result--ad, .badge--ad, #zero_click_wrapper, .zci-wrapper {
 +  display: none !important;
 +}
 +.header, .header-wrap, .header__form, .search, .search--header {
@@ -601,13 +621,12 @@
 +   planet 800vw across, curving down under the views, its lowest point 168px
 +   below 11vh. A search from the new tab carries its horizon up and flips it
 +   to exactly here (VantaHome.leave, RESULTS_RIM), so keep the two in step.
-+   It hangs off the page itself, so no box of DuckDuckGo's can clip it; only
-+   the lit rim is drawn. */
-+html::before {
++   It hangs off the body, so no box of DuckDuckGo's can clip it; only the
++   lit rim is drawn. */
++body::before {
 +  /* The planet: 800vw across, its lowest point 168px below 11vh. Lit like
 +     a body with the sun just behind it: a bright rim, a little light
-+     inside the limb, and haze below. (The page clips sideways, so it never
-+     scrolls.) */
++     inside the limb, and haze below. */
 +  content: "";
 +  position: absolute;
 +  top: calc(11vh + 168px - 800vw);
@@ -625,7 +644,7 @@
 +  pointer-events: none;
 +  z-index: 0;
 +}
-+html::after {
++body::after {
 +  /* Where the hidden sun is nearest, the rim catches more light. */
 +  content: "";
 +  position: absolute;
@@ -655,33 +674,54 @@
 +  padding: 0 !important;
 +}
 +.vanta-views a {
-+  text-shadow: 0 1px 0 rgba(200, 212, 240, .14) !important;
 +  all: unset !important;
 +  cursor: pointer !important;
 +  font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
 +  letter-spacing: .18em !important;
 +  text-transform: uppercase !important;
 +  color: rgba(255, 255, 255, .42) !important;
++  /* After all: unset, which would undo it. */
++  text-shadow: 0 1px 0 rgba(200, 212, 240, .14) !important;
 +}
 +.vanta-views a:hover { color: rgba(255, 255, 255, .8) !important; }
 +.vanta-views a[aria-current] { color: #fff !important; cursor: default !important; }
 +.search__input {
-+  /* Lit from below by the rim. */
-+  text-shadow: 0 1px 0 rgba(200, 212, 240, .22), 0 22px 48px rgba(170, 185, 215, .12) !important;
 +  all: unset !important;
 +  display: block !important;
++  box-sizing: border-box !important;
 +  width: 100% !important;
 +  font: 650 56px/68px "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
 +  height: 68px !important;
 +  letter-spacing: -.035em !important;
 +  color: #fff !important;
 +  caret-color: #fff !important;
++  /* A search longer than the column ends in an ellipsis, not a cut letter. */
++  text-overflow: ellipsis !important;
 +  text-rendering: geometricPrecision;
++  /* Lit from below by the rim: a hairline only, since a soft shadow is cut
++     to the field's box and shows as a faint grey slab. */
++  text-shadow: 0 1px 0 rgba(200, 212, 240, .22) !important;
 +}
++/* Long searches are set smaller (VantaSearchChild.headingSize), in the same
++   68px line, so nothing below moves. */
++html[vanta-size="46"] .search__input { font-size: 46px !important; }
++html[vanta-size="38"] .search__input { font-size: 38px !important; }
++html[vanta-size="32"] .search__input { font-size: 32px !important; }
 +
 +/* Results: the site in small spaced capitals, the title, then the words. */
 +.serp__results { all: unset !important; display: block !important; margin-top: 150px !important; }
-+.results, #links { all: unset !important; display: block !important; }
++#links {
++  /* Not all: unset, which would stop it gliding down when the answer
++     arrives (VantaSearchChild.makeRoom). */
++  display: block !important;
++  width: auto !important;
++  max-width: none !important;
++  float: none !important;
++  margin: 0 !important;
++  padding: 0 !important;
++  border: 0 !important;
++  box-shadow: none !important;
++}
 +.result {
 +  all: unset !important;
 +  display: block !important;
@@ -734,6 +774,32 @@
 +}
 +.result__snippet b { color: #fff !important; font-weight: 500 !important; }
 +
++/* "Including results for …" above the results, and "No results.": the
++   results' own type, not DuckDuckGo's blue. */
++#did_you_mean, .serp__results .msg {
++  all: unset !important;
++  display: block !important;
++  margin: 0 0 44px !important;
++  font: 400 15px/1.6 "SF Pro Text", -apple-system, "Inter", "Helvetica Neue", sans-serif !important;
++  color: rgba(255, 255, 255, .5) !important;
++}
++:is(#did_you_mean, .serp__results .msg) a {
++  color: #fff !important;
++  font-weight: 500 !important;
++  text-decoration: none !important;
++}
++:is(#did_you_mean, .serp__results .msg) a:hover {
++  text-decoration: underline 1px !important;
++  text-underline-offset: 4px !important;
++}
++.no-results {
++  margin: 0 !important;
++  padding: 0 !important;
++  font: 500 26px/1.22 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
++  letter-spacing: -.02em !important;
++  color: rgba(255, 255, 255, .5) !important;
++}
++
 +/* Next page: a word, not a button. */
 +.nav-link form { display: inline !important; }
 +.nav-link input[type="submit"] {
@@ -747,12 +813,23 @@
 +}
 +.nav-link input[type="submit"]:hover { color: #fff !important; }
 +
++/* Keyboard focus: a thin ring of light (results are one Tab stop each,
++   their title). */
++:is(.vanta-views a, .result__a, .nav-link input[type="submit"], .vanta-answer a,
++  #did_you_mean a, .serp__results .msg a, .anomaly-modal__submit):focus-visible {
++  outline: 1px solid rgba(255, 255, 255, .6) !important;
++  outline-offset: 5px !important;
++  border-radius: 3px !important;
++}
++
 +@media (prefers-reduced-motion: no-preference) {
-+  .result { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
-+  .result:nth-child(2) { animation-delay: 40ms; }
-+  .result:nth-child(3) { animation-delay: 80ms; }
-+  .result:nth-child(4) { animation-delay: 120ms; }
-+  .result:nth-child(n+5) { animation-delay: 160ms; }
++  /* On the result's body: the result itself is all: unset, which also
++     stops animations. */
++  .result__body { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
++  .result:nth-child(2) > .result__body { animation-delay: 40ms; }
++  .result:nth-child(3) > .result__body { animation-delay: 80ms; }
++  .result:nth-child(4) > .result__body { animation-delay: 120ms; }
++  .result:nth-child(n+5) > .result__body { animation-delay: 160ms; }
 +}
 +@keyframes vanta-result-in {
 +  from { opacity: 0; transform: translateY(8px); }
@@ -767,6 +844,7 @@
 +}
 +.vanta-answer-source {
 +  display: block;
++  width: fit-content;
 +  margin: 0 0 10px;
 +  font: 600 11.5px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
 +  letter-spacing: .16em;
@@ -774,6 +852,7 @@
 +  color: rgba(255, 255, 255, .4) !important;
 +  text-decoration: none !important;
 +}
++a.vanta-answer-source:hover { color: rgba(255, 255, 255, .8) !important; }
 +.vanta-answer-title {
 +  margin: 0;
 +  font: 600 34px/1.15 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif;
@@ -800,8 +879,69 @@
 +}
 +.vanta-answer-facts dd { margin: 4px 0 0; font-size: 15px; color: #fff; }
 +@media (prefers-reduced-motion: no-preference) {
-+  .vanta-answer { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
++  .vanta-answer, .vanta-answer-facts { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
 +}
++
++/* DuckDuckGo's bot check, sent now and then instead of results: the search
++   stays the heading (VantaSearchChild adds it) and the check is the page's
++   one result, in the results' type. Squares and the box around them are
++   DuckDuckGo's; the blue goes. */
++#lite_wrapper {
++  all: unset !important;
++  display: block !important;
++  position: relative !important;
++  z-index: 1 !important;
++  margin-top: 150px !important;
++}
++#lite_wrapper > :is(br, .header-url, iframe, .html-only), body > img {
++  display: none !important;
++}
++.anomaly-modal__mask, .anomaly-modal__modal {
++  all: unset !important;
++  display: block !important;
++}
++.anomaly-modal__title {
++  margin: 0 !important;
++  text-align: left !important;
++  font: 500 26px/1.22 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
++  letter-spacing: -.02em !important;
++  color: #fff !important;
++}
++.anomaly-modal__description, .anomaly-modal__instructions, .anomaly-modal__error-instructions {
++  width: auto !important;
++  margin: 8px 0 0 !important;
++  text-align: left !important;
++  font: 400 16px/1.6 "SF Pro Text", -apple-system, "Inter", "Helvetica Neue", sans-serif !important;
++  color: rgba(255, 255, 255, .55) !important;
++}
++.anomaly-modal__instructions { margin-top: 30px !important; color: #fff !important; }
++.anomaly-modal__puzzle-margins { max-width: 330px !important; margin: 16px 0 0 !important; }
++.anomaly-modal__image { border-radius: 10px !important; }
++.anomaly-modal__check:checked + img { box-shadow: 0 0 0 2px #fff !important; }
++.anomaly-modal__check:checked ~ .anomaly-modal__overlay { background-color: #fff !important; opacity: .12 !important; }
++.anomaly-modal__check { accent-color: #fff; }
++.anomaly-modal__controls { max-width: 330px !important; margin: 26px 0 0 !important; text-align: left !important; }
++.anomaly-modal__submit, .anomaly-modal__try-again {
++  all: unset !important;
++  cursor: pointer !important;
++  font: 600 12px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
++  letter-spacing: .18em !important;
++  text-transform: uppercase !important;
++  color: #fff !important;
++}
++.anomaly-modal__submit:hover, .anomaly-modal__try-again:hover {
++  text-decoration: underline 1px !important;
++  text-underline-offset: 5px !important;
++}
++.anomaly-modal__controls > p { margin: 0 !important; }
++.feedback-text, .feedback-instructions {
++  display: inline-block !important;
++  margin: 18px 0 0 !important;
++  font: 400 13px/1.5 "SF Pro Text", -apple-system, "Inter", "Helvetica Neue", sans-serif !important;
++  color: rgba(255, 255, 255, .38) !important;
++  text-decoration: none !important;
++}
++.feedback-instructions { display: block !important; margin: 4px 0 0 !important; }
 +  `,
 +
 +  DDG: `
@@ -1032,12 +1172,13 @@
 +    }
 +    html.react #header_wrapper .header__search-wrap { padding-left: 12vw !important; }
 +    html.react #search_form_input {
-+      /* Lit from below by the rim. */
-+      text-shadow: 0 1px 0 rgba(200, 212, 240, .22), 0 22px 48px rgba(170, 185, 215, .12) !important;
-+      font: 650 56px/68px "Inter Display", -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif !important;
++      /* Lit from below by the rim (a hairline, as on Vanta's own page). */
++      text-shadow: 0 1px 0 rgba(200, 212, 240, .22) !important;
++      font: 650 56px/68px "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
 +      height: 68px !important;
 +      letter-spacing: -.035em !important;
-+      width: min(760px, 62vw) !important;
++      width: min(760px, 76vw) !important;
++      text-overflow: ellipsis !important;
 +    }
 +    html.react #react-duckbar { margin: 22px 0 0 calc(12vw + 2px) !important; padding: 0 !important; height: 14px !important; min-height: 0 !important; }
 +    html.react #react-duckbar :is(div, section, nav) {
@@ -1050,13 +1191,13 @@
 +    html.react #react-duckbar nav > ul:first-of-type { display: flex !important; gap: 30px !important; margin: 0 !important; padding: 0 !important; }
 +    html.react #react-duckbar nav > ul:first-of-type > li { margin: 0 !important; padding: 0 !important; }
 +    html.react #react-duckbar nav > ul:first-of-type a {
-+      text-shadow: 0 1px 0 rgba(200, 212, 240, .14) !important;
 +      all: unset !important;
 +      cursor: pointer !important;
 +      font: 600 12px/14px system-ui, -apple-system, sans-serif !important;
 +      letter-spacing: .18em !important;
 +      text-transform: uppercase !important;
 +      color: rgba(255,255,255,.42) !important;
++      text-shadow: 0 1px 0 rgba(200, 212, 240, .14) !important;
 +    }
 +    html.react #react-duckbar nav > ul:first-of-type a :not(svg, svg *) {
 +      all: unset !important;
@@ -1166,12 +1307,20 @@
 +    this.input.addEventListener("input", this);
 +    this.list = el("ol", "vanta-home-suggestions");
 +    this.list.addEventListener("click", this);
++    // A middle click is an auxclick, not a click.
++    this.list.addEventListener("auxclick", this);
 +    this.list.addEventListener("mousedown", e => e.preventDefault());
 +    this.root = el(
 +      "div",
 +      "",
 +      // The sun first, so the planet hides its lower half.
-+      el("div", "vanta-home-sky", el("div", "vanta-home-sun"), el("div", "vanta-home-planet")),
++      el(
++        "div",
++        "vanta-home-sky",
++        el("div", "vanta-home-sun"),
++        el("div", "vanta-home-planet"),
++        el("div", "vanta-home-glint")
++      ),
 +      el(
 +        "div",
 +        "vanta-home-search",
@@ -1302,9 +1451,10 @@
 +        clearTimeout(this.typing);
 +        this.typing = setTimeout(() => this.suggest(), 60);
 +        break;
-+      case "click": {
++      case "click":
++      case "auxclick": {
 +        let row = event.target.closest("li");
-+        if (row) {
++        if (row && (event.type == "click" || event.button == 1)) {
 +          this.go(this.rows[[...this.list.children].indexOf(row)], event);
 +        }
 +        break;
@@ -1316,6 +1466,10 @@
 +  },
 +
 +  onKey(event) {
++    // Keys that finish an accent or an IME word are the input method's.
++    if (event.isComposing || event.keyCode == 229) {
++      return;
++    }
 +    let count = this.list.children.length;
 +    if ((event.key == "ArrowDown" || event.key == "ArrowUp") && count) {
 +      event.preventDefault();
@@ -1332,15 +1486,18 @@
 +    }
 +  },
 +
-+  // Enter goes where the address bar would: a site, or your search engine.
-+  // A search glides into the results page (see leave()).
++  // Enter goes where the address bar would: a site, or your search engine,
++  // here or, with the address bar's modifier keys or a middle click, in a
++  // new tab or window. A search here glides into the results page (see
++  // leave()).
 +  go(row, event) {
++    let where = gURLBar.controller.whereToOpen(event);
 +    if (row?.url) {
-+      openTrustedLinkIn(row.url, "current");
++      openTrustedLinkIn(row.url, where);
 +      return;
 +    }
 +    let text = row?.text ?? this.input.value.trim();
-+    if (text && this.isSearch(text)) {
++    if (text && where == "current" && this.isSearch(text)) {
 +      this.leave(text);
 +    }
 +    gURLBar.value = text;
@@ -1361,32 +1518,46 @@
 +
 +  // The search glides to where the results page sets it, smaller, while the
 +  // horizon rises and turns over to curve under the results page's views and
-+  // the sun sets. Positions come from the results page's layout (RESULTS in
-+  // search.js): query at 11vh and 12vw at 56px, and the horizon's lowest
-+  // point RESULTS_RIM px below 11vh.
++  // the sun sets. Positions come from the results page's layout
++  // (VantaSearchSkin.RESULTS): the query in a 68px line at 11vh and 12vw, in
++  // a column min(760px, 76vw) wide, at VantaSearchSkin.headingSize, and the
++  // horizon's lowest point RESULTS_RIM px below 11vh.
 +  RESULTS_RIM: 168,
 +
 +  leave(text) {
 +    let browser = gBrowser.selectedBrowser;
 +    let page = browser.getBoundingClientRect();
-+    let home = this.root.getBoundingClientRect();
++    // Show the words from their start, where the heading shows them.
++    this.input.value = text;
++    this.input.setSelectionRange(0, 0);
++    this.input.scrollLeft = 0;
++    this.input.blur();
 +    let input = this.input.getBoundingClientRect();
-+    let scale = 56 / 68;
++    let scale = VantaSearchSkin.headingSize(text) / 68;
 +    let set = (name, px) => this.root.style.setProperty(name, px + "px");
 +    set("--leave-x", page.left + page.width * 0.12 - input.left);
-+    set("--leave-y", page.top + page.height * 0.11 - input.top);
++    // Centred on the heading's line, whatever the size.
++    set("--leave-y", page.top + page.height * 0.11 + 34 - (input.height * scale) / 2 - input.top);
 +    this.root.style.setProperty("--leave-scale", scale);
++    // As wide as the heading once scaled, so a long search is cut (with an
++    // ellipsis) where the heading cuts it.
++    set("--leave-width", Math.min(760, page.width * 0.76) / scale);
 +    // The horizon rises and turns upside down to curve under the results
 +    // page's views, where that page draws it: the underside of a planet
 +    // 800vw across, centred, its lowest point RESULTS_RIM below 11vh (see
-+    // .header::after in the results page's style).
++    // body::before in the results page's style).
 +    let planet = this.root.querySelector(".vanta-home-planet").getBoundingClientRect();
 +    let size = page.width * 8;
 +    let s = size / planet.width;
 +    set("--leave-px", page.left + page.width / 2 - (planet.left + planet.width / 2));
 +    set("--leave-py", page.top + page.height * 0.11 + this.RESULTS_RIM - planet.top);
 +    this.root.style.setProperty("--leave-ps", s);
-+    this.input.value = text;
++    // The brighter middle of that page's rim (body::after there): 52vw wide
++    // and 80px tall, centred on the rim's lowest point.
++    let sky = this.root.querySelector(".vanta-home-sky").getBoundingClientRect();
++    set("--glint-x", page.left + page.width * 0.24 - sky.left);
++    set("--glint-y", page.top + page.height * 0.11 + this.RESULTS_RIM - 40 - sky.top);
++    set("--glint-width", page.width * 0.52);
 +    this.rows = [];
 +    this.list.replaceChildren();
 +    // End the arrival animation first, so the horizon transitions from
@@ -1505,17 +1676,21 @@
 +  },
 +
 +  // Pages you have visited whose address or title contains the words.
++  // Results pages are left out: the searches they were are already above.
 +  async historyMatches(query) {
 +    if (PrivateBrowsingUtils.isWindowPrivate(window)) {
 +      return [];
 +    }
++    let { SearchService } = ChromeUtils.importESModule(
++      "moz-src:///toolkit/components/search/SearchService.sys.mjs"
++    );
 +    let db = await PlacesUtils.promiseDBConnection();
 +    let like = "%" + query.replace(/[%_/]/g, "/$&") + "%";
 +    let rows = await db.executeCached(
 +      `SELECT url, title FROM moz_places
 +       WHERE hidden = 0 AND frecency <> 0
 +         AND (url LIKE :pattern ESCAPE '/' OR title LIKE :pattern ESCAPE '/')
-+       ORDER BY frecency DESC LIMIT 6`,
++       ORDER BY frecency DESC LIMIT 12`,
 +      { pattern: like }
 +    );
 +    let hosts = new Set();
@@ -1526,6 +1701,9 @@
 +      try {
 +        host = new URL(url).hostname.replace(/^www\./, "");
 +      } catch (e) {
++        continue;
++      }
++      if (host == "html.duckduckgo.com" || SearchService.parseSubmissionURL(url).engine) {
 +        continue;
 +      }
 +      // One page per site keeps the list short and varied.
