@@ -1004,6 +1004,19 @@ sidebar-main,
   }
 }
 
+/* Where the results page's rim catches the hidden sun (body::after in its
+   style). Only there as the search leaves for that page, so the hand-over
+   to it doesn't brighten. Placed by VantaHome.leave. */
+.vanta-home-glint {
+  position: absolute;
+  left: var(--glint-x, 24%);
+  top: var(--glint-y, 0);
+  width: var(--glint-width, 52%);
+  height: 80px;
+  background: radial-gradient(closest-side, rgba(205, 218, 245, .16), transparent);
+  opacity: 0;
+}
+
 /* The sun on the horizon: a point, its glare along the rim, and a wide
    halo. Drawn as one gradient layer so it stays cheap. */
 .vanta-home-sun {
@@ -1056,7 +1069,9 @@ sidebar-main,
   border-radius: 0 !important;
   outline: none !important;
   box-shadow: none !important;
-  font: 650 68px/1.08 "Inter Display", "Helvetica Neue", system-ui, -apple-system, sans-serif !important;
+  /* The results page's heading face, so the words glide into the same
+     letters (SF Pro on a Mac, Inter where it is installed). */
+  font: 650 68px/1.08 "SF Pro Display", "Inter Display", -apple-system, system-ui, "Helvetica Neue", sans-serif !important;
   letter-spacing: -.035em !important;
   /* Large light text on black: grayscale smoothing keeps its edges clean. */
   -moz-osx-font-smoothing: grayscale !important;
@@ -1065,6 +1080,7 @@ sidebar-main,
   background: linear-gradient(165deg, #fff 30%, #8d8f99) !important;
   background-clip: text !important;
   caret-color: #fff !important;
+  text-overflow: ellipsis !important;
   &:placeholder-shown { background: none !important; }
   &::placeholder { color: rgba(255,255,255,.17) !important; opacity: 1 !important; }
 }
@@ -1086,7 +1102,7 @@ sidebar-main,
     width: fit-content;
     max-width: 100%;
     padding: 3px 0;
-    font: 500 26px/1.25 "Inter Display", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+    font: 500 26px/1.25 "SF Pro Display", "Inter Display", -apple-system, system-ui, "Helvetica Neue", sans-serif;
     letter-spacing: -.02em;
     -moz-osx-font-smoothing: grayscale;
     color: rgba(255,255,255,.58);
@@ -1145,6 +1161,9 @@ sidebar-main,
   .vanta-home-date, .vanta-home-suggestions { opacity: 0; }
   .vanta-home-input {
     transform: translate(var(--leave-x), var(--leave-y)) scale(var(--leave-scale));
+    /* As wide as the results page's heading once scaled, so a long search
+       ends where the heading ends it. */
+    width: var(--leave-width) !important;
     /* Plain white like the results page. Text clipped from a background
        drops out while it moves, so the words are drawn as ordinary text. */
     color: #fff !important;
@@ -1157,11 +1176,16 @@ sidebar-main,
   .vanta-home-planet {
     transform-origin: 50% 0;
     transform: translate(var(--leave-px), var(--leave-py)) scale(var(--leave-ps), calc(var(--leave-ps) * -1));
+    /* The results page's lit rim (body::before in its style), upside down.
+       Its faint light inside the limb is left out: inset shadows this size
+       are slow to redraw on every frame of the turn. */
     box-shadow:
-      0 calc(-1px / var(--leave-ps)) 0 rgba(170, 185, 215, .4),
+      0 calc(-1px / var(--leave-ps)) 0 rgba(205, 216, 242, .55),
+      0 calc(-3px / var(--leave-ps)) calc(6px / var(--leave-ps)) calc(-1px / var(--leave-ps)) rgba(170, 185, 215, .18),
       0 calc(-8px / var(--leave-ps)) calc(30px / var(--leave-ps)) calc(-6px / var(--leave-ps)) rgba(170, 185, 215, .14),
       0 calc(-50px / var(--leave-ps)) calc(140px / var(--leave-ps)) calc(-30px / var(--leave-ps)) rgba(170, 185, 215, .08);
   }
+  .vanta-home-glint { opacity: 1; }
   .vanta-home-sun {
     transform: translateY(calc(var(--leave-py) + 30px)) scale(calc(var(--sun-size) * .4));
     opacity: 0;
@@ -1177,6 +1201,7 @@ sidebar-main,
     .vanta-home-input { transition: transform 720ms cubic-bezier(.2, .8, .2, 1); }
     .vanta-home-planet { transition: transform 900ms cubic-bezier(.3, .7, .2, 1), box-shadow 900ms ease; }
     .vanta-home-sun { transition: transform 800ms cubic-bezier(.4, 0, .6, 1), opacity 600ms ease; }
+    .vanta-home-glint { transition: opacity 500ms ease 400ms; }
   }
   #vanta-home[gone] { transition: opacity 260ms ease; }
 }
