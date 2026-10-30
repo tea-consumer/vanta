@@ -1,6 +1,6 @@
 --- a/browser/base/content/browser-init.js
 +++ b/browser/base/content/browser-init.js
-@@ -1258,3 +1258,1728 @@
+@@ -1258,3 +1258,1747 @@
    },
  };
  delayedStartupPromise.then(() => VantaPageTint.init());
@@ -577,7 +577,8 @@
 +/* Vanta's results page. DuckDuckGo's script-free HTML page supplies the
 +   results; everything you see is drawn here: true black, your search set
 +   large like the new tab's heading, results as type, and the new tab's
-+   horizon low in the window. */
++   horizon low in the window. Declarations are !important: this is a user
++   sheet, and the page's own rules beat a user sheet's normal ones. */
 +
 +html, body {
 +  background: #000 !important;
@@ -586,7 +587,7 @@
 +}
 +body {
 +  font: 400 16px/1.55 "SF Pro Text", -apple-system, "Inter", "Helvetica Neue", sans-serif !important;
-+  -moz-osx-font-smoothing: grayscale;
++  -moz-osx-font-smoothing: grayscale !important;
 +  padding: 0 0 22vh 12vw !important;
 +  /* The body spans the window and holds the horizon, clipping it at the
 +     window's sides, so the page is never wider than the window. The column
@@ -734,15 +735,15 @@
 +  background: none !important;
 +  border: 0 !important;
 +}
-+.result__extras { order: -1; margin: 0 0 8px !important; }
++.result__extras { display: block !important; order: -1 !important; margin: 0 0 8px !important; }
 +.result__extras__url { display: flex !important; align-items: center !important; gap: 10px !important; }
-+.result__icon, .result__icon a { display: inline-flex !important; }
++.result__icon, .result__icon a { display: inline-flex !important; width: auto !important; margin: 0 !important; }
 +.result__icon__img {
 +  width: 14px !important;
 +  height: 14px !important;
-+  border-radius: 3px;
-+  opacity: .85;
-+  filter: grayscale(.6);
++  border-radius: 3px !important;
++  opacity: .85 !important;
++  filter: grayscale(.6) !important;
 +}
 +.result__url {
 +  font: 600 11.5px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
@@ -750,13 +751,24 @@
 +  text-transform: uppercase !important;
 +  color: rgba(255, 255, 255, .4) !important;
 +  text-decoration: none !important;
-+  white-space: nowrap;
-+  overflow: hidden;
-+  text-overflow: ellipsis;
-+  max-width: 100%;
++  position: static !important;
++  white-space: nowrap !important;
++  overflow: hidden !important;
++  text-overflow: ellipsis !important;
++  max-width: 100% !important;
 +}
 +.result__title { margin: 0 !important; font: inherit !important; }
++/* One line each, a long title ending in an ellipsis. The clip reaches below
++   the line, so the hover underline isn't cut off. */
 +.result__a {
++  display: inline-block !important;
++  max-width: 100% !important;
++  margin: 0 !important;
++  vertical-align: top !important;
++  white-space: nowrap !important;
++  overflow: clip !important;
++  overflow-clip-margin: 8px !important;
++  text-overflow: ellipsis !important;
 +  font: 500 26px/1.22 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
 +  letter-spacing: -.02em !important;
 +  color: #fff !important;
@@ -766,7 +778,7 @@
 +.result__a:hover { text-decoration: underline 1px !important; text-underline-offset: 6px !important; }
 +.result__snippet {
 +  display: block !important;
-+  margin-top: 8px !important;
++  margin: 8px 0 0 !important;
 +  font-size: 16px !important;
 +  line-height: 1.6 !important;
 +  color: rgba(255, 255, 255, .55) !important;
@@ -800,7 +812,13 @@
 +  color: rgba(255, 255, 255, .5) !important;
 +}
 +
-+/* Next page: a word, not a button. */
++/* Next page: a word, not a button, at the column's edge. */
++.nav-link {
++  display: inline-block !important;
++  float: none !important;
++  margin: 0 !important;
++  padding: 0 !important;
++}
 +.nav-link form { display: inline !important; }
 +.nav-link input[type="submit"] {
 +  all: unset !important;
@@ -838,46 +856,47 @@
 +/* The quick answer (VantaSearchChild): the first thing under the horizon,
 +   set larger than a result, with no box around it. */
 +.vanta-answer {
-+  display: block;
-+  margin: 0 0 64px;
-+  max-width: 680px;
++  display: block !important;
++  margin: 0 0 64px !important;
++  max-width: 680px !important;
 +}
 +.vanta-answer-source {
-+  display: block;
-+  width: fit-content;
-+  margin: 0 0 10px;
-+  font: 600 11.5px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
-+  letter-spacing: .16em;
-+  text-transform: uppercase;
++  display: block !important;
++  width: fit-content !important;
++  margin: 0 0 10px !important;
++  font: 600 11.5px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
++  letter-spacing: .16em !important;
++  text-transform: uppercase !important;
 +  color: rgba(255, 255, 255, .4) !important;
 +  text-decoration: none !important;
 +}
 +a.vanta-answer-source:hover { color: rgba(255, 255, 255, .8) !important; }
 +.vanta-answer-title {
-+  margin: 0;
-+  font: 600 34px/1.15 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif;
-+  letter-spacing: -.025em;
-+  color: #fff;
++  margin: 0 !important;
++  font: 600 34px/1.15 "SF Pro Display", "Inter Display", -apple-system, "Helvetica Neue", sans-serif !important;
++  letter-spacing: -.025em !important;
++  color: #fff !important;
 +}
 +.vanta-answer-text {
-+  margin: 14px 0 0;
-+  font-size: 17px;
-+  line-height: 1.6;
-+  color: rgba(255, 255, 255, .72);
++  margin: 14px 0 0 !important;
++  padding: 0 !important;
++  font-size: 17px !important;
++  line-height: 1.6 !important;
++  color: rgba(255, 255, 255, .72) !important;
 +}
 +.vanta-answer-facts {
-+  display: grid;
-+  grid-template-columns: repeat(2, minmax(0, 1fr));
-+  gap: 16px 40px;
-+  margin: 24px 0 0;
++  display: grid !important;
++  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
++  gap: 16px 40px !important;
++  margin: 24px 0 0 !important;
 +}
 +.vanta-answer-facts dt {
-+  font: 600 11px/14px "SF Pro Text", -apple-system, system-ui, sans-serif;
-+  letter-spacing: .16em;
-+  text-transform: uppercase;
-+  color: rgba(255, 255, 255, .4);
++  font: 600 11px/14px "SF Pro Text", -apple-system, system-ui, sans-serif !important;
++  letter-spacing: .16em !important;
++  text-transform: uppercase !important;
++  color: rgba(255, 255, 255, .4) !important;
 +}
-+.vanta-answer-facts dd { margin: 4px 0 0; font-size: 15px; color: #fff; }
++.vanta-answer-facts dd { margin: 4px 0 0 !important; font-size: 15px !important; color: #fff !important; }
 +@media (prefers-reduced-motion: no-preference) {
 +  .vanta-answer, .vanta-answer-facts { animation: vanta-result-in 520ms cubic-bezier(.2, .9, .3, 1) both; }
 +}
